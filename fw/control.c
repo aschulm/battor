@@ -1,0 +1,89 @@
+#include "common.h"
+
+#include "error.h"
+#include "control.h"
+#include "blink.h"
+#include "samples.h"
+#include "usbpower.h"
+
+static control_message message;
+static int message_b_idx = 0;
+uint8_t g_control_mode;
+
+void control_got_uart_bytes() //{{{
+{
+	uint8_t i;
+	uint8_t recv_len = 1;
+	uint8_t* message_b = (uint8_t*)&message;
+
+	while (recv_len > 0) // stop when there is no uart data left
+	{
+		// need more bytes
+		if (message_b_idx < sizeof(control_message))
+		{
+			recv_len = uart_rx_bytes((message_b + message_b_idx), sizeof(control_message) - message_b_idx);
+			message_b_idx += recv_len;
+		}
+
+		// have enough bytes
+		if (message_b_idx == sizeof(control_message))
+		{
+			if (message.delim[0] == CONTROL_DELIM0 && 
+				message.delim[1] == CONTROL_DELIM1)
+			{
+				control_run_message(&message);
+				uart_tx_byte(CONTROL_ACK); // send an ack
+				message_b_idx = 0; // done with the message
+			}
+			else
+			{
+				// chuck everything till what looks like the start of a delimiter
+				while (message.delim[0] != CONTROL_DELIM0 && message_b_idx > 0)
+				{
+					// shift over all bytes by one, and shrink the message
+					message_b_idx--;
+					for (i = 0; i < message_b_idx; i++)
+						message_b[i] = message_b[i+1];
+				}
+			}
+		}
+	}
+} //}}}
+
+void control_run_message(control_message* m) //{{{
+{
+	uint16_t pos;
+	switch (m->type)
+	{
+		case CONTROL_TYPE_AMPPOT_SET:
+			pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
+			pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
+			if (m->value1 != pos)
+				halt();
+		break;
+		case CONTROL_TYPE_FILPOT_SET:
+			pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);
+			pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
+			if (m->value1 != pos)
+				halt();
+		break;
+		case CONTROL_TYPE_SAMPLE_TIMER_SET:
+			timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
+		break;
+		case CONTROL_TYPE_START_SAMPLING_UART:
+			g_control_mode = CONTROL_MODE_STREAM;
+			g_samples_uart_seqnum = 0;
+			blink_set_led(LED_GREEN_bm);
+			dma_start(); // start getting samples from the ADCs
+		break;
+		case CONTROL_TYPE_START_SAMPLING_SD:
+			g_control_mode = CONTROL_MODE_STORE;
+			blink_set_led(LED_GREEN_bm);
+			// TODO setup any SD sampling?
+			dma_start(); // start getting samples from the ADCs
+		break;
+		case CONTROL_TYPE_USB_POWER_SET:
+			usbpower_set(m->value1);
+		break;
+	}
+} //}}}
