@@ -2,13 +2,13 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "schulman@cs.umd.edu"
+#define PACKAGE_BUGREPORT "aschulm@gmail.com"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "BattOr Reader"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "BattOr Reader 1.0"
+#define PACKAGE_STRING "BattOr Reader"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "battor-reader"
