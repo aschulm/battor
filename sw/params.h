@@ -26,7 +26,7 @@
 #define BATTOR_UART_PATH_LINUX "/dev/ttyUSB0"
 
 // voltage measurement
-#define V_DEV (2.0/12.0)
+#define V_DEV (2.0/(2.0+10.0))
 
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos);
