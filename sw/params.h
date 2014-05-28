@@ -13,6 +13,7 @@
 #define SAMPLE_RATE_HZ_DEFAULT 1000  // paired with timer settings above
 
 // current measurement
+#define ADC_TOP 2047.0
 #define AMPPOT_POS_DEFAULT 200
 #define AMPPOT_OHM 50000.0 // base resistance of the amp potentiometer
 #define CURRENT_GAIN_DEFAULT 5 // paired with gain settings above
@@ -25,7 +26,7 @@
 #define BATTOR_UART_PATH_LINUX "/dev/ttyUSB0"
 
 // voltage measurement
-#define V_DEV (2.0/10.0)
+#define V_DEV (2.0/12.0)
 
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos);
