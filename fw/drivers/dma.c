@@ -115,3 +115,12 @@ void dma_start()
 	DMA.CH2.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
 	DMA.CH3.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
 }
+
+void dma_stop()
+{
+	DMA.INTFLAGS = 0xFF; // clear all interrups
+	DMA.CH0.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 0 for ADCA
+	DMA.CH1.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 0 for ADCA
+	DMA.CH2.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
+	DMA.CH3.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
+}

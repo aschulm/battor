@@ -26,7 +26,8 @@ void adc_init(ADC_t* adc)
 	adc->CAL = adc_cal; // load the calibration value into the ADC adc_cal 
 
 	// setup the channel (signal)
-	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc;
+	//adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc;
+	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc;
 	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_PIN7_gc; 
 
 	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_0_gc | ADC_EVACT_CH0_gc; // read channel 0 for event 0 

@@ -19,7 +19,9 @@ ISR(USARTD0_RXC_vect) //{{{
 	interrupt_set(INTERRUPT_UART_RX);
 } //}}}
 
-static FILE g_uart_stream = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+#ifdef DEBUG
+	static FILE g_uart_stream = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+#endif
 
 void uart_init() //{{{
 {
@@ -28,13 +30,13 @@ void uart_init() //{{{
 	PORTD.DIR &= ~USARTD0_RXD_PIN; // set the RX pin to input
 
 	// set baud rate with BSEL and BSCALE values
-//#ifdef DEBUG
+#ifdef DEBUG
 	USARTD0.BAUDCTRLB = USART_BSCALE_115200BPS << USART_BSCALE_gp;
 	USARTD0.BAUDCTRLA = USART_BSEL_115200BPS & USART_BSEL_gm;
-//#else
+#else
 	USARTD0.BAUDCTRLB = USART_BSCALE_921600BPS << USART_BSCALE_gp;
 	USARTD0.BAUDCTRLA = USART_BSEL_921600BPS & USART_BSEL_gm;
-//#endif
+#endif
 
 	USARTD0.CTRLC = USART_CMODE_ASYNCHRONOUS_gc | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc; // set transfer parameters
 	USARTD0.CTRLA = USART_RXCINTLVL_MED_gc; // interrupt for receive 

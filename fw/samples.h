@@ -9,6 +9,7 @@
 extern uint8_t g_samples_uart_seqnum;
 
 void samples_uart_write(uint8_t* v_s, uint8_t* i_s);
-//void samples_sd_write(uint8_t* v_s, uint8_t* i_s, FIL* file);
+void samples_store_write(uint8_t* v_s, uint8_t* i_s);
+void samples_store_read(uint16_t file);
 
 #endif

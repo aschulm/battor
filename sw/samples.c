@@ -12,7 +12,7 @@ float sample_v(sample* s) //{{{
 		fprintf(stderr, "warning: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 	if (s->signal < 0)
 		s->signal = 0;
-	float v_adcv = ((float)(s->signal)) / 2048.0;
+	float v_adcv = ((float)(s->signal)) / ADC_TOP;
 	return (v_adcv / V_DEV) * 1000.0; // undo the voltage divider
 } //}}}
 
@@ -24,7 +24,7 @@ float sample_i(sample* s, float gain, float current_offset) //{{{
 
 	if (s->signal < 0)
 		s->signal = 0;
-	float i_adcv = ((float)(s->signal)) / 2048.0;
+	float i_adcv = ((float)(s->signal)) / ADC_TOP;
 	float i_adcv_unamp = i_adcv / gain; // undo the current gain
 	float i_samp = ((i_adcv_unamp / IRES_OHM) * 1000.0) - current_offset;
 	if (i_samp < 0)
