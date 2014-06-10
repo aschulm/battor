@@ -49,7 +49,7 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash:	all
-	avrdude -p $(DEVICE) -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
+	avrdude -e -p $(DEVICE) -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
 
 flash_mkII:	all
 	avrdude -p $(DEVICE) -c avrispmkII -P usb -U flash:w:main.hex
