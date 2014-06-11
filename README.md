@@ -8,9 +8,8 @@ sw - PC software for configuring and installing BattOr
 
 The fw and software should build and run on Linux and OSX. However, if you are
 using OSX 10.9 (Maverics) you will need to disable the OSX FTDI USB-to-serial
-driver and install the one from FTDI.
-
-Follow the OSX 10.9 instructions [from FTDI](http://www.ftdichip.com/Support/Documents/AppNotes/AN_134_FTDI_Drivers_Installation_Guide_for_MAC_OSX.pdf).
+driver and install the one from FTDI. To do so, follow the OSX 10.9 install
+instructions [from FTDI](http://www.ftdichip.com/Support/Documents/AppNotes/AN_134_FTDI_Drivers_Installation_Guide_for_MAC_OSX.pdf).
 
     fw:
     $ ./bootstrap
