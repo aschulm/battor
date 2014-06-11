@@ -28,9 +28,11 @@ typedef struct control_message_
 
 typedef enum CONTROL_MODE_enum
 {
-	CONTROL_MODE_STREAM = 1,
+	CONTROL_MODE_IDLE,
+	CONTROL_MODE_STREAM,
 	CONTROL_MODE_STORE,
-	CONTROL_MODE_REC_CONTROL
+	CONTROL_MODE_REC_CONTROL,
+	CONTROL_MODE_READ_FILE
 } CONTROL_MODE_t;
 
 extern uint8_t g_control_mode;

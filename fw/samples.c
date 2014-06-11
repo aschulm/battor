@@ -5,11 +5,11 @@
 #include "error.h"
 
 uint8_t g_samples_uart_seqnum;
+uint16_t g_samples_read_file;
+uint8_t g_adca0[SAMPLES_LEN], g_adca1[SAMPLES_LEN], g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
 
-void samples_uart_write(uint8_t* v_s, uint8_t* i_s) //{{{
+void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len) //{{{
 {
-	uint16_t len = SAMPLES_LEN;
-
 	// write frame delimiter
 	uart_tx_byte(SAMPLES_DELIM0);
 	uart_tx_byte(SAMPLES_DELIM1);
@@ -39,7 +39,6 @@ void samples_store_write(uint8_t* v_s, uint8_t* i_s) //{{{
 	store_write_bytes(i_s, len);
 } //}}}
 
-static uint8_t store_v_s[SAMPLES_LEN], store_i_s[SAMPLES_LEN];
 void samples_store_read(uint16_t file) //{{{
 {
 	uint16_t len = SAMPLES_LEN;
@@ -49,19 +48,18 @@ void samples_store_read(uint16_t file) //{{{
 	store_read_open(file);
 
 	// read voltage
-	ret_v = store_read_bytes(store_v_s, len);
+	ret_v = store_read_bytes(g_adca0, len);
 	// read current
-	ret_i = store_read_bytes(store_i_s, len);
-
-	printf("samples: store_read v %d i %d\r\n", ret_v, ret_i);
-
+	ret_i = store_read_bytes(g_adcb0, len);
 	while (ret_v >= 0 && ret_i >= 0)
 	{
 		led_toggle(LED_GREEN_bm);
-		samples_uart_write(store_v_s, store_i_s);
+		samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
 		// read voltage
-		ret_v = store_read_bytes(store_v_s, len);
+		ret_v = store_read_bytes(g_adca0, len);
 		// read current
-		ret_i = store_read_bytes(store_i_s, len);
+		ret_i = store_read_bytes(g_adcb0, len);
 	}
+	samples_uart_write(NULL, NULL, 0); // no more samples
+
 } //}}}

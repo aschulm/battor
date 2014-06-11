@@ -5,10 +5,8 @@
 #include "control.h"
 #include "store.h"
 #include "interrupt.h"
-#include "samples.h"
 #include "usbpower.h"
-
-uint8_t g_adca0[SAMPLES_LEN], g_adca1[SAMPLES_LEN], g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
+#include "samples.h"
 
 void init_devices() //{{{
 {
@@ -58,8 +56,6 @@ int main() //{{{
 	{
 		printf("main: store init successful\r\n");
 		store_run_commands();
-		//dma_stop();
-		//samples_store_read(1);
 	}
 
 	// main loop for interrupt bottom halves 
@@ -89,7 +85,7 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0);
+				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca0, g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH0);
@@ -100,11 +96,18 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1);
+				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca1, g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH1);
 			interrupt_clear(INTERRUPT_DMA_CH3);
+		}
+
+		// need to read a file
+		if (g_control_mode == CONTROL_MODE_READ_FILE)
+		{
+			g_control_mode = CONTROL_MODE_IDLE;
+			samples_store_read(g_samples_read_file);
 		}
 	}
 	return 0;

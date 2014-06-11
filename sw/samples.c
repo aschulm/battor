@@ -59,6 +59,10 @@ void samples_print_loop(float gain, float current_offset) //{{{
 				}
 				prev_seqnum = hdr.seqnum;
 
+				// EOF for file read
+				if (hdr.samples_len == 0)
+					break;
+
 				uart_read(v_s, hdr.samples_len);
 				uart_read(i_s, hdr.samples_len);
 

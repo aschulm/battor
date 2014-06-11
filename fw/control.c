@@ -53,6 +53,7 @@ void control_got_uart_bytes() //{{{
 
 void control_run_message(control_message* m) //{{{
 {
+	printf("control: type %d\r\n", m->type);
 	// record the message if we are in record mode, else run it
 	if (g_control_mode == CONTROL_MODE_REC_CONTROL &&
 			m->type != CONTROL_TYPE_START_REC_CONTROL &&
@@ -97,13 +98,14 @@ void control_run_message(control_message* m) //{{{
 				store_start_rec_control(m->value1);
 			break;
 			case CONTROL_TYPE_END_REC_CONTROL:
-				g_control_mode = 0;
+				g_control_mode = CONTROL_MODE_IDLE;
 				store_end_rec_control();
 			break;
 			case CONTROL_TYPE_READ_FILE:
-				dma_stop(); // we are now in read mode
+				g_control_mode = CONTROL_MODE_READ_FILE;
 				g_samples_uart_seqnum = 0;
-				samples_store_read(m->value1);
+				g_samples_read_file = m->value1;
+				dma_stop(); // will get samples from the file
 			break;
 			case CONTROL_TYPE_USB_POWER_SET:
 				usbpower_set(m->value1);

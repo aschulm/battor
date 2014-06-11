@@ -5,7 +5,7 @@
 
 #define STORE_STARTBLOCK_IDX 0
 #define STORE_MAGIC 0xAAD5
-#define STORE_VERSION 2
+#define STORE_VERSION 1
 #define STORE_FILE_BLOCKS 112500 // about 4 hours per file
 
 typedef struct store_startblock_t
