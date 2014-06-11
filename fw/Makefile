@@ -1,7 +1,7 @@
 # Name: Makefile
-# Author: <insert your name here>
+# Author: Aaron Schulman
 # Copyright: <insert your copyright message here>
-# License: <insert your license reference here>
+# License: Apache License 2.0
 
 # This is a prototype Makefile. Modify it according to your needs.
 # You should at least check the settings for
@@ -16,7 +16,7 @@
 VERSION = 1.0
 
 CLOCK      = 16000000 
-CFLAGS     = -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os -DDEBUG
+CFLAGS     = -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os #-DDEBUG
 DEVICE     = atxmega192a3
 OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m

@@ -3,12 +3,10 @@
 #include "error.h"
 #include "blink.h"
 #include "control.h"
-#include "interrupt.h"
-#include "samples.h"
 #include "store.h"
+#include "interrupt.h"
 #include "usbpower.h"
-
-uint8_t g_adca0[SAMPLES_LEN], g_adca1[SAMPLES_LEN], g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
+#include "samples.h"
 
 void init_devices() //{{{
 {
@@ -49,20 +47,21 @@ int main() //{{{
 	printf("main: init_devices()\r\n");
 	init_devices();
 
-	g_control_mode = 0; // not sampling yet
-	printf("main: blink_init()\r\n");
-	blink_init(750, LED_YELLOW_bm); // setup an LED to blink while running, start with yellow to indicate not ready yet 
+	// setup an LED to blink while running, start with yellow to indicate not ready yet 
+	blink_init(10000, LED_YELLOW_bm); 
 
-	// try to initiate storage 
-	//if (store_init())
-	//{
-	//}
+	// try to initalize storage
+	g_control_mode = 0;
+	if (store_init())
+	{
+		printf("main: store init successful\r\n");
+		store_run_commands();
+	}
 
 	// main loop for interrupt bottom halves 
 	while (1) 
 	{
 		// turn off the CPU between interrupts 
-		printf("main loop: sleeps()\r\n");
 		set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
 		sleep_enable();
 		sleep_cpu();
@@ -72,7 +71,6 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
 		{
 			interrupt_clear(INTERRUPT_TIMER_MS);
-			printf("main: blink_ms_time_update\r\n");
 			blink_ms_timer_update();
 		}
 
@@ -87,10 +85,9 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0);
-			// TODO write to SD card
-			//if (g_control_mode == CONTROL_MODE_STORE)
-				//samples_sd_write(g_adca0, g_adcb0, &samples_file);
+				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca0, g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH0);
 			interrupt_clear(INTERRUPT_DMA_CH2);
 		}
@@ -99,12 +96,18 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1);
-			// TODO write to SD card
-			//if (g_control_mode == CONTROL_MODE_STORE)
-			//	samples_sd_write(g_adca1, g_adcb1, &samples_file);
+				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca1, g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH1);
 			interrupt_clear(INTERRUPT_DMA_CH3);
+		}
+
+		// need to read a file
+		if (g_control_mode == CONTROL_MODE_READ_FILE)
+		{
+			g_control_mode = CONTROL_MODE_IDLE;
+			samples_store_read(g_samples_read_file);
 		}
 	}
 	return 0;

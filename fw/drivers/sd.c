@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "../error.h"
 #include "timer.h"
 #include "spi.h"
 #include "sd.h"
@@ -26,7 +27,7 @@ static void swap_bytes(uint8_t* d, uint16_t len) //{{{
 	}
 } //}}}
 
-void sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint8_t crc, uint8_t* response, uint16_t response_len) //{{{
+int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint8_t crc, uint8_t* response, uint16_t response_len) //{{{
 {
 	uint32_t tries;
 	uint8_t command[6];
@@ -61,8 +62,17 @@ void sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, u
 	 * this also gives the SD card at least 8 clock pulses to give 
 	 * it a chance to prepare for the next CMD */
 	rx = 0;
-	while (rx == 0)
+	tries = 0;
+	while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
+	{
 		spi_txrx(&SPIE, NULL, &rx, 1);
+		tries++;
+	}
+
+	if (tries >= SD_MAX_BUSY_TRIES)
+		return -1;
+
+	return 0;
 } //}}}
 
 int sd_init(sd_info* info) //{{{
@@ -78,15 +88,17 @@ int sd_init(sd_info* info) //{{{
 
 	// keep trying to reset
 	uint16_t tries = 0;
+	int ret = 0;
 	resp[0] = 0x00;
 	while(resp[0] != 0x01 && tries < SD_MAX_RESET_TRIES)
 	{
 		gpio_off(&PORTE, SPI_SS_PIN_bm);
-		sd_command(0, 0x00, 0x00, 0x00, 0x00, 0x95, resp, 1); // CMD0
+		ret = sd_command(0, 0x00, 0x00, 0x00, 0x00, 0x95, resp, 1); // CMD0
 		gpio_on(&PORTE, SPI_SS_PIN_bm);
 		tries++;
 	}
-	if (tries >= SD_MAX_RESET_TRIES)
+
+	if (tries >= SD_MAX_RESET_TRIES || ret < 0)
 		return -1;
 
 	// check voltage range and check for V2
@@ -171,11 +183,12 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 
 	// send the single block write 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(24, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1); // CMD24
+	if (sd_command(24, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1) < 0) // CMD24
+		halt();
 
 	// Could be an issue here where the last 8 of SD command contains the token, but I doubt this happens
 	if (rx != 0x00)
-		return 0;
+		halt();
 
 	// tick clock 8 times to start write operation 
 	spi_txrx(&SPIE, NULL, NULL, 1);
@@ -192,7 +205,7 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 
 	// check if the data is accepted
 	if (!((rx & 0xE) >> 1 == 0x2))
-		return 0;
+		halt();
 
 	// wait for the card to release the busy flag
 	rx = 0;
@@ -202,27 +215,5 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	spi_txrx(&SPIE, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
 
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
-	return 1;
+	return 0;
 } //}}}
-
-void sd_erase_blocks(uint32_t start_block_num, uint32_t end_block_num)
-{
-	uint8_t rx = 0xFF;
-
-	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(32, (0xFF000000 & start_block_num) >> 24, (0xFF0000 & start_block_num) >> 16, (0xFF00 & start_block_num) >> 8, 0xFF & start_block_num, 0, &rx, 1); // CMD32 start erase block
-	gpio_on(&PORTE, SPI_SS_PIN_bm);
-
-	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(33, (0xFF000000 & end_block_num) >> 24, (0xFF0000 & end_block_num) >> 16, (0xFF00 & end_block_num) >> 8, 0xFF & end_block_num, 0, &rx, 1); // CMD33 end erase block
-	gpio_on(&PORTE, SPI_SS_PIN_bm);
-
-	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(38, 0, 0, 0, 0, 0, &rx, 1); // CMD38 erase blocks
-	// wait for the card to release the busy flag
-	rx = 0;
-	while (rx == 0)
-		spi_txrx(&SPIE, NULL, &rx, 1);
-	spi_txrx(&SPIE, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
-	gpio_on(&PORTE, SPI_SS_PIN_bm);
-}

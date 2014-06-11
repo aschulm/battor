@@ -5,6 +5,7 @@
 #include "blink.h"
 #include "samples.h"
 #include "usbpower.h"
+#include "store.h"
 
 static control_message message;
 static int message_b_idx = 0;
@@ -52,38 +53,63 @@ void control_got_uart_bytes() //{{{
 
 void control_run_message(control_message* m) //{{{
 {
-	uint16_t pos;
-	switch (m->type)
+	printf("control: type %d\r\n", m->type);
+	// record the message if we are in record mode, else run it
+	if (g_control_mode == CONTROL_MODE_REC_CONTROL &&
+			m->type != CONTROL_TYPE_START_REC_CONTROL &&
+			m->type != CONTROL_TYPE_END_REC_CONTROL)
 	{
-		case CONTROL_TYPE_AMPPOT_SET:
-			pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
-			pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
-			if (m->value1 != pos)
-				halt();
-		break;
-		case CONTROL_TYPE_FILPOT_SET:
-			pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);
-			pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
-			if (m->value1 != pos)
-				halt();
-		break;
-		case CONTROL_TYPE_SAMPLE_TIMER_SET:
-			timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
-		break;
-		case CONTROL_TYPE_START_SAMPLING_UART:
-			g_control_mode = CONTROL_MODE_STREAM;
-			g_samples_uart_seqnum = 0;
-			blink_set_led(LED_GREEN_bm);
-			dma_start(); // start getting samples from the ADCs
-		break;
-		case CONTROL_TYPE_START_SAMPLING_SD:
-			g_control_mode = CONTROL_MODE_STORE;
-			blink_set_led(LED_GREEN_bm);
-			// TODO setup any SD sampling?
-			dma_start(); // start getting samples from the ADCs
-		break;
-		case CONTROL_TYPE_USB_POWER_SET:
-			usbpower_set(m->value1);
-		break;
+		store_rec_control(m);
+	}
+	else
+	{
+		uint16_t pos;
+		switch (m->type)
+		{
+			case CONTROL_TYPE_AMPPOT_SET:
+				pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
+				pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
+				if (m->value1 != pos)
+					halt();
+			break;
+			case CONTROL_TYPE_FILPOT_SET:
+				pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);
+				pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
+				if (m->value1 != pos)
+					halt();
+			break;
+			case CONTROL_TYPE_SAMPLE_TIMER_SET:
+				timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
+			break;
+			case CONTROL_TYPE_START_SAMPLING_UART:
+				g_control_mode = CONTROL_MODE_STREAM;
+				g_samples_uart_seqnum = 0;
+				blink_set_led(LED_GREEN_bm);
+				dma_start(); // start getting samples from the ADCs
+			break;
+			case CONTROL_TYPE_START_SAMPLING_SD:
+				g_control_mode = CONTROL_MODE_STORE;
+				blink_set_led(LED_GREEN_bm | LED_YELLOW_bm);
+				blink_set_strobe_count(store_write_open());
+				dma_start(); // start getting samples from the ADCs
+			break;
+			case CONTROL_TYPE_START_REC_CONTROL:
+				g_control_mode = CONTROL_MODE_REC_CONTROL;
+				store_start_rec_control(m->value1);
+			break;
+			case CONTROL_TYPE_END_REC_CONTROL:
+				g_control_mode = CONTROL_MODE_IDLE;
+				store_end_rec_control();
+			break;
+			case CONTROL_TYPE_READ_FILE:
+				g_control_mode = CONTROL_MODE_READ_FILE;
+				g_samples_uart_seqnum = 0;
+				g_samples_read_file = m->value1;
+				dma_stop(); // will get samples from the file
+			break;
+			case CONTROL_TYPE_USB_POWER_SET:
+				usbpower_set(m->value1);
+			break;
+		}
 	}
 } //}}}

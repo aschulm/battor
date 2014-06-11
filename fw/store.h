@@ -1,20 +1,38 @@
 #ifndef STORE_H
 #define STORE_H
 
+#include "control.h"
+
+#define STORE_STARTBLOCK_IDX 0
 #define STORE_MAGIC 0xAAD5
 #define STORE_VERSION 1
+#define STORE_FILE_BLOCKS 112500 // about 4 hours per file
 
-uint8_t store_init();
-
-typedef struct store_file_startblock_t
+typedef struct store_startblock_t
 {
 	uint16_t magic;
 	uint16_t version;
-	uint32_t blocks;
+	uint16_t rand;
 	uint16_t written;
-	uint8_t commands[502];
-} store_file_startblock;
+	control_message control[10];
+	uint16_t control_len;
+} store_startblock;
 
-uint32_t store_find_last_startblock(store_file_startblock* startb_prev);
+typedef struct store_fileblock_t
+{
+	uint16_t len;
+	uint16_t rand;
+	uint8_t buf[508];
+} store_fileblock;
+
+uint8_t store_init();
+void store_run_commands();
+uint16_t store_write_open();
+void store_write_bytes(uint8_t* buf, uint16_t len);
+void store_read_open(uint16_t file);
+int store_read_bytes(uint8_t* buf, uint16_t len);
+void store_start_rec_control(uint16_t rand);
+void store_end_rec_control();
+void store_rec_control(control_message* m);
 
 #endif

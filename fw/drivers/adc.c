@@ -9,7 +9,7 @@ void adc_init(ADC_t* adc)
 {
 	adc->CTRLB = (1<<4) | ADC_RESOLUTION_12BIT_gc; // 12bit, signed
 	adc->REFCTRL = ADC_REFSEL_INT1V_gc | (1<<1); // defaults are good internal 1V reference, enable bandgap
-	adc->PRESCALER = ADC_PRESCALER_DIV64_gc; // ADC clock max 2 MHz, be conservative to get higher precision 
+	adc->PRESCALER = ADC_PRESCALER_DIV32_gc; // ADC clock max 2 MHz, be conservative to get higher precision 
 
 	// get the factory written ADC calibration value
 	uint16_t adc_cal = 0;
