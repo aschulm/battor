@@ -1,4 +1,4 @@
-# BattOr - smartphone power monitor
+# BattOr - Power monitor for smartphones and tablets
 
 ## Directory structure
 
