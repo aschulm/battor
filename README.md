@@ -9,10 +9,11 @@
 
 ### Firmware
 
-To build the firmware you will need avr-binutils, avr-gcc, avr-libc, and avrdude.
+To build the firmware you will need avr-binutils, avr-gcc, and avr-libc; to
+flash it to the BattOr you need avrdude.
 
     $ make
-    $ make flash (hit the reset button on BattOr as you do this)
+    $ make flash (hit the reset button on BattOr as you hit return)
 
 ### Software
 
