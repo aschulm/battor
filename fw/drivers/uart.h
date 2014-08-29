@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define UART_BUFFER_LEN 20
+#define UART_BUFFER_LEN 100
 
 #define USARTD0_TXD_PIN (1<<3)
 #define USARTD0_RXD_PIN (1<<2)
