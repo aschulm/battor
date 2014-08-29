@@ -38,12 +38,14 @@ uint8_t store_init() //{{{
 		sd_write_block(&sb, STORE_STARTBLOCK_IDX);
 	}
 
-	return 1;
+	return 0;
 } //}}}
 
 void store_run_commands() //{{{
 {
 	uint16_t i;
+
+	printf("store: run_commands %d\n", sb.control_len);
 
 	// run stored control messages
 	for (i = 0; i < sb.control_len; i++)

@@ -55,6 +55,13 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 		tries++;
 	}
 
+	if (tries >= SD_MAX_RESP_TRIES)
+	{
+		//led_on(LED_GREEN_bm);
+		//while(1);
+		return -1;
+	}
+
 	if (response_len > 1)
 		spi_txrx(&SPIE, NULL, (response+1), response_len-1);
 
@@ -70,7 +77,9 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	}
 
 	if (tries >= SD_MAX_BUSY_TRIES)
-		return -1;
+		//led_on(LED_YELLOW_bm);
+		//while(1);
+		return -2;
 
 	return 0;
 } //}}}
@@ -184,11 +193,19 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	// send the single block write 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
 	if (sd_command(24, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1) < 0) // CMD24
+	{
+		//led_on(LED_GREEN_bm);
+		//while(1);
 		halt();
+	}
 
 	// Could be an issue here where the last 8 of SD command contains the token, but I doubt this happens
 	if (rx != 0x00)
+	{
+		//led_on(LED_YELLOW_bm);
+		//while(1);
 		halt();
+	}
 
 	// tick clock 8 times to start write operation 
 	spi_txrx(&SPIE, NULL, NULL, 1);
@@ -205,7 +222,11 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 
 	// check if the data is accepted
 	if (!((rx & 0xE) >> 1 == 0x2))
+	{
+		//led_on(LED_RED_bm);
+		//while(1);
 		halt();
+	}
 
 	// wait for the card to release the busy flag
 	rx = 0;

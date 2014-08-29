@@ -52,7 +52,7 @@ int main() //{{{
 
 	// try to initalize storage
 	g_control_mode = 0;
-	if (store_init())
+	if (store_init() >= 0)
 	{
 		printf("main: store init successful\r\n");
 		store_run_commands();
