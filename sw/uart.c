@@ -4,64 +4,32 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <libftdi1/ftdi.h>
 
 #include "uart.h"
 #include "params.h"
 #include "samples.h"
 
-static int fd;
+struct ftdi_context *ftdi;
 
 void uart_init() //{{{
 {
-	struct termios tio;
 	speed_t baud_rate = BAUD_RATE;
-	
-#ifdef __APPLE__
-	if ((fd = open(BATTOR_UART_PATH_APPLE, O_RDWR | O_NOCTTY)) < 0)
-#elif __linux__
-	if ((fd = open(BATTOR_UART_PATH_LINUX, O_RDWR | O_NOCTTY)) < 0)
-#endif
+	int ret;
+	struct ftdi_version_info version;
+	if ((ftdi = ftdi_new()) == 0)
 	{
-		perror("open()");
+		fprintf(stderr, "ftdi_new failed\n");
 		exit(EXIT_FAILURE);
 	}
-	if (tcgetattr(fd, &tio) == -1)
+	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6011)) < 0)
 	{
-		perror("tcgetattr()");
+		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);
 	}
 
-#ifdef __APPLE__
-	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
-	cfmakeraw(&tio); // read one byte or timeout
-	tio.c_cc[VMIN] = 1; // 
-	tio.c_cc[VTIME] = 10; //
-	tio.c_cflag = CS8; // 8-bit mode
-#elif __linux__
-	cfsetspeed(&tio, B38400); // don't care, we  the baud rate anyway
-	cfmakeraw(&tio); // read one byte or timeout
-	tio.c_cflag |= B38400 | CS8;
-#endif
-
-	tcsetattr(fd, TCSANOW, &tio); // set the options now
-
-#if __APPLE__
-	#include <IOKit/serial/ioss.h>
-	#include <sys/ioctl.h>
-	if (ioctl(fd, IOSSIOSPEED, &baud_rate) == -1) // set a non-standard baud rate on os X
-	{
-		perror("ioctl()");
-		exit(EXIT_FAILURE);
-	}
-#elif __linux__
-	#include <linux/serial.h>
-	#include <asm-generic/ioctls.h>
-	struct serial_struct ss;
-	ioctl(fd, TIOCGSERIAL, &ss);
-	ss.flags |= ASYNC_SPD_CUST;
-	ss.custom_divisor = ss.baud_base / BAUD_RATE;
-	ioctl(fd, TIOCSSERIAL, &ss);
-#endif
+	ftdi_set_baudrate(ftdi, BAUD_RATE);
+	ftdi_set_line_property(ftdi, BITS_8, STOP_BIT_1, NONE);
 } //}}}
 
 void uart_read(void* b, uint16_t b_len) //{{{
@@ -71,7 +39,7 @@ void uart_read(void* b, uint16_t b_len) //{{{
 	int to_read_len = b_len;
 	while (to_read_len > 0)
 	{
-		if ((read_len = read(fd, b_b + (b_len - to_read_len), to_read_len)) < 0)
+		if ((read_len = ftdi_read_data(ftdi, b_b + (b_len - to_read_len), to_read_len)) < 0)
 			perror("read()");
 		to_read_len -= read_len;
 	}
@@ -84,7 +52,7 @@ void uart_write(void* b, uint16_t b_len) //{{{
 	int to_write_len = b_len;
 	while (to_write_len > 0)
 	{
-		if ((write_len = write(fd, b_b + (b_len - to_write_len), to_write_len)) < 0)
+		if ((write_len = ftdi_write_data(ftdi, b_b + (b_len - to_write_len), to_write_len)) < 0)
 			perror("write()");
 		to_write_len -= write_len;
 	}

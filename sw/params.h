@@ -4,7 +4,7 @@
 #define BAUD_RATE 921600
 
 #define ADC_MAX 0x7FF
-#define VREF 1.0
+#define VREF 2.048
 
 // sample rate
 #define CLOCK_HZ 16000000
