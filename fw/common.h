@@ -10,6 +10,7 @@
 #include "drivers/timer.h"
 #include "drivers/clock.h"
 #include "drivers/led.h"
+#include "drivers/mux.h"
 #include "drivers/uart.h"
 #include "drivers/adc.h"
 #include "drivers/int.h"

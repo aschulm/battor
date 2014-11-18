@@ -18,7 +18,7 @@ VERSION = 1.0
 CLOCK      = 16000000 
 CFLAGS     = -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os #-DDEBUG
 DEVICE     = atxmega192a3
-OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
+OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
 DEBUG_PORT = 4242
@@ -106,6 +106,6 @@ flash_ftdi_eeprom:
 	#
 	# Make sure you are using the git version of libftdi, **not** the Ubuntu package!
 	# 
-	sudo modprobe -r ftdi_sio
+	#sudo modprobe -r ftdi_sio
 	sudo ftdi_eeprom --flash-eeprom battor.ftdi
-	sudo modprobe ftdi_sio
+	#sudo modprobe ftdi_sio

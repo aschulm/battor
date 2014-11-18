@@ -1,7 +1,7 @@
 #ifndef BLINK_H
 #define BLINK_H
 
-#define BLINK_ON_TIME_MS 200
+#define BLINK_ON_TIME_MS 100
 
 void blink_init(uint16_t interval_ms, uint8_t led);
 void blink_ms_timer_update();

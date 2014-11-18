@@ -14,6 +14,7 @@ Options:                                                                        
   -r <rate> : sample rate (default %d Hz)                                             \n\
   -g <gain> : current gain (default %dx) set to hit max then reduce                   \n\
   -o <offset> : current offset (default 0) set to adjust for the amplifier            \n\
+  -v : verbose printing for debugging                                                 \n\
                                                                                       \n\
 ", name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT);
 } //}}}
@@ -22,7 +23,7 @@ int main(int argc, char** argv)
 {
 	FILE* file;
 	char opt;
-	char usb = 0, conf = 0, down = 0;
+	char usb = 0, conf = 0, down = 0, verb = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -40,7 +41,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "scd:r:g:o:hu:")) != -1)
+	while ((opt = getopt(argc, argv, "scd:r:g:o:vhu:")) != -1)
 	{
 		switch(opt)
 		{
@@ -96,6 +97,9 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
+			case 'v':
+				verb = 1;
+			break;
 			case 'h':
 				usage(argv[0]);
 				return EXIT_FAILURE;
@@ -108,7 +112,7 @@ int main(int argc, char** argv)
 	sample min_s;
 	sample max_s;
 	min_s.signal = 0;
-	max_s.signal = 2048;
+	max_s.signal = ADC_TOP;
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s), sample_v(&max_s));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset), sample_i(&max_s, gain, current_offset));
 	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
@@ -123,7 +127,7 @@ int main(int argc, char** argv)
 		// TODO
 		// read file
 		control(CONTROL_TYPE_READ_FILE, down_file, 0);
-		samples_print_loop(gain, current_offset);
+		samples_print_loop(gain, current_offset, verb);
 	}
 
 	// start configuration recording if enabled
@@ -148,7 +152,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0);
-		samples_print_loop(gain, current_offset);
+		samples_print_loop(gain, current_offset, verb);
 	}
 	
 	return EXIT_SUCCESS;

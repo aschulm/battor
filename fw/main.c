@@ -20,6 +20,9 @@ void init_devices() //{{{
 	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 250);
 	printf("init_devices: led_init()\r\n");
 	led_init();
+	printf("init_devices: mux_init()\r\n");
+	mux_init();
+	mux_select(MUX_R);
 	printf("init_devices: uart_init()\r\n");
 	uart_init();
 	printf("init_devices: pot_init()\r\n");
