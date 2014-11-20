@@ -6,7 +6,7 @@
 #define SAMPLES_DELIM0 0xBA
 #define SAMPLES_DELIM1 0x77
 
-extern uint8_t g_samples_uart_seqnum;
+extern uint32_t g_samples_uart_seqnum;
 extern uint16_t g_samples_read_file;
 extern uint8_t g_adca0[], g_adca1[], g_adcb0[], g_adcb1[];
 

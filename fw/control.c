@@ -10,6 +10,7 @@
 static control_message message;
 static int message_b_idx = 0;
 uint8_t g_control_mode;
+uint8_t g_control_calibrated;
 
 void control_got_uart_bytes() //{{{
 {
@@ -85,12 +86,21 @@ void control_run_message(control_message* m) //{{{
 				g_control_mode = CONTROL_MODE_STREAM;
 				g_samples_uart_seqnum = 0;
 				blink_set_led(LED_GREEN_bm);
+				g_control_calibrated = 0;
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage to gnd
+				mux_select(MUX_GND); // current to gnd 
+				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				g_control_mode = CONTROL_MODE_STORE;
 				blink_set_led(LED_GREEN_bm | LED_YELLOW_bm);
 				blink_set_strobe_count(store_write_open());
+				// setup calibration
+				g_control_calibrated = 0;
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage to gnd
+				mux_select(MUX_GND); // current to gnd 
+				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
 			break;
 			case CONTROL_TYPE_START_REC_CONTROL:

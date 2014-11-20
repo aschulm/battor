@@ -72,7 +72,7 @@ void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samp
 	DMA.CH2.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
 	DMA.CH3.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
 
-	// trigger on ADC channel 1 (sweep ends there, starts at 0)
+	// trigger on ADC channel 0 (sweep ends there, starts at 0)
 	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_ADCA_CH0_gc;
 	DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_ADCA_CH0_gc;
 	DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH0_gc;

@@ -4,7 +4,7 @@
 #include "samples.h"
 #include "error.h"
 
-uint8_t g_samples_uart_seqnum;
+uint32_t g_samples_uart_seqnum;
 uint16_t g_samples_read_file;
 uint8_t g_adca0[SAMPLES_LEN], g_adca1[SAMPLES_LEN], g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
 
@@ -15,7 +15,7 @@ void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len) //{{{
 	uart_tx_byte(SAMPLES_DELIM1);
 
 	// write seqnum
-	uart_tx_byte(g_samples_uart_seqnum);
+	uart_tx_bytes(&g_samples_uart_seqnum, sizeof(g_samples_uart_seqnum));
 
 	// write number of samples
 	uart_tx_bytes(&len, sizeof(len)); 

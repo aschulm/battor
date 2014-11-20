@@ -36,6 +36,7 @@ typedef enum CONTROL_MODE_enum
 } CONTROL_MODE_t;
 
 extern uint8_t g_control_mode;
+extern uint8_t g_control_calibrated;
 
 void control_got_uart_bytes();
 void control_run_message(control_message* m);

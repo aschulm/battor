@@ -22,7 +22,6 @@ void init_devices() //{{{
 	led_init();
 	printf("init_devices: mux_init()\r\n");
 	mux_init();
-	mux_select(MUX_R);
 	printf("init_devices: uart_init()\r\n");
 	uart_init();
 	printf("init_devices: pot_init()\r\n");
@@ -31,8 +30,6 @@ void init_devices() //{{{
 	adc_init(&ADCA); // voltage ADC
 	printf("init_devices: adc_init(ADCB)\r\n");
 	adc_init(&ADCB); // current ADC
-	printf("init_devices: dma_init()\r\n");
-	dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 	printf("init_devices: usb power init\r\n");
 	usbpower_init();
 
@@ -40,7 +37,6 @@ void init_devices() //{{{
 	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
-	
 } //}}}
 
 int main() //{{{
@@ -87,6 +83,14 @@ int main() //{{{
 		// ADCA and ADCB DMA channels
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
+			// calibration finished, setup normal measurement operation
+			if (!g_control_calibrated)
+			{
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage measurment
+				mux_select(MUX_R); // current measurement
+				g_control_calibrated = 1;
+			}
+
 			if (g_control_mode == CONTROL_MODE_STREAM)
 				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
 			if (g_control_mode == CONTROL_MODE_STORE)

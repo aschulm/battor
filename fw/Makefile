@@ -25,7 +25,7 @@ DEBUG_PORT = 4242
 
 UNAME_S = $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-	USBDEV = /dev/tty.usbserial-A100QZQN
+	USBDEV = /dev/tty.usbserial-battorv3
 else
 	USBDEV = /dev/ttyUSB0
 endif
@@ -109,3 +109,6 @@ flash_ftdi_eeprom:
 	#sudo modprobe -r ftdi_sio
 	sudo ftdi_eeprom --flash-eeprom battor.ftdi
 	#sudo modprobe ftdi_sio
+
+console:
+	picocom -b 115200 $(USBDEV)

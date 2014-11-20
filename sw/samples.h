@@ -12,7 +12,7 @@ typedef struct sample_ sample;
 
 struct samples_hdr_
 {
-	uint8_t seqnum;
+	uint32_t seqnum;
 	uint16_t samples_len;
 } __attribute__((packed));
 typedef struct samples_hdr_ samples_hdr;
