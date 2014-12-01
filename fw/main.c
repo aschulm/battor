@@ -17,7 +17,7 @@ void init_devices() //{{{
 	printf("init_devices: timer_init()\r\n");
 	timer_init(&TCC0, TC_OVFINTLVL_LO_gc);
 	printf("init_devices: timer_set()\r\n");
-	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 250);
+	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 249);
 	printf("init_devices: led_init()\r\n");
 	led_init();
 	printf("init_devices: mux_init()\r\n");

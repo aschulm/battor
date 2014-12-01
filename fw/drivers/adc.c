@@ -31,7 +31,7 @@ void adc_init(ADC_t* adc)
 	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // apparently differential has less noise than single ended
 	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_PIN7_gc; 
 
-	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_0_gc | ADC_EVACT_CH0_gc; // read channel 0,1 for event 0 
+	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_0_gc | ADC_EVACT_CH0_gc; // read channel 0 for event 0 
 
 	adc->CTRLA = ADC_ENABLE_bm; // turn on the ADC
 }

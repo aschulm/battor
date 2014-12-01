@@ -14,7 +14,7 @@ uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uin
 	}
 
 	*t_div = XMEGA_CLKDIV_64_gc;
-	*t_ovf = ovf;
+	*t_ovf = (ovf-1); // -1 is extremely important! this is for overflow
 
 	float filpot_r = 1.0 / ((desired_sample_rate_hz/2.0)*2.0*M_PI*FILCAP_F);
 	*filpot_pos = (filpot_r / FILPOT_OHM) * 1024;

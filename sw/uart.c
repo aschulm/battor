@@ -40,7 +40,10 @@ void uart_read(void* b, uint16_t b_len) //{{{
 	while (to_read_len > 0)
 	{
 		if ((read_len = ftdi_read_data(ftdi, b_b + (b_len - to_read_len), to_read_len)) < 0)
-			perror("read()");
+		{
+			perror("ftdi_read_data()");
+			exit(EXIT_FAILURE);
+		}
 		to_read_len -= read_len;
 	}
 } //}}}
