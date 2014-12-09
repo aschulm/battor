@@ -19,7 +19,7 @@ uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uin
 	float filpot_r = 1.0 / ((desired_sample_rate_hz/2.0)*2.0*M_PI*FILCAP_F);
 	*filpot_pos = (filpot_r / FILPOT_OHM) * 1024;
 		
-	return clock_hz / *t_ovf;
+	return clock_hz / (*t_ovf+1);
 } //}}}
 
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos) //{{{
