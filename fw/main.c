@@ -83,6 +83,8 @@ int main() //{{{
 		// ADCA and ADCB DMA channels
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
+			uint16_t len = SAMPLES_LEN;
+
 			// calibration finished, setup normal measurement operation
 			if (!g_control_calibrated)
 			{
@@ -91,8 +93,10 @@ int main() //{{{
 				g_control_calibrated = 1;
 			}
 
+			len = samples_ovsample((uint16_t*)g_adca0, (uint16_t*)g_adcb0, len);
+
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
+				samples_uart_write(g_adca0, g_adcb0, len);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca0, g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH0);
@@ -102,8 +106,12 @@ int main() //{{{
 		// other ADCA and ADCB DMA channels (double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
+			uint16_t len = SAMPLES_LEN;
+
+			len = samples_ovsample((uint16_t*)g_adca1, (uint16_t*)g_adcb1, len);
+
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
+				samples_uart_write(g_adca1, g_adcb1, len);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca1, g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH1);

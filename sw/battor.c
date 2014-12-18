@@ -13,10 +13,10 @@ usage: %s -s <options>               stream power measurements over USB         
 Options:                                                                              \n\
   -r <rate> : sample rate (default %d Hz)                                             \n\
   -g <gain> : current gain (default %dx) set to hit max then reduce                   \n\
-  -o <offset> : current offset (default 0) set to adjust for the amplifier            \n\
+  -b <bits> : set the number of bits to obtain through oversampling (default %d)      \n\
   -v : verbose printing for debugging                                                 \n\
                                                                                       \n\
-", name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT);
+", name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -31,6 +31,7 @@ int main(int argc, char** argv)
 	uint32_t	sample_rate = param_sample_rate(SAMPLE_RATE_HZ_DEFAULT, &timer_ovf, &timer_div, &filpot_pos);
 	float gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
 	float current_offset = 0;
+	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 
 	// need an option
 	if (argc < 2)
@@ -73,10 +74,12 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
-			case 'o':
-				if (atof(optarg) != 0.0)
+			case 'u':
+				if (atoi(optarg) == 0 || atoi(optarg) == 1)
 				{
-					current_offset = atof(optarg);
+					uart_init();
+					control(CONTROL_TYPE_USB_POWER_SET, atoi(optarg), 0);
+					return EXIT_SUCCESS;
 				}
 				else
 				{
@@ -84,12 +87,10 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
-			case 'u':
-				if (atoi(optarg) == 0 || atoi(optarg) == 1)
+			case 'b':
+				if (atoi(optarg) != 0)
 				{
-					uart_init();
-					control(CONTROL_TYPE_USB_POWER_SET, atoi(optarg), 0);
-					return EXIT_SUCCESS;
+					ovs_bits = atoi(optarg);
 				}
 				else
 				{
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s), sample_v(&max_s));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset), sample_i(&max_s, gain, current_offset));
 	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
-	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div);
+	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 
 	uart_init();
 
@@ -141,6 +142,7 @@ int main(int argc, char** argv)
 	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0);
 	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0);
 	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf);
+	control(CONTROL_TYPE_OVERSAMPLING_SET, ovs_bits, 0);
 
 	// end configuration recording if enabled
 	if (conf)

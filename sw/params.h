@@ -28,7 +28,10 @@
 // voltage measurement
 #define V_DEV (5.0/(5.0+10.0))
 
-uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
+// oversampling
+#define OVERSAMPLE_BITS_DEFAULT 0
+
+uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos);
 
 #endif

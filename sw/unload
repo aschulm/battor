@@ -1,7 +1,3 @@
 #!/bin/bash
 
-aclocal
-autoconf
-automake --add-missing
-
 sudo kextunload -bundle-id com.apple.driver.AppleUSBFTDI

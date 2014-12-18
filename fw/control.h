@@ -15,7 +15,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_USB_POWER_SET,       // change the state of the USB power
 	CONTROL_TYPE_START_REC_CONTROL,   // init recording the control messages to the SD card
 	CONTROL_TYPE_END_REC_CONTROL,     // write the control messages to the SD card
-	CONTROL_TYPE_READ_FILE            // read a file from the SD card
+	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
+	CONTROL_TYPE_OVERSAMPLING_SET     // set the desired number of bits from oversampling
 } CONTROL_TYPE_t;
 
 typedef struct control_message_ 
