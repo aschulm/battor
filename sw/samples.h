@@ -19,6 +19,6 @@ typedef struct samples_hdr_ samples_hdr;
 
 float sample_v(sample* s);
 float sample_i(sample* s, float gain, float current_offset);
-void samples_print_loop(float gain, float current_offset, char verb);
+void samples_print_loop(float gain, float current_offset, float ovs_bits, char verb);
 
 #endif

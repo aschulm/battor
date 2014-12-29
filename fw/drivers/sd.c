@@ -196,7 +196,7 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	{
 		//led_on(LED_GREEN_bm);
 		//while(1);
-		halt();
+		halt(ERROR_SD_CMD24_FAILED);
 	}
 
 	// Could be an issue here where the last 8 of SD command contains the token, but I doubt this happens
@@ -204,7 +204,7 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	{
 		//led_on(LED_YELLOW_bm);
 		//while(1);
-		halt();
+		halt(ERROR_SD_CMD24_ACK_FAILED);
 	}
 
 	// tick clock 8 times to start write operation 
@@ -225,7 +225,7 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	{
 		//led_on(LED_RED_bm);
 		//while(1);
-		halt();
+		halt(ERROR_SD_CMD24_DATA_REJECTED);
 	}
 
 	// wait for the card to release the busy flag

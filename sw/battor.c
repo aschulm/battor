@@ -2,6 +2,8 @@
 
 #include "uart.h"
 
+char g_verb = 0;
+
 void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
@@ -21,17 +23,18 @@ Options:                                                                        
 
 int main(int argc, char** argv)
 {
+	int i;
 	FILE* file;
 	char opt;
-	char usb = 0, conf = 0, down = 0, verb = 0;
+	char usb = 0, conf = 0, down = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
-	uint32_t	sample_rate = param_sample_rate(SAMPLE_RATE_HZ_DEFAULT, &timer_ovf, &timer_div, &filpot_pos);
+	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 	float gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
 	float current_offset = 0;
-	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
+	uint32_t	sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 
 	// need an option
 	if (argc < 2)
@@ -42,7 +45,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "scd:r:g:o:vhu:")) != -1)
+	while ((opt = getopt(argc, argv, "scd:b:r:g:o:vhu:")) != -1)
 	{
 		switch(opt)
 		{
@@ -51,7 +54,7 @@ int main(int argc, char** argv)
 			break;
 			case 'r':
 				if (atoi(optarg) != 0)
-					sample_rate = param_sample_rate(atoi(optarg), &timer_ovf, &timer_div, &filpot_pos);
+					sample_rate = atoi(optarg);
 				else
 				{
 					usage(argv[0]);
@@ -67,7 +70,7 @@ int main(int argc, char** argv)
 			break;
 			case 'g':
 				if (atoi(optarg) != 0)
-					gain = param_gain(atoi(optarg), &amppot_pos);
+					gain = atoi(optarg); 
 				else
 				{
 					usage(argv[0]);
@@ -88,18 +91,10 @@ int main(int argc, char** argv)
 				}
 			break;
 			case 'b':
-				if (atoi(optarg) != 0)
-				{
-					ovs_bits = atoi(optarg);
-				}
-				else
-				{
-					usage(argv[0]);
-					return EXIT_FAILURE;
-				}
+				ovs_bits = atoi(optarg);
 			break;
 			case 'v':
-				verb = 1;
+				g_verb = 1;
 			break;
 			case 'h':
 				usage(argv[0]);
@@ -110,10 +105,14 @@ int main(int argc, char** argv)
 		}
 	}
 
+	// get actual parameters
+	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
+	gain = param_gain(gain, &amppot_pos);
+
 	sample min_s;
 	sample max_s;
 	min_s.signal = 0;
-	max_s.signal = ADC_TOP;
+	max_s.signal = 1 << (ADC_BITS + ovs_bits);
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s), sample_v(&max_s));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset), sample_i(&max_s, gain, current_offset));
 	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
@@ -121,14 +120,15 @@ int main(int argc, char** argv)
 
 	uart_init();
 
+	// init the battor 
+	control(CONTROL_TYPE_INIT, 0, 0);
+
 	// download file
 	if (down)
 	{
 		// read configuration
-		// TODO
-		// read file
 		control(CONTROL_TYPE_READ_FILE, down_file, 0);
-		samples_print_loop(gain, current_offset, verb);
+		samples_print_loop(gain, current_offset, ovs_bits, g_verb);
 	}
 
 	// start configuration recording if enabled
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0);
-		samples_print_loop(gain, current_offset, verb);
+		samples_print_loop(gain, current_offset, ovs_bits, g_verb);
 	}
 	
 	return EXIT_SUCCESS;

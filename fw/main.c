@@ -47,7 +47,7 @@ int main() //{{{
 	init_devices();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
-	blink_init(10000, LED_YELLOW_bm); 
+	blink_init(1000, LED_YELLOW_bm); 
 
 	// try to initalize storage
 	g_control_mode = 0;
@@ -61,23 +61,23 @@ int main() //{{{
 	while (1) 
 	{
 		// turn off the CPU between interrupts 
-		set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
+		/*set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
 		sleep_enable();
 		sleep_cpu();
-		sleep_disable();
+		sleep_disable();*/
 
 		// general ms timer
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
 		{
-			interrupt_clear(INTERRUPT_TIMER_MS);
 			blink_ms_timer_update();
+			interrupt_clear(INTERRUPT_TIMER_MS);
 		}
 
 		// UART receive
 		if (interrupt_is_set(INTERRUPT_UART_RX))
 		{
-			interrupt_clear(INTERRUPT_UART_RX);
 			control_got_uart_bytes();
+			interrupt_clear(INTERRUPT_UART_RX);
 		}
 
 		// ADCA and ADCB DMA channels
@@ -85,15 +85,7 @@ int main() //{{{
 		{
 			uint16_t len = SAMPLES_LEN;
 
-			// calibration finished, setup normal measurement operation
-			if (!g_control_calibrated)
-			{
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage measurment
-				mux_select(MUX_R); // current measurement
-				g_control_calibrated = 1;
-			}
-
-			len = samples_ovsample((uint16_t*)g_adca0, (uint16_t*)g_adcb0, len);
+			len = samples_ovsample((int16_t*)g_adca0, (int16_t*)g_adcb0, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
 				samples_uart_write(g_adca0, g_adcb0, len);
@@ -108,7 +100,20 @@ int main() //{{{
 		{
 			uint16_t len = SAMPLES_LEN;
 
-			len = samples_ovsample((uint16_t*)g_adca1, (uint16_t*)g_adcb1, len);
+			// calibration finished, setup normal measurement operation
+			if (!g_control_calibrated)
+			{
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage measurment
+				mux_select(MUX_R); // current measurement
+				g_control_calibrated = 1;
+
+				// let the ADC settle
+				dma_stop();
+				timer_sleep_ms(10);
+				dma_start();
+			}
+
+			len = samples_ovsample((int16_t*)g_adca1, (int16_t*)g_adcb1, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
 				samples_uart_write(g_adca1, g_adcb1, len);
@@ -125,5 +130,6 @@ int main() //{{{
 			samples_store_read(g_samples_read_file);
 		}
 	}
+
 	return 0;
 } //}}}

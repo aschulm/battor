@@ -11,28 +11,28 @@
 ISR(DMA_CH0_vect)
 {
 	if (interrupt_is_set(INTERRUPT_DMA_CH0))
-		halt();
+		halt(ERROR_DMA_CH0_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH0);
 	DMA.INTFLAGS = DMA_CH0TRNIF_bm; // clear the interrupt
 }
 ISR(DMA_CH1_vect)
 {
 	if (interrupt_is_set(INTERRUPT_DMA_CH1))
-		halt();
+		halt(ERROR_DMA_CH1_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH1);
 	DMA.INTFLAGS = DMA_CH1TRNIF_bm; // clear the interrupt
 }
 ISR(DMA_CH2_vect)
 {
 	if (interrupt_is_set(INTERRUPT_DMA_CH2))
-		halt();
+		halt(ERROR_DMA_CH2_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH2);
 	DMA.INTFLAGS = DMA_CH2TRNIF_bm; // clear the interrupt
 }
 ISR(DMA_CH3_vect)
 {
 	if (interrupt_is_set(INTERRUPT_DMA_CH3))
-		halt();
+		halt(ERROR_DMA_CH3_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH3);
 	DMA.INTFLAGS = DMA_CH3TRNIF_bm; // clear the interrupt
 }
@@ -58,7 +58,12 @@ void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samp
 	loop_until_bit_is_clear(DMA.CTRL, DMA_RESET_bp);
 	
 	DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_CH01CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 0,1 (ADCA) and 2,3 (ADCB)
-	;
+
+	// repeat forevr
+	DMA.CH0.REPCNT = 0; 
+	DMA.CH1.REPCNT = 0;
+	DMA.CH2.REPCNT = 0;
+	DMA.CH3.REPCNT = 0;
 
 	// setup the channels to copy 2 byte bursts (ADC CH0) and one burst blocks, trigger only fires burst
 	DMA.CH0.CTRLA = DMA_CH_REPEAT_bm | DMA_CH_BURSTLEN_2BYTE_gc | DMA_CH_SINGLE_bm;
@@ -84,12 +89,6 @@ void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samp
 	DMA.CH2.TRFCNT = samples_len;
 	DMA.CH3.TRFCNT = samples_len;
 
-	// repeat forevr
-	DMA.CH0.REPCNT = 0; 
-	DMA.CH1.REPCNT = 0;
-	DMA.CH2.REPCNT = 0;
-	DMA.CH3.REPCNT = 0;
-
 	// setup the source addr to result 0 in the respective ADCs
 	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(ADCA.CH0RES));
 	set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)&(ADCA.CH0RES));
@@ -110,10 +109,10 @@ void dma_start()
 	DMA.CH2.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 2 for ADCB, will auto double buffer with channel 3
 	
 	// interrupt when the transaction is complete
-	DMA.CH0.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
-	DMA.CH1.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
-	DMA.CH2.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
-	DMA.CH3.CTRLB = DMA_CH_TRNINTLVL_HI_gc;
+	DMA.CH0.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
+	DMA.CH1.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
+	DMA.CH2.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
+	DMA.CH3.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
 }
 
 void dma_stop()

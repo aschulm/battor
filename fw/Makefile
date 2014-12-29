@@ -2,22 +2,10 @@
 # Author: Aaron Schulman
 # Copyright: <insert your copyright message here>
 # License: Apache License 2.0
-
-# This is a prototype Makefile. Modify it according to your needs.
-# You should at least check the settings for
-# DEVICE ....... The AVR device you compile for
-# CLOCK ........ Target AVR clock rate in Hertz
-# OBJECTS ...... The object files created from your source files. This list is
-#                usually the same as the list of source files with suffix ".o".
-#                uploading to the AVR and the interface where this hardware
-#                is connected.
-# FUSES ........ Parameters for avrdude to flash the fuses appropriately.
-
+ 
 VERSION = 1.0
 
-CLOCK      = 16000000 
-CFLAGS     = -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os #-DDEBUG
-DEVICE     = atxmega192a3
+CFLAGS     = -mmcu=avrxmega6 -D__AVR_ATxmega192A3U__ -DF_CPU=16000000 -Wall -O2 #-Og -gdwarf-2 #-DDEBUG
 OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
@@ -49,13 +37,16 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash:	all
-	avrdude -e -p $(DEVICE) -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
+	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
 
 flash_mkII:	all
-	avrdude -p $(DEVICE) -c avrispmkII -P usb -U flash:w:main.hex
+	avrdude -p x192a3u -c avrispmkII -P usb -U flash:w:main.hex
+
+flash_ICE: all
+	avrdude -p x192a3u -c atmelice_pdi -U flash:w:main.hex
 
 fuse:
-	avrdude -p $(DEVICE) -c avrispmkII -P usb -U $(FUSES)
+	avrdude -p x192a3u -c avrispmkII -P usb -U $(FUSES)
 
 # Xcode uses the Makefile targets "", "clean" and "install"
 install: flash

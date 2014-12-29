@@ -8,47 +8,22 @@
 #include "store.h"
 
 static control_message message;
-static int message_b_idx = 0;
 uint8_t g_control_mode;
 uint8_t g_control_calibrated;
 
 void control_got_uart_bytes() //{{{
 {
-	uint8_t i;
-	uint8_t recv_len = 1;
-	uint8_t* message_b = (uint8_t*)&message;
+	uint8_t recv_len;
+	uint8_t type;
 
-	while (recv_len > 0) // stop when there is no uart data left
+	recv_len = uart_rx_bytes(&type, (uint8_t*)&message, sizeof(message));
+
+	if (recv_len == sizeof(control_message))
 	{
-		// need more bytes
-		if (message_b_idx < sizeof(control_message))
-		{
-			recv_len = uart_rx_bytes((message_b + message_b_idx), sizeof(control_message) - message_b_idx);
-			message_b_idx += recv_len;
-		}
-
-		// have enough bytes
-		if (message_b_idx == sizeof(control_message))
-		{
-			if (message.delim[0] == CONTROL_DELIM0 && 
-				message.delim[1] == CONTROL_DELIM1)
-			{
-				control_run_message(&message);
-				uart_tx_byte(CONTROL_ACK); // send an ack
-				message_b_idx = 0; // done with the message
-			}
-			else
-			{
-				// chuck everything till what looks like the start of a delimiter
-				while (message.delim[0] != CONTROL_DELIM0 && message_b_idx > 0)
-				{
-					// shift over all bytes by one, and shrink the message
-					message_b_idx--;
-					for (i = 0; i < message_b_idx; i++)
-						message_b[i] = message_b[i+1];
-				}
-			}
-		}
+		control_run_message(&message);
+		uart_tx_start(UART_TYPE_CONTROL_ACK);
+		uart_tx_bytes(&message.type, sizeof(message.type)); // send ack for flow control
+		uart_tx_end();
 	}
 } //}}}
 
@@ -67,17 +42,21 @@ void control_run_message(control_message* m) //{{{
 		uint16_t pos;
 		switch (m->type)
 		{
+			case CONTROL_TYPE_INIT:
+				g_control_mode = CONTROL_MODE_IDLE;
+				dma_stop(); // stop getting samples from the ADCs
+			break;
 			case CONTROL_TYPE_AMPPOT_SET:
 				pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
 				pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
 				if (m->value1 != pos)
-					halt();
+					halt(ERROR_AMPPOT_SET_FAILED);
 			break;
 			case CONTROL_TYPE_FILPOT_SET:
 				pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);
 				pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
 				if (m->value1 != pos)
-					halt();
+					halt(ERROR_FILPOT_SET_FAILED);
 			break;
 			case CONTROL_TYPE_SAMPLE_TIMER_SET:
 				timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
@@ -89,9 +68,13 @@ void control_run_message(control_message* m) //{{{
 				g_control_mode = CONTROL_MODE_STREAM;
 				g_samples_uart_seqnum = 0;
 				blink_set_led(LED_GREEN_bm);
+
+				// setup calibration mode
 				g_control_calibrated = 0;
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage to gnd
-				mux_select(MUX_GND); // current to gnd 
+				mux_select(MUX_GND); // current measurment input to gnd 
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+
+				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
 			break;
@@ -101,8 +84,10 @@ void control_run_message(control_message* m) //{{{
 				blink_set_strobe_count(store_write_open());
 				// setup calibration
 				g_control_calibrated = 0;
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_PIN7_gc; // voltage to gnd
-				mux_select(MUX_GND); // current to gnd 
+				mux_select(MUX_GND); // current measurement input to gnd
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+
+				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
 			break;
