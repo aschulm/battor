@@ -1,12 +1,12 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN (512*2)
+#define SAMPLES_LEN 250
 
 extern uint32_t g_samples_ovsamp_bits;
 extern uint32_t g_samples_uart_seqnum;
 extern uint16_t g_samples_read_file;
-extern uint8_t g_adca0[], g_adca1[], g_adcb0[], g_adcb1[];
+extern uint16_t g_adca0[], g_adca1[], g_adcb0[], g_adcb1[];
 
 uint16_t samples_ovsample(int16_t* v_s, int16_t* i_s, uint16_t len);
 void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len);

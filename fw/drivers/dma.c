@@ -6,6 +6,7 @@
 #include "../error.h"
 #include "../interrupt.h"
 #include "adc.h"
+#include "timer.h"
 #include "dma.h"
 
 ISR(DMA_CH0_vect)
@@ -72,10 +73,10 @@ void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samp
 	DMA.CH3.CTRLA = DMA_CH_REPEAT_bm | DMA_CH_BURSTLEN_2BYTE_gc | DMA_CH_SINGLE_bm;
 
 	// reload the ADC addr every burst, increment the source, reload dst every transaction and increment it
-	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
-	DMA.CH1.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
-	DMA.CH2.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
-	DMA.CH3.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_DESTDIR_INC_gc;
+	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BLOCK_gc | DMA_CH_DESTDIR_INC_gc;
+	DMA.CH1.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BLOCK_gc | DMA_CH_DESTDIR_INC_gc;
+	DMA.CH2.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BLOCK_gc | DMA_CH_DESTDIR_INC_gc;
+	DMA.CH3.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BLOCK_gc | DMA_CH_DESTDIR_INC_gc;
 
 	// trigger on ADC channel 0 (sweep ends there, starts at 0)
 	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_ADCA_CH0_gc;
@@ -107,12 +108,14 @@ void dma_start()
 	DMA.INTFLAGS = 0xFF; // clear all interrups
 	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 0 for ADCA, will auto double buffer with channel 1
 	DMA.CH2.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 2 for ADCB, will auto double buffer with channel 3
-	
+
 	// interrupt when the transaction is complete
 	DMA.CH0.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
 	DMA.CH1.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
 	DMA.CH2.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
 	DMA.CH3.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
+
+	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 }
 
 void dma_stop()
@@ -122,4 +125,6 @@ void dma_stop()
 	DMA.CH1.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 0 for ADCA
 	DMA.CH2.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
 	DMA.CH3.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
+
+	EVSYS.CH0MUX = 0; // stop event channel 0
 }

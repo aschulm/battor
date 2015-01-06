@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-CPU_FREQ = 16e6
+CPU_FREQ = 32e6
 CLK2X = False
 
 mult = 8 if CLK2X else 16

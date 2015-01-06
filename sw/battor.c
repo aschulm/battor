@@ -109,6 +109,8 @@ int main(int argc, char** argv)
 	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
 	gain = param_gain(gain, &amppot_pos);
 
+	samples_init(ovs_bits);
+
 	sample min_s;
 	sample max_s;
 	min_s.signal = 0;

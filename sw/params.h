@@ -1,12 +1,12 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#define BAUD_RATE 1000000
+#define BAUD_RATE 800000
 
 #define VREF 2.048
 
 // sample rate
-#define CLOCK_HZ 16000000
+#define CLOCK_HZ 32000000
 #define TIMER_OVF_DEFAULT 250
 #define SAMPLE_RATE_HZ_DEFAULT 1000  // paired with timer settings above
 
@@ -26,7 +26,7 @@
 #define V_DEV (5.0/(5.0+10.0))
 
 // oversampling
-#define OVERSAMPLE_BITS_DEFAULT 2
+#define OVERSAMPLE_BITS_DEFAULT 1
 
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos);

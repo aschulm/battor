@@ -5,7 +5,7 @@
  
 VERSION = 1.0
 
-CFLAGS     = -mmcu=avrxmega6 -D__AVR_ATxmega192A3U__ -DF_CPU=16000000 -Wall -O2 #-Og -gdwarf-2 #-DDEBUG
+CFLAGS     = -mmcu=avrxmega6 -D__AVR_ATxmega192A3U__ -DF_CPU=32000000 -Wall -O3 -gdwarf-2 #-DDEBUG
 OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
@@ -21,7 +21,7 @@ endif
 COMPILE = avr-gcc $(CFLAGS) 
 
 # symbolic targets:
-all:	main.hex
+all:	main.hex ovsample.hex
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -65,6 +65,14 @@ main.elf: $(OBJECTS)
 main.hex: main.elf
 	rm -f main.hex
 	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+
+ovsample.elf: ovsample.o
+	$(COMPILE) -o ovsample.elf ovsample.o
+
+ovsample.hex: ovsample.elf
+	rm -f ovsample.hex
+	avr-objcopy -j .text -j .data -O ihex ovsample.elf ovsample.hex
+
 # If you have an EEPROM section, you must also create a hex file for the
 # EEPROM and add it to the "flash" target.
 

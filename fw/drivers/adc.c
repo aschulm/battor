@@ -12,7 +12,7 @@ void adc_init(ADC_t* adc)
 {
 	adc->CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc; // 12bit, signed (sadly, have to do signed and lose a bit since differential has much less noise and it's only available in signed)
 	adc->REFCTRL = ADC_REFSEL_AREFA_gc; // external reference (2.048 V) on PORTA
-	adc->PRESCALER = ADC_PRESCALER_DIV8_gc; // set ADC clock to 2MHz for some reason it works best here
+	adc->PRESCALER = ADC_PRESCALER_DIV16_gc; // set ADC clock to 2MHz for some reason it works best here
 
 	// get the factory written ADC calibration value
 	uint16_t adc_cal = 0;
@@ -28,8 +28,7 @@ void adc_init(ADC_t* adc)
 	}
 	adc->CAL = adc_cal; // load the calibration value into the ADC adc_cal
 
-	// setup the signal channel
-	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // apparently differential has less noise than single ended
+	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // no gain needed due to low impedience
 	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 
 	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_0_gc | ADC_EVACT_SYNCSWEEP_gc; // read channel 0 for event 0 

@@ -29,6 +29,9 @@ typedef enum UART_TYPE_enum
 #define USART_BSCALE_1000000BPS 0b1001 // 2's -7
 #define USART_BSEL_1000000BPS 0
 
+#define USART_BSCALE_800000BPS 0b1111 // 2's -1
+#define USART_BSEL_800000BPS 3
+
 void uart_init();
 void uart_tx_start(uint8_t type);
 void uart_tx_end();

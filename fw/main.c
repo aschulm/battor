@@ -8,16 +8,20 @@
 #include "usbpower.h"
 #include "samples.h"
 
+uint32_t total = 0;
+
 void init_devices() //{{{
 {
 	// order of init is very important
 	printf("init_devices: clock_set_crystal()\r\n");
 	clock_set_crystal();
+
 	// ms timer for blinking led and other real time tasks
 	printf("init_devices: timer_init()\r\n");
 	timer_init(&TCC0, TC_OVFINTLVL_LO_gc);
 	printf("init_devices: timer_set()\r\n");
-	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 249);
+	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 499);
+
 	printf("init_devices: led_init()\r\n");
 	led_init();
 	printf("init_devices: mux_init()\r\n");
@@ -34,7 +38,6 @@ void init_devices() //{{{
 	usbpower_init();
 
 	// sample timer
-	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
 } //}}}
@@ -61,10 +64,10 @@ int main() //{{{
 	while (1) 
 	{
 		// turn off the CPU between interrupts 
-		/*set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
+		set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
 		sleep_enable();
 		sleep_cpu();
-		sleep_disable();*/
+		sleep_disable();
 
 		// general ms timer
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
@@ -85,10 +88,10 @@ int main() //{{{
 		{
 			uint16_t len = SAMPLES_LEN;
 
-			len = samples_ovsample((int16_t*)g_adca0, (int16_t*)g_adcb0, len);
+			len = samples_ovsample(g_adca0, g_adcb0, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0, len);
+				samples_uart_write(g_adca0, g_adcb0, len*sizeof(int16_t));
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca0, g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH0);
@@ -113,10 +116,10 @@ int main() //{{{
 				dma_start();
 			}
 
-			len = samples_ovsample((int16_t*)g_adca1, (int16_t*)g_adcb1, len);
+			len = samples_ovsample(g_adca1, g_adcb1, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1, len);
+				samples_uart_write(g_adca1, g_adcb1, len*sizeof(int16_t));
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca1, g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH1);

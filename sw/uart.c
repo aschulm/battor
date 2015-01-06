@@ -219,7 +219,7 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_write_data_set_chunksize(ftdi, 1000)) < 0)
+	if ((ret = ftdi_write_data_set_chunksize(ftdi, 1500)) < 0)
 	{
 		fprintf(stderr, "unable to set chunk size: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);

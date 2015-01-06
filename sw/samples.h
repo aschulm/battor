@@ -17,6 +17,7 @@ struct samples_hdr_
 } __attribute__((packed));
 typedef struct samples_hdr_ samples_hdr;
 
+void samples_init(uint16_t ovs_bits);
 float sample_v(sample* s);
 float sample_i(sample* s, float gain, float current_offset);
 void samples_print_loop(float gain, float current_offset, float ovs_bits, char verb);

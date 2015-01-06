@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-
 #define UART_START_DELIM 0x00
 #define UART_END_DELIM 0x01
 #define UART_ESC_DELIM 0x02

@@ -5,9 +5,16 @@
 
 static float s_adc_top;
 
+void samples_init(uint16_t ovs_bits) //{{{
+{
+	// determine ADC_TOP with ovsersampling
+	s_adc_top = pow(2, (ADC_BITS + ovs_bits));
+	verb_printf("adc_top %f\n", s_adc_top);
+} //}}}
+
 float sample_v(sample* s) //{{{
 {
-	if (s->signal == s_adc_top)
+	if (s->signal == (s_adc_top-1))
 		fprintf(stderr, "warning: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 	if (s->signal < 0)
 		s->signal = 0;
@@ -18,7 +25,7 @@ float sample_v(sample* s) //{{{
 float sample_i(sample* s, float gain, float current_offset) //{{{
 {
 	// current
-	if (s->signal == s_adc_top)
+	if (s->signal == (s_adc_top-1))
 		fprintf(stderr, "warning: maximum current, won't hurt anything, but you should turn down the gain.\n");
 
 	if (s->signal < 0)
@@ -38,7 +45,7 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	uint8_t* frame_ptr;
 	uint8_t type;
 
-	uart_rx_bytes(&type, frame, sizeof(frame));
+	while (uart_rx_bytes(&type, frame, sizeof(frame)) < 0);
 	frame_ptr = frame;
 
 	hdr = (samples_hdr*)frame_ptr;
@@ -70,10 +77,6 @@ void samples_print_loop(float gain, float current_offset, float ovs_bits, char v
 	uint16_t samples_len;
 	int32_t v_cal = 0, i_cal = 0;
 
-	// determine ADC_TOP with ovsersampling
-	s_adc_top = pow(2, (ADC_BITS + ovs_bits))-1;
-	verb_printf("adc_top %f\n", s_adc_top);
-
 	// read calibration and compute it
 	while (seqnum != 1)
 	{
@@ -82,12 +85,15 @@ void samples_print_loop(float gain, float current_offset, float ovs_bits, char v
 
 	for (i = 0; i < samples_len; i++)
 	{
+		verb_printf("i_cal %d\n", i_s[i].signal);
+		verb_printf("v_cal %d\n", v_s[i].signal);
+
 		v_cal += v_s[i].signal;
 		i_cal += i_s[i].signal;
 	}
 	v_cal = v_cal / samples_len;
 	i_cal = i_cal / samples_len;
-	verb_printf("v_cal %d, i_cal %d\n", v_cal, i_cal);	
+	verb_printf("v_cal_avg %d, i_cal_avg %d\n", v_cal, i_cal);	
 
 	// main sample read loop
 	while(1)
