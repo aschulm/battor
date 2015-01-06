@@ -76,6 +76,11 @@ void samples_print_loop(float gain, float current_offset, float ovs_bits, char v
 	uint32_t seqnum = 0;
 	uint16_t samples_len;
 	int32_t v_cal = 0, i_cal = 0;
+	sigset_t sigs;
+
+	// will block and unblock SIGINT
+	sigemptyset(&sigs);
+	sigaddset(&sigs, SIGINT);
 
 	// read calibration and compute it
 	while (seqnum != 1)
@@ -111,7 +116,10 @@ void samples_print_loop(float gain, float current_offset, float ovs_bits, char v
 
 			float mv = sample_v(v_s+i);
 			float mi = sample_i(i_s+i, gain, current_offset);
+
+			sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 			printf("%f %f\n", mi, mv);
+			sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
 		}
 	}
 }

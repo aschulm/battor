@@ -17,7 +17,7 @@
 #define AMPPOT_POS_DEFAULT 200
 #define AMPPOT_OHM 100000.0
 #define CURRENT_GAIN_DEFAULT 5 // paired with gain settings above
-#define IRES_OHM 0.18 // current sense resistor resistance
+#define IRES_OHM 0.018 // current sense resistor resistance
 #define FILPOT_OHM 100000.0
 #define FILCAP_F 0.0000001
 #define FILPOT_POS 81 // with 0.1 uF cap corner is 1006.5 Hz, must correspond to the sample rate

@@ -8,6 +8,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 
 #include "params.h"
 #include "samples.h"
