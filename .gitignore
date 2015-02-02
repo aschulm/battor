@@ -16,7 +16,10 @@ sw/config.h
 sw/config.h.in
 sw/config.log
 sw/config.status
+sw/depcomp
+sw/install-sh
 sw/Makefile
 sw/Makefile.in
+sw/missing
 sw/stamp-h1
 
