@@ -18,8 +18,8 @@ struct samples_hdr_
 typedef struct samples_hdr_ samples_hdr;
 
 void samples_init(uint16_t ovs_bits);
-float sample_v(sample* s);
-float sample_i(sample* s, float gain, float current_offset);
-void samples_print_loop(float gain, float current_offset, float ovs_bits, char verb);
+double sample_v(sample* s);
+double sample_i(sample* s, double gain, double current_offset);
+void samples_print_loop(double gain, double current_offset, double ovs_bits, char verb);
 
 #endif

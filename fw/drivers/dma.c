@@ -45,13 +45,13 @@ void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
 	d[2] = 0;
 }
 
-void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samples0, uint8_t* adcb_samples1, uint16_t samples_len)
+void dma_init(int16_t* adca_samples0, int16_t* adca_samples1, int16_t* adcb_samples0, int16_t* adcb_samples1, uint16_t samples_len)
 {
 	// clear the buffers
-	memset(adca_samples0, 0, samples_len);
-	memset(adca_samples1, 0, samples_len);
-	memset(adcb_samples0, 0, samples_len);
-	memset(adcb_samples1, 0, samples_len);
+	memset(adca_samples0, 0, samples_len*sizeof(uint16_t));
+	memset(adca_samples1, 0, samples_len*sizeof(uint16_t));
+	memset(adcb_samples0, 0, samples_len*sizeof(uint16_t));
+	memset(adcb_samples1, 0, samples_len*sizeof(uint16_t));
 
 	// reset the DMA controller
 	DMA.CTRL = 0;
@@ -85,10 +85,10 @@ void dma_init(uint8_t* adca_samples0, uint8_t* adca_samples1, uint8_t* adcb_samp
 	DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH0_gc;
 
 	// 2 bytes per block transfter (ADC CH0 16bit value)
-	DMA.CH0.TRFCNT = samples_len;
-	DMA.CH1.TRFCNT = samples_len;
-	DMA.CH2.TRFCNT = samples_len;
-	DMA.CH3.TRFCNT = samples_len;
+	DMA.CH0.TRFCNT = samples_len*sizeof(uint16_t);
+	DMA.CH1.TRFCNT = samples_len*sizeof(uint16_t);
+	DMA.CH2.TRFCNT = samples_len*sizeof(uint16_t);
+	DMA.CH3.TRFCNT = samples_len*sizeof(uint16_t);
 
 	// setup the source addr to result 0 in the respective ADCs
 	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(ADCA.CH0RES));

@@ -15,7 +15,6 @@ uint16_t samples_ovsample(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
 	uint8_t s_in_idx = 0;
 	uint8_t s_out_idx = 0;
 
-	uint16_t s_len = len >> 1;
 	uint8_t s_ovs_len = (4 << ((g_samples_ovsamp_bits-1) << 1));
 
 	uint16_t s_ovs_idx_end = 0;
@@ -28,7 +27,7 @@ uint16_t samples_ovsample(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
 		return len;
 
 	// oversample
-	while (s_in_idx < s_len)
+	while (s_in_idx < len)
 	{
 		v_sum = 0;
 		i_sum = 0;
@@ -56,8 +55,10 @@ uint16_t samples_ovsample(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
 	return len / s_ovs_len;
 } //}}}
 
-void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len) //{{{
+void samples_uart_write(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
 {
+	len *= sizeof(int16_t);
+
 	uart_tx_start(UART_TYPE_SAMPLES);
 
 	// write seqnum
@@ -76,36 +77,36 @@ void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len) //{{{
 	g_samples_uart_seqnum++;
 } //}}}
 
-void samples_store_write(uint8_t* v_s, uint8_t* i_s) //{{{
+void samples_store_write(int16_t* v_s, int16_t* i_s) //{{{
 {
-	uint16_t len = SAMPLES_LEN;
+	uint16_t len = SAMPLES_LEN * sizeof(int16_t);
 
 	printf("samples: store_write_bytes\r\n");
 	// write voltage samples
-	store_write_bytes(v_s, len);
+	store_write_bytes((uint8_t*)v_s, len);
 	// write current samples
-	store_write_bytes(i_s, len);
+	store_write_bytes((uint8_t*)i_s, len);
 } //}}}
 
 void samples_store_read(uint16_t file) //{{{
 {
-	uint16_t len = SAMPLES_LEN;
+	uint16_t len = SAMPLES_LEN * sizeof(int16_t);
 	int ret_v = 0, ret_i = 0;
 
 	// open file
 	store_read_open(file);
 
 	// read voltage
-	ret_v = store_read_bytes(g_adca0, len);
+	ret_v = store_read_bytes((uint8_t*)g_adca0, len);
 	// read current
-	ret_i = store_read_bytes(g_adcb0, len);
+	ret_i = store_read_bytes((uint8_t*)g_adcb0, len);
 	while (ret_v >= 0 && ret_i >= 0)
 	{
 		samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
 		// read voltage
-		ret_v = store_read_bytes(g_adca0, len);
+		ret_v = store_read_bytes((uint8_t*)g_adca0, len);
 		// read current
-		ret_i = store_read_bytes(g_adcb0, len);
+		ret_i = store_read_bytes((uint8_t*)g_adcb0, len);
 	}
 	samples_uart_write(NULL, NULL, 0); // no more samples
 

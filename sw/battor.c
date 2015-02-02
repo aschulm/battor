@@ -32,8 +32,8 @@ int main(int argc, char** argv)
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	float gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
-	float current_offset = 0;
+	double gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
+	double current_offset = 0;
 	uint32_t	sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 
 	// need an option

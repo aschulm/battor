@@ -15,27 +15,32 @@ static inline uint16_t byte_swap16(uint16_t b)
 // else two pots on the same MISO can not output
 static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 {
-	uint16_t tx, rx;
-	tx = byte_swap16(0x8001);
+	uint8_t tx[2], rx[2];
+
+	tx[0]=0x80;
+	tx[1]=0x01;
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, &tx, &rx, 2);
+	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 
-	tx = 0x0000;
+	tx[0] = 0x00;
+	tx[1] = 0x00;
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, &tx, &rx, 2);
+	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 }
 
-static uint16_t pot_send_command(uint8_t pot_cs_pin, uint16_t command, uint16_t data)
+static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t data)
 {
-	uint16_t tx, rx;
-	tx = byte_swap16((command << 10) | data);
+	uint8_t tx[2], rx[2];
+
+	tx[0] = (command << 2) | ((data & 0x300) >> 8);
+	tx[1] = (data & 0xFF);
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, &tx, &rx, 2);
+	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 	timer_sleep_ms(10);
-	return byte_swap16(rx) & 0x3FF;
+	return ((rx[0] & 0x3) << 8) | (rx[1] & 0xFF);
 }
 
 uint16_t pot_wiperpos_get(uint8_t pot_cs_pin)

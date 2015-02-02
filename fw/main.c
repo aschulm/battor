@@ -91,7 +91,7 @@ int main() //{{{
 			len = samples_ovsample(g_adca0, g_adcb0, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0, len*sizeof(int16_t));
+				samples_uart_write(g_adca0, g_adcb0, len);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca0, g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH0);
@@ -119,7 +119,7 @@ int main() //{{{
 			len = samples_ovsample(g_adca1, g_adcb1, len);
 
 			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1, len*sizeof(int16_t));
+				samples_uart_write(g_adca1, g_adcb1, len);
 			if (g_control_mode == CONTROL_MODE_STORE)
 				samples_store_write(g_adca1, g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH1);
