@@ -21,7 +21,7 @@ endif
 COMPILE = avr-gcc $(CFLAGS) 
 
 # symbolic targets:
-all:	main.hex ovsample.hex
+all:	main.hex
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -65,13 +65,6 @@ main.elf: $(OBJECTS)
 main.hex: main.elf
 	rm -f main.hex
 	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
-
-ovsample.elf: ovsample.o
-	$(COMPILE) -o ovsample.elf ovsample.o
-
-ovsample.hex: ovsample.elf
-	rm -f ovsample.hex
-	avr-objcopy -j .text -j .data -O ihex ovsample.elf ovsample.hex
 
 # If you have an EEPROM section, you must also create a hex file for the
 # EEPROM and add it to the "flash" target.
