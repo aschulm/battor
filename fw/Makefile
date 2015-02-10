@@ -5,7 +5,7 @@
  
 VERSION = 1.0
 
-CFLAGS     = -mmcu=avrxmega6 -D__AVR_ATxmega192A3U__ -DF_CPU=32000000 -Wall -O3 -gdwarf-2 #-DDEBUG
+CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -O3 -gdwarf-2 #-DDEBUG
 OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
@@ -43,7 +43,7 @@ flash_mkII:	all
 	avrdude -p x192a3u -c avrispmkII -P usb -U flash:w:main.hex
 
 flash_ICE: all
-	avrdude -p x192a3u -c atmelice_pdi -U flash:w:main.hex
+	avrdude -p x192a3u -c atmelice_pdi -B0.5 -U flash:w:main.hex
 
 fuse:
 	avrdude -p x192a3u -c avrispmkII -P usb -U $(FUSES)

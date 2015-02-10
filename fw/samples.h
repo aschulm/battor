@@ -1,7 +1,7 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN 256
+#define SAMPLES_LEN 128
 
 extern uint32_t g_samples_ovsamp_bits;
 extern uint32_t g_samples_uart_seqnum;

@@ -1,4 +1,9 @@
-#include <libftdi1/ftdi.h>
+#if defined(__linux__)
+	#include <ftdi.h>
+#endif
+#if defined(__APPLE__)
+	#include <libftdi1/ftdi.h>
+#endif
 
 #include "common.h"
 #include "uart.h"
@@ -37,9 +42,9 @@ int uart_rx_byte(uint8_t* b) //{{{
 		verb_printf("uart_rx_byte: read:%d", uart_rx_buffer_write_idx);
 		for (i = 0; i < uart_rx_buffer_write_idx; i++)
 		{
-			verb_printf(" %0.2X", uart_rx_buffer[i]);
+			verb_printf(" %.2X", uart_rx_buffer[i]);
 		}
-		verb_printf("\n", NULL);
+		verb_printf("%s\n", "");
 	}
 
 	*b = uart_rx_buffer[uart_rx_buffer_read_idx++];
@@ -95,12 +100,12 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 	}
 
 	// verbose
-	verb_printf("uart_rx_bytes: recv", NULL);
+	verb_printf("uart_rx_bytes: recv%s", "");
 	for (i = 0; i < bytes_read; i++)
 	{
-		verb_printf(" %0.2X", b_b[i]);
+		verb_printf(" %.2X", b_b[i]);
 	}
-	verb_printf("\n", NULL);
+	verb_printf("%s\n", "");
 
 	return bytes_read;
 } //}}}
@@ -129,12 +134,12 @@ void uart_tx_byte(uint8_t b) //{{{
 			}
 
 			// verbose
-			verb_printf("uart_tx_byte: sent ", NULL);
+			verb_printf("uart_tx_byte: sent %s", "");
 			for (i = 0; i < write_len; i++)
 			{
-				verb_printf(" %0.2X", uart_tx_buffer[i + (uart_tx_buffer_idx - to_write_len)]);
+				verb_printf(" %.2X", uart_tx_buffer[i + (uart_tx_buffer_idx - to_write_len)]);
 			}
-			verb_printf("\n", NULL);
+			verb_printf("%s\n", "");
 
 			to_write_len -= write_len;
 		}
@@ -148,12 +153,12 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 	uint8_t* b_b = (uint8_t*)b;
 
 	// verbose
-	verb_printf("uart_tx_bytes: send", NULL);
+	verb_printf("uart_tx_bytes: send%s", "");
 	for (i = 0; i < len; i++)
 	{
-		verb_printf(" %0.2X", b_b[i]);
+		verb_printf(" %.2X", b_b[i]);
 	}
-	verb_printf("\n", NULL);
+	verb_printf("%s\n", "");
 
 	uart_tx_byte(UART_START_DELIM);
 	uart_tx_byte(type);
@@ -174,7 +179,6 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 void uart_init() //{{{
 {
 	int ret, i;
-	struct ftdi_version_info version;
 	uint8_t zeros[10];
 
 	memset(zeros, 0, sizeof(zeros));

@@ -4,4 +4,4 @@ aclocal
 autoconf
 automake --add-missing
 
-sudo kextunload -bundle-id com.apple.driver.AppleUSBFTDI
+#sudo kextunload -bundle-id com.apple.driver.AppleUSBFTDI
