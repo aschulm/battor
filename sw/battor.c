@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
-	uint32_t	sample_rate = param_sample_rate(SAMPLE_RATE_HZ_DEFAULT, &timer_ovf, &timer_div, &filpot_pos);
+	double sample_rate = param_sample_rate(SAMPLE_RATE_HZ_DEFAULT, &timer_ovf, &timer_div, &filpot_pos);
 	float gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
 	float current_offset = 0;
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 	max_s.signal = 2048;
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s), sample_v(&max_s));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset), sample_i(&max_s, gain, current_offset));
-	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
+	printf("# sample_rate=%fHz, gain=%fx\n", sample_rate, gain);
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div);
 
 	uart_init();

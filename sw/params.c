@@ -1,6 +1,6 @@
 #include "common.h"
 
-uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos)
+double param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos)
 {
 	// for now just loop through every 64div overflow and see what is closest
 	uint32_t clock_hz = CLOCK_HZ / 64;
@@ -12,14 +12,16 @@ uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t* t_ovf, uin
 		fprintf(stderr, "warning: sample rate out of range, reverting to default\n");
 		ovf = TIMER_OVF_DEFAULT;
 	}
+	
+	double actual_sample_rate = (double)clock_hz / ovf;
 
 	*t_div = XMEGA_CLKDIV_64_gc;
-	*t_ovf = ovf;
+	*t_ovf = ovf - 1;
 
 	float filpot_r = 1.0 / ((desired_sample_rate_hz/2.0)*2.0*M_PI*FILCAP_F);
 	*filpot_pos = (filpot_r / FILPOT_OHM) * 1024;
 		
-	return clock_hz / (*t_ovf+1);
+	return actual_sample_rate;
 } //}}}
 
 float param_gain(uint32_t desired_gain, uint16_t* amppot_pos)
