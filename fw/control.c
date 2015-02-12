@@ -51,6 +51,8 @@ void control_got_uart_bytes() //{{{
 	}
 } //}}}
 
+extern void dma_start_wait_sync();
+
 void control_run_message(control_message* m) //{{{
 {
 	printf("control: type %d\r\n", m->type);
@@ -84,8 +86,9 @@ void control_run_message(control_message* m) //{{{
 			case CONTROL_TYPE_START_SAMPLING_UART:
 				g_control_mode = CONTROL_MODE_STREAM;
 				g_samples_uart_seqnum = 0;
-				blink_set_led(LED_GREEN_bm);
-				dma_start(); // start getting samples from the ADCs
+				blink_set_led(LED_RED_bm);
+				//dma_start(); // start getting samples from the ADCs
+				dma_start_wait_sync();
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				g_control_mode = CONTROL_MODE_STORE;
@@ -108,7 +111,7 @@ void control_run_message(control_message* m) //{{{
 				dma_stop(); // will get samples from the file
 			break;
 			case CONTROL_TYPE_USB_POWER_SET:
-				usbpower_set(m->value1);
+				//usbpower_set(m->value1);
 			break;
 		}
 	}

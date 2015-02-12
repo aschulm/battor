@@ -9,6 +9,7 @@ typedef enum INTERRUPT_enum
 	INTERRUPT_DMA_CH1 = (1<<3),
 	INTERRUPT_DMA_CH2 = (1<<4),
 	INTERRUPT_DMA_CH3 = (1<<5),
+	INTERRUPT_GPIO_PE4 = (1<<6),
 } INTERRUPT_t;
 
 extern volatile uint16_t g_interrupt;

@@ -1,4 +1,7 @@
 #include "common.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "error.h"
 #include "blink.h"
@@ -31,14 +34,34 @@ void init_devices() //{{{
 	printf("init_devices: dma_init()\r\n");
 	dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 	printf("init_devices: usb power init\r\n");
-	usbpower_init();
+	//usbpower_init();
 
 	// sample timer
 	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
-	
+
+	// GPIO for synchronization
+	interrupt_disable();
+	PORTE.DIR = 0;
+	PORTE.PIN7CTRL = PORT_ISC_RISING_gc;
+	PORTE.INT0MASK = PIN7_bm;
+	PORTE.INTCTRL = PORT_INT0LVL_MED_gc;
+	interrupt_enable();
 } //}}}
+
+
+ISR(PORTE_INT0_vect)
+{
+	interrupt_set(INTERRUPT_GPIO_PE4);
+	PORTE.INT0MASK &= ~PIN7_bm;
+}
+
+static volatile int waiting = 0;
+
+void dma_start_wait_sync() {
+	waiting = 1;
+}
 
 int main() //{{{
 {
@@ -48,15 +71,17 @@ int main() //{{{
 	init_devices();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
-	blink_init(10000, LED_YELLOW_bm); 
+	blink_init(1000, LED_YELLOW_bm); 
 
 	// try to initalize storage
 	g_control_mode = 0;
+	/*
 	if (store_init() >= 0)
 	{
 		printf("main: store init successful\r\n");
 		store_run_commands();
 	}
+	*/
 
 	// main loop for interrupt bottom halves 
 	while (1) 
@@ -66,6 +91,16 @@ int main() //{{{
 		sleep_enable();
 		sleep_cpu();
 		sleep_disable();
+
+		if (interrupt_is_set(INTERRUPT_GPIO_PE4)) {
+			if (waiting) {
+				blink_set_led(LED_GREEN_bm);
+				dma_start();
+				waiting = 0;
+			}
+			interrupt_clear(INTERRUPT_GPIO_PE4);
+			PORTE.INT0MASK &= PIN7_bm;
+		}
 
 		// general ms timer
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
