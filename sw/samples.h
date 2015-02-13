@@ -18,6 +18,7 @@ struct samples_hdr_
 typedef struct samples_hdr_ samples_hdr;
 
 float sample_v(sample* s);
+float sample_v_gpio(sample* s, int *gpio_seen);
 float sample_i(sample* s, float gain, float current_offset);
 void samples_print_loop(float gain, float current_offset);
 

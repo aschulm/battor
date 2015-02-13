@@ -26,6 +26,9 @@ void samples_uart_write(uint8_t* v_s, uint8_t* i_s, uint16_t len) //{{{
 	uart_tx_bytes(i_s, len);
 
 	g_samples_uart_seqnum++;
+
+	memset(v_s, 0, len);
+	memset(i_s, 0, len);
 } //}}}
 
 void samples_store_write(uint8_t* v_s, uint8_t* i_s) //{{{

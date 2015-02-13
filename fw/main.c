@@ -50,18 +50,54 @@ void init_devices() //{{{
 	interrupt_enable();
 } //}}}
 
+#define GPIO_DISPLAY_DURATION 250 //ms
+static int gpio_display = 0;
+static volatile uint8_t *gpio_v_s;
+static int gpio_mark_first_later = 0;
 
 ISR(PORTE_INT0_vect)
 {
-	interrupt_set(INTERRUPT_GPIO_PE4);
+	interrupt_set(INTERRUPT_GPIO);
 	PORTE.INT0MASK &= ~PIN7_bm;
 }
 
-static volatile int waiting = 0;
+static void gpio_mark_recent_sample()
+{
+	uint16_t min_s = 0;
+	uint16_t max_s = (SAMPLES_LEN / 2) - 1;
+	uint16_t mid_s;
+	uint16_t mid_b;
 
-void dma_start_wait_sync() {
-	waiting = 1;
+	// If the array is empty, then mark the first sample later once
+	// the DMA for it occurs. This will be handled in the main loop.
+	if (gpio_v_s[0] == 0) {
+		gpio_mark_first_later = 1;
+		return;
+	}
+
+	// Binary search to get close to the DMA boundary
+	while ((max_s - min_s) > 5) {
+		mid_s = min_s + ((max_s - min_s) / 2);
+		mid_b = mid_s << 1;
+
+		uint8_t cur_value = gpio_v_s[mid_b];
+		if(cur_value != 0) {
+			min_s = mid_s + 1; // DMA acting on later data
+		}	else {
+			max_s = mid_s; // DMA acting on earlier data
+		}
+	}
+
+	// Linear search from the minimum to find exact DMA boundary
+	for(mid_b = (min_s << 1); mid_b < SAMPLES_LEN; mid_b += 2) {
+		if (gpio_v_s[mid_b] == 0) {
+			gpio_v_s[mid_b - 1] |= 0x80;
+			return;
+		}
+	}
+	gpio_v_s[SAMPLES_LEN - 1] |= 0x80;
 }
+
 
 int main() //{{{
 {
@@ -92,21 +128,46 @@ int main() //{{{
 		sleep_cpu();
 		sleep_disable();
 
-		if (interrupt_is_set(INTERRUPT_GPIO_PE4)) {
-			if (waiting) {
-				blink_set_led(LED_GREEN_bm);
-				dma_start();
-				waiting = 0;
+		// ADCA and ADCB DMA channels
+		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+		{
+			if (gpio_mark_first_later == 1) {
+				gpio_v_s[1] |= 0x80;
+				gpio_mark_first_later = 0;
 			}
-			interrupt_clear(INTERRUPT_GPIO_PE4);
-			PORTE.INT0MASK &= PIN7_bm;
+			if (g_control_mode == CONTROL_MODE_STREAM)
+				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca0, g_adcb0);
+			interrupt_clear(INTERRUPT_DMA_CH0);
+			interrupt_clear(INTERRUPT_DMA_CH2);
+			gpio_v_s = (volatile uint8_t*)g_adca1;
+		}
+		
+		// other ADCA and ADCB DMA channels (double buffered)
+		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
+		{
+			if (gpio_mark_first_later == 1) {
+				gpio_v_s[1] |= 0x80;
+				gpio_mark_first_later = 0;
+			}
+			if (g_control_mode == CONTROL_MODE_STREAM)
+				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca1, g_adcb1);
+			interrupt_clear(INTERRUPT_DMA_CH1);
+			interrupt_clear(INTERRUPT_DMA_CH3);
+			gpio_v_s = (volatile uint8_t*)g_adca0;
 		}
 
-		// general ms timer
-		if (interrupt_is_set(INTERRUPT_TIMER_MS))
-		{
-			interrupt_clear(INTERRUPT_TIMER_MS);
-			blink_ms_timer_update();
+		// GPIO handling (NOTE: Must be after DMA interrupt handling)
+		if (interrupt_is_set(INTERRUPT_GPIO)) {
+			interrupt_clear(INTERRUPT_GPIO);
+			PORTE.INT0MASK |= PIN7_bm;
+
+			gpio_mark_recent_sample();
+			led_on(LED_RED_bm);
+			gpio_display = 0;
 		}
 
 		// UART receive
@@ -116,26 +177,17 @@ int main() //{{{
 			control_got_uart_bytes();
 		}
 
-		// ADCA and ADCB DMA channels
-		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+		// general ms timer
+		if (interrupt_is_set(INTERRUPT_TIMER_MS))
 		{
-			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
-			if (g_control_mode == CONTROL_MODE_STORE)
-				samples_store_write(g_adca0, g_adcb0);
-			interrupt_clear(INTERRUPT_DMA_CH0);
-			interrupt_clear(INTERRUPT_DMA_CH2);
-		}
-		
-		// other ADCA and ADCB DMA channels (double buffered)
-		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
-		{
-			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
-			if (g_control_mode == CONTROL_MODE_STORE)
-				samples_store_write(g_adca1, g_adcb1);
-			interrupt_clear(INTERRUPT_DMA_CH1);
-			interrupt_clear(INTERRUPT_DMA_CH3);
+			interrupt_clear(INTERRUPT_TIMER_MS);
+			blink_ms_timer_update();
+
+			if (gpio_display < GPIO_DISPLAY_DURATION) {
+				if (++gpio_display == GPIO_DISPLAY_DURATION) {
+					led_off(LED_RED_bm);
+				}
+			}
 		}
 
 		// need to read a file

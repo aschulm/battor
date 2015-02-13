@@ -10,10 +10,19 @@ float sample_v(sample* s) //{{{
 {
 	if (s->signal == ADC_MAX)
 		fprintf(stderr, "warning: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
-	if (s->signal < 0)
-		s->signal = 0;
 	float v_adcv = ((float)(s->signal)) / ADC_TOP;
 	return (v_adcv / V_DEV) * 1000.0; // undo the voltage divider
+} //}}}
+
+float sample_v_gpio(sample* s, int *gpio_seen) //{{{
+{
+	if (s->signal < 0) {
+		*gpio_seen = 1;
+		s->signal &= 0x7FFF;
+	} else {
+		*gpio_seen = 0;
+	}
+	return sample_v(s);
 } //}}}
 
 float sample_i(sample* s, float gain, float current_offset) //{{{
@@ -70,9 +79,10 @@ void samples_print_loop(float gain, float current_offset) //{{{
 				{
 					//printf("i %d\n", i_s[i].signal);
 					//printf("v %d\n", v_s[i].signal);
-					float mv = sample_v(v_s+i);
+					int gpio_seen;
+					float mv = sample_v_gpio(v_s+i, &gpio_seen);
 					float mi = sample_i(i_s+i, gain, current_offset);
-					printf("%f %f\n", mi, mv);
+					printf("%f %f %d\n", mi, mv, gpio_seen);
 				}
 			}
 		}
