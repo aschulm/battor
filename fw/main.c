@@ -51,15 +51,9 @@ void init_devices() //{{{
 } //}}}
 
 #define GPIO_DISPLAY_DURATION 250 //ms
-static int gpio_display = 0;
+static volatile int gpio_display = 0;
 static volatile uint8_t *gpio_v_s;
-static int gpio_mark_first_later = 0;
-
-ISR(PORTE_INT0_vect)
-{
-	interrupt_set(INTERRUPT_GPIO);
-	PORTE.INT0MASK &= ~PIN7_bm;
-}
+static volatile int gpio_mark_first_later = 0;
 
 static void gpio_mark_recent_sample()
 {
@@ -98,6 +92,18 @@ static void gpio_mark_recent_sample()
 	gpio_v_s[SAMPLES_LEN - 1] |= 0x80;
 }
 
+ISR(PORTE_INT0_vect)
+{
+	PORTE.INT0MASK &= ~PIN7_bm;
+	gpio_mark_recent_sample();
+	led_on(LED_RED_bm);
+	gpio_display = 0;
+	PORTE.INT0MASK |= PIN7_bm;
+	
+	//interrupt_set(INTERRUPT_GPIO);
+	//PORTE.INT0MASK &= ~PIN7_bm;
+}
+
 
 int main() //{{{
 {
@@ -123,10 +129,12 @@ int main() //{{{
 	while (1) 
 	{
 		// turn off the CPU between interrupts 
-		set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
-		sleep_enable();
-		sleep_cpu();
-		sleep_disable();
+		set_sleep_mode(SLEEP_SMODE_IDLE_gc);
+		if (!interrupt_is_set(0xFFFF)) {
+			sleep_enable();
+			sleep_cpu();
+			sleep_disable();
+		}
 
 		// GPIO handling when DMA interrupts occur
 		// 	- Marking first sample of previous buffer if required
@@ -153,10 +161,6 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_GPIO)) {
 			interrupt_clear(INTERRUPT_GPIO);
 			PORTE.INT0MASK |= PIN7_bm;
-
-			gpio_mark_recent_sample();
-			led_on(LED_RED_bm);
-			gpio_display = 0;
 		}
 
 		// ADCA and ADCB DMA channels
