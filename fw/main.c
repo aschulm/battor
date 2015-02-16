@@ -128,39 +128,28 @@ int main() //{{{
 		sleep_cpu();
 		sleep_disable();
 
-		// ADCA and ADCB DMA channels
+		// GPIO handling when DMA interrupts occur
+		// 	- Marking first sample of previous buffer if required
+		// 	- Changing the sample array the GPIO handler looks at
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
 			if (gpio_mark_first_later == 1) {
 				gpio_v_s[1] |= 0x80;
 				gpio_mark_first_later = 0;
 			}
-			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
-			if (g_control_mode == CONTROL_MODE_STORE)
-				samples_store_write(g_adca0, g_adcb0);
-			interrupt_clear(INTERRUPT_DMA_CH0);
-			interrupt_clear(INTERRUPT_DMA_CH2);
 			gpio_v_s = (volatile uint8_t*)g_adca1;
-		}
-		
-		// other ADCA and ADCB DMA channels (double buffered)
-		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
+		} else if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
 			if (gpio_mark_first_later == 1) {
 				gpio_v_s[1] |= 0x80;
 				gpio_mark_first_later = 0;
 			}
-			if (g_control_mode == CONTROL_MODE_STREAM)
-				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
-			if (g_control_mode == CONTROL_MODE_STORE)
-				samples_store_write(g_adca1, g_adcb1);
-			interrupt_clear(INTERRUPT_DMA_CH1);
-			interrupt_clear(INTERRUPT_DMA_CH3);
 			gpio_v_s = (volatile uint8_t*)g_adca0;
 		}
 
-		// GPIO handling (NOTE: Must be after DMA interrupt handling)
+		// GPIO handling when GPIO interrupt occurs
+		// 	- Mark the most recent sample in the current DMA buffer
+		// 	- Enable the red LED for a short time
 		if (interrupt_is_set(INTERRUPT_GPIO)) {
 			interrupt_clear(INTERRUPT_GPIO);
 			PORTE.INT0MASK |= PIN7_bm;
@@ -168,6 +157,28 @@ int main() //{{{
 			gpio_mark_recent_sample();
 			led_on(LED_RED_bm);
 			gpio_display = 0;
+		}
+
+		// ADCA and ADCB DMA channels
+		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+		{
+			if (g_control_mode == CONTROL_MODE_STREAM)
+				samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca0, g_adcb0);
+			interrupt_clear(INTERRUPT_DMA_CH0);
+			interrupt_clear(INTERRUPT_DMA_CH2);
+		}
+		
+		// other ADCA and ADCB DMA channels (double buffered)
+		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
+		{
+			if (g_control_mode == CONTROL_MODE_STREAM)
+				samples_uart_write(g_adca1, g_adcb1, SAMPLES_LEN);
+			if (g_control_mode == CONTROL_MODE_STORE)
+				samples_store_write(g_adca1, g_adcb1);
+			interrupt_clear(INTERRUPT_DMA_CH1);
+			interrupt_clear(INTERRUPT_DMA_CH3);
 		}
 
 		// UART receive
