@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 	sample max_s;
 	min_s.signal = 0;
 	max_s.signal = 1 << (ADC_BITS + ovs_bits);
-	printf("# battor\n");
+	printf("# BattOr\n");
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s), sample_v(&max_s));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset), sample_i(&max_s, gain, current_offset));
 	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
