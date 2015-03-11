@@ -1,5 +1,7 @@
-#!su -c /system/bin/sh
+#!/bin/bash 
 
+adb root
+adb shell '
 FLASH_FILE='/sys/class/leds/led:flash_1/brightness'
 FLASH_INT_S=0.01
 
@@ -18,3 +20,4 @@ do
 done
 echo 0 > $FLASH_FILE
 echo 0
+'
