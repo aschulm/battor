@@ -74,7 +74,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	int i;
 	sample v_s[2000], i_s[2000];
 	uint32_t seqnum = 0;
-  uint32_t sample_num = 0;
+	uint32_t sample_num = 0;
 	uint16_t samples_len;
 	int32_t v_cal = 0, i_cal = 0;
 	sigset_t sigs;
@@ -115,7 +115,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			i_s[i].signal -= i_cal;
 			v_s[i].signal -= v_cal;
 
-      double sec = sample_num/((double)sample_rate);
+			double sec = sample_num/((double)sample_rate);
 			double mv = sample_v(v_s+i);
 			double mi = sample_i(i_s+i, gain, current_offset);
 
@@ -124,7 +124,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			fflush(stdout);
 			sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
 
-      sample_num++;
+			sample_num++;
 		}
 	}
 }
