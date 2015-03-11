@@ -121,6 +121,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 
 			sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 			printf("%f %f %f\n", sec, mi, mv);
+			fflush(stdout);
 			sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
 
       sample_num++;
