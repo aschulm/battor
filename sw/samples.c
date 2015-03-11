@@ -69,11 +69,12 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(double gain, double current_offset, double ovs_bits, char verb) //{{{
+void samples_print_loop(double gain, double current_offset, double ovs_bits, char verb, uint32_t sample_rate) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
 	uint32_t seqnum = 0;
+  uint32_t sample_num = 0;
 	uint16_t samples_len;
 	int32_t v_cal = 0, i_cal = 0;
 	sigset_t sigs;
@@ -114,12 +115,15 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			i_s[i].signal -= i_cal;
 			v_s[i].signal -= v_cal;
 
+      double sec = sample_num/((double)sample_rate);
 			double mv = sample_v(v_s+i);
 			double mi = sample_i(i_s+i, gain, current_offset);
 
 			sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
-			printf("%f %f\n", mi, mv);
+			printf("%f %f %f\n", sec, mi, mv);
 			sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
+
+      sample_num++;
 		}
 	}
 }

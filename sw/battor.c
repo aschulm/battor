@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 	{
 		// read configuration
 		control(CONTROL_TYPE_READ_FILE, down_file, 0);
-		samples_print_loop(gain, current_offset, ovs_bits, g_verb);
+		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
 	}
 
 	// start configuration recording if enabled
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0);
-		samples_print_loop(gain, current_offset, ovs_bits, g_verb);
+		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
 	}
 	
 	return EXIT_SUCCESS;
