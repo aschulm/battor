@@ -15,10 +15,26 @@ typedef enum INTERRUPT_enum
 extern volatile uint16_t g_interrupt;
 
 void interrupt_init();
-void inline interrupt_set(uint16_t interrupt);
-void inline interrupt_clear(uint16_t interrupt);
 uint8_t interrupt_is_set(uint16_t interrupt);
-void inline interrupt_disable();
-void inline interrupt_enable();
+
+static inline void interrupt_set(uint16_t interrupt) //{{{
+{
+	g_interrupt |= interrupt;
+} //}}}
+
+static inline void interrupt_clear(uint16_t interrupt) //{{{
+{
+	g_interrupt &= ~interrupt;
+} //}}}
+
+static inline void interrupt_disable() //{{{
+{
+	cli();	
+} //}}}
+
+static inline void interrupt_enable() //{{{
+{
+	sei();	
+} //}}}
 
 #endif

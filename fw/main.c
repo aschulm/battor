@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <util/atomic.h>
 
 #include "error.h"
 #include "blink.h"
@@ -54,6 +55,7 @@ void init_devices() //{{{
 static volatile int gpio_display = 0;
 static volatile uint8_t *gpio_v_s;
 static volatile int gpio_mark_first_later = 0;
+static volatile uint16_t gpio_ms_since = 0;
 
 static void gpio_mark_recent_sample()
 {
@@ -95,6 +97,7 @@ static void gpio_mark_recent_sample()
 ISR(PORTE_INT0_vect)
 {
 	PORTE.INT0MASK &= ~PIN7_bm;
+	gpio_ms_since = 0;
 	gpio_mark_recent_sample();
 	led_on(LED_RED_bm);
 	gpio_display = 0;
@@ -139,29 +142,34 @@ int main() //{{{
 		// GPIO handling when DMA interrupts occur
 		// 	- Marking first sample of previous buffer if required
 		// 	- Changing the sample array the GPIO handler looks at
-		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 		{
-			if (gpio_mark_first_later == 1) {
-				gpio_v_s[1] |= 0x80;
-				gpio_mark_first_later = 0;
+			if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+			{
+				if (gpio_mark_first_later == 1) {
+					gpio_v_s[1] |= 0x80;
+					gpio_mark_first_later = 0;
+				}
+				gpio_v_s = (volatile uint8_t*)g_adca1;
+			} else if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
+			{
+				if (gpio_mark_first_later == 1) {
+					gpio_v_s[1] |= 0x80;
+					gpio_mark_first_later = 0;
+				}
+				gpio_v_s = (volatile uint8_t*)g_adca0;
 			}
-			gpio_v_s = (volatile uint8_t*)g_adca1;
-		} else if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
-		{
-			if (gpio_mark_first_later == 1) {
-				gpio_v_s[1] |= 0x80;
-				gpio_mark_first_later = 0;
-			}
-			gpio_v_s = (volatile uint8_t*)g_adca0;
 		}
 
 		// GPIO handling when GPIO interrupt occurs
 		// 	- Mark the most recent sample in the current DMA buffer
 		// 	- Enable the red LED for a short time
+		/*
 		if (interrupt_is_set(INTERRUPT_GPIO)) {
 			interrupt_clear(INTERRUPT_GPIO);
 			PORTE.INT0MASK |= PIN7_bm;
 		}
+		*/
 
 		// ADCA and ADCB DMA channels
 		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
@@ -202,6 +210,12 @@ int main() //{{{
 				if (++gpio_display == GPIO_DISPLAY_DURATION) {
 					led_off(LED_RED_bm);
 				}
+			}
+
+			if(gpio_ms_since > 20000) {
+				led_on(LED_RED_bm);
+			} else {
+				gpio_ms_since += 1;
 			}
 		}
 

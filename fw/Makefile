@@ -16,9 +16,9 @@
 VERSION = 1.0
 
 CLOCK      = 16000000 
-CFLAGS     = -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os #-DDEBUG
+CFLAGS     = -std=gnu99 -mmcu=$(DEVICE) -DF_CPU=$(CLOCK) -Wall -Os #-DDEBUG
 DEVICE     = atxmega192a3
-OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
+OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/sd.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
 DEBUG_PORT = 4242

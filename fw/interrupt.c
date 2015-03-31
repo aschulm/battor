@@ -11,27 +11,8 @@ void interrupt_init() //{{{
 	sei(); // enable interrupts
 } //}}}
 
-void inline interrupt_set(uint16_t interrupt) //{{{
-{
-	g_interrupt |= interrupt;
-} //}}}
-
-void inline interrupt_clear(uint16_t interrupt) //{{{
-{
-	g_interrupt &= ~interrupt;
-} //}}}
-
 uint8_t interrupt_is_set(uint16_t interrupt) //{{{
 {
 	return (g_interrupt & interrupt) > 0;
 } //}}}
 
-void inline interrupt_disable() //{{{
-{
-	cli();	
-} //}}}
-
-void inline interrupt_enable() //{{{
-{
-	sei();	
-} //}}}
