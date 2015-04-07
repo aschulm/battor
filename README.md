@@ -10,7 +10,8 @@
 ### Firmware
 
 To build the firmware you will need avr-binutils, avr-gcc, and avr-libc; to
-flash it to the BattOr you need avrdude.
+flash it to the BattOr you need avrdude. You can download the latest AVR toolchain  
+[here](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx).
 
     $ make
     $ make flash (hit the reset button on BattOr as you hit return)
