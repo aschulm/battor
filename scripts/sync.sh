@@ -2,8 +2,11 @@
 
 adb root
 adb shell '
-FLASH_FILE='/sys/class/leds/led:flash_1/brightness'
+FLASH_FILE="/sys/class/leds/led:flash_1/brightness"
 FLASH_INT_S=0.01
+
+echo "trace_event_clock_sync: name=battor regulator=8941_smbb_boost" > \
+  /sys/kernel/debug/tracing/trace_marker
 
 # drop sync signal with flash
 chmod 777 $FLASH_FILE
@@ -20,4 +23,7 @@ do
 done
 echo 0 > $FLASH_FILE
 echo 0
+
+echo "trace_event_clock_sync: name=battor regulator=8941_smbb_boost" > \
+  /sys/kernel/debug/tracing/trace_marker
 '
