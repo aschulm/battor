@@ -97,6 +97,10 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 		{
 			b_b[bytes_read++] = b_tmp;
 		}
+    else
+    {
+      return -1;
+    }
 	}
 
 	// verbose
