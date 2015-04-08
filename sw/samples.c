@@ -45,7 +45,7 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	uint8_t* frame_ptr;
 	uint8_t type;
 
-	while (uart_rx_bytes(&type, frame, sizeof(frame)) < 0);
+	while (uart_rx_bytes(&type, frame, sizeof(frame)) < 0 || type != UART_TYPE_SAMPLES);
 	frame_ptr = frame;
 
 	hdr = (samples_hdr*)frame_ptr;
