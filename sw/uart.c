@@ -11,8 +11,8 @@
 #include "samples.h"
 
 static struct ftdi_context *ftdi;
-static uint8_t uart_rx_buffer[UART_BUFFER_LEN];
-static uint8_t uart_tx_buffer[UART_BUFFER_LEN];
+static uint8_t uart_rx_buffer[UART_RX_BUFFER_LEN];
+static uint8_t uart_tx_buffer[UART_RX_BUFFER_LEN];
 static int uart_rx_buffer_write_idx = 0;
 static int uart_rx_buffer_read_idx = 0;
 static int uart_tx_buffer_idx = 0;
@@ -22,6 +22,7 @@ int uart_rx_byte(uint8_t* b) //{{{
 	int i, attempt;
 
 	attempt = 0;
+ 
 	while (uart_rx_buffer_read_idx >= uart_rx_buffer_write_idx)
 	{
 		if (attempt++ >= UART_RX_ATTEMPTS)
@@ -39,7 +40,7 @@ int uart_rx_byte(uint8_t* b) //{{{
 		uart_rx_buffer_read_idx = 0;
 
 		// verbose
-		verb_printf("uart_rx_byte: read:%d", uart_rx_buffer_write_idx);
+		verb_printf("uart_rx_byte: len:%d", uart_rx_buffer_write_idx);
 		for (i = 0; i < uart_rx_buffer_write_idx; i++)
 		{
 			verb_printf(" %.2X", uart_rx_buffer[i]);
@@ -60,22 +61,28 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 	uint8_t end_found = 0;
 	uint16_t bytes_read = 0;
 
+	fprintf(stderr,"uart_rx_bytes: start\n");
+
 	while (!(start_found && end_found))
 	{
 		if (uart_rx_byte(&b_tmp) < 0)
 		{
+			fprintf(stderr,"uart_rx_bytes: failed to get byte\n");
 			return -1;
 		}
 
 		if (b_tmp == UART_ESC_DELIM)
 		{
+			fprintf(stderr,"uart_rx_bytes: got escape\n");
 			if (uart_rx_byte(&b_tmp) < 0)
 			{
+				fprintf(stderr,"uart_rx_bytes: got escape -- failed to get next byte\n");
 				return -1;
 			}
 
 			if (bytes_read < b_len)
 			{
+				fprintf(stderr,"uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
 			}
 		}
@@ -86,19 +93,24 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 
 			if (uart_rx_byte(type) < 0)
 			{
+				fprintf(stderr,"uart_rx_byte: got start -- failed to get next byte\n");
 				return -1;
 			}
+			fprintf(stderr,"uart_rx_byte: got start type 0x%X\n", *type);
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
+			fprintf(stderr,"uart_rx_byte: got end\n");
 			end_found = 1;
 		}
 		else if (bytes_read < b_len)
 		{
+			fprintf(stderr,"uart_rx_byte: got byte 0x%X\n", b_tmp);
 			b_b[bytes_read++] = b_tmp;
 		}
     else
     {
+			fprintf(stderr,"uart_rx_byte: nothing worked so done\n");
       return -1;
     }
 	}
@@ -224,12 +236,6 @@ void uart_init() //{{{
 	if ((ret = ftdi_setflowctrl(ftdi, SIO_DISABLE_FLOW_CTRL)) < 0)
 	{
 		fprintf(stderr, "unable to disable flow control: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	if ((ret = ftdi_write_data_set_chunksize(ftdi, 1500)) < 0)
-	{
-		fprintf(stderr, "unable to set chunk size: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);
 	}
 
