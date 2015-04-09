@@ -67,6 +67,11 @@ void samples_uart_write(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
 	// write number of samples
 	uart_tx_bytes(&len, sizeof(len)); 
 
+#ifdef SAMPLE_ZERO
+  memset(v_s, 0, len);
+  memset(i_s, 0, len);
+#endif
+
 	// write voltage samples
 	uart_tx_bytes(v_s, len);
 	// write current samples
