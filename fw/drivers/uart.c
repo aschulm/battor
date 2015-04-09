@@ -44,8 +44,8 @@ void uart_init() //{{{
 	USARTD0.BAUDCTRLB = USART_BSCALE_115200BPS << USART_BSCALE_gp;
 	USARTD0.BAUDCTRLA = USART_BSEL_115200BPS & USART_BSEL_gm;
 #else
-	USARTD0.BAUDCTRLB = USART_BSCALE_800000BPS << USART_BSCALE_gp;
-	USARTD0.BAUDCTRLA = USART_BSEL_800000BPS & USART_BSEL_gm;
+	USARTD0.BAUDCTRLB = USART_BSCALE_400000BPS << USART_BSCALE_gp;
+	USARTD0.BAUDCTRLA = USART_BSEL_400000BPS & USART_BSEL_gm;
 #endif
 
 	USARTD0.CTRLC = USART_CMODE_ASYNCHRONOUS_gc | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc; // set transfer parameters
@@ -69,10 +69,8 @@ void uart_init() //{{{
 
 inline void uart_tx_byte(uint8_t b) //{{{
 {
-	interrupt_disable();
 	loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
 	USARTD0.DATA = b; // put the data in the tx buffer
-	interrupt_enable();
 } //}}}
 
 void uart_tx_start(uint8_t type) //{{{

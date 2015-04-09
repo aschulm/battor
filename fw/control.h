@@ -17,7 +17,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_START_REC_CONTROL,   // init recording the control messages to the SD card
 	CONTROL_TYPE_END_REC_CONTROL,     // write the control messages to the SD card
 	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
-	CONTROL_TYPE_OVERSAMPLING_SET     // set the desired number of bits from oversampling
+	CONTROL_TYPE_OVERSAMPLING_SET,    // set the desired number of bits from oversampling
+	CONTROL_TYPE_READ_READY           // ready to start receiving next round of samples
 } CONTROL_TYPE_t;
 
 typedef struct control_message_ 
@@ -38,6 +39,7 @@ typedef enum CONTROL_MODE_enum
 
 extern uint8_t g_control_mode;
 extern uint8_t g_control_calibrated;
+extern uint8_t g_control_read_ready;
 
 void control_got_uart_bytes();
 void control_run_message(control_message* m);

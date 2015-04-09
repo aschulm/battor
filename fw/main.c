@@ -88,14 +88,25 @@ int main() //{{{
 		{
 			uint16_t len = SAMPLES_LEN;
 
-			len = samples_ovsample(g_adca0, g_adcb0, len);
+			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
+			{
+				len = samples_ovsample(g_adca0, g_adcb0, len);
 
-			if (g_control_mode == CONTROL_MODE_STREAM)
 				samples_uart_write(g_adca0, g_adcb0, len);
+				g_control_read_ready = 0;
+
+				interrupt_clear(INTERRUPT_DMA_CH0);
+				interrupt_clear(INTERRUPT_DMA_CH2);
+			}
 			if (g_control_mode == CONTROL_MODE_STORE)
+			{
+				len = samples_ovsample(g_adca0, g_adcb0, len);
+
 				samples_store_write(g_adca0, g_adcb0);
-			interrupt_clear(INTERRUPT_DMA_CH0);
-			interrupt_clear(INTERRUPT_DMA_CH2);
+
+				interrupt_clear(INTERRUPT_DMA_CH0);
+				interrupt_clear(INTERRUPT_DMA_CH2);
+			}
 		}
 		
 		// other ADCA and ADCB DMA channels (double buffered)
@@ -116,14 +127,25 @@ int main() //{{{
 				dma_start();
 			}
 
-			len = samples_ovsample(g_adca1, g_adcb1, len);
+			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
+			{
+				len = samples_ovsample(g_adca1, g_adcb1, len);
 
-			if (g_control_mode == CONTROL_MODE_STREAM)
 				samples_uart_write(g_adca1, g_adcb1, len);
+				g_control_read_ready = 0;
+
+				interrupt_clear(INTERRUPT_DMA_CH1);
+				interrupt_clear(INTERRUPT_DMA_CH3);
+			}
 			if (g_control_mode == CONTROL_MODE_STORE)
+			{
+				len = samples_ovsample(g_adca1, g_adcb1, len);
+
 				samples_store_write(g_adca1, g_adcb1);
-			interrupt_clear(INTERRUPT_DMA_CH1);
-			interrupt_clear(INTERRUPT_DMA_CH3);
+
+				interrupt_clear(INTERRUPT_DMA_CH1);
+				interrupt_clear(INTERRUPT_DMA_CH3);
+			}
 		}
 
 		// need to read a file

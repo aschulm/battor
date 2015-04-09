@@ -232,7 +232,7 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_set_latency_timer(ftdi, 100)) < 0)
+	if ((ret = ftdi_set_latency_timer(ftdi, 1)) < 0)
 	{
 		fprintf(stderr, "unable to set latency timer: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);

@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 				if (atoi(optarg) == 0 || atoi(optarg) == 1)
 				{
 					uart_init();
-					control(CONTROL_TYPE_USB_POWER_SET, atoi(optarg), 0);
+					control(CONTROL_TYPE_USB_POWER_SET, atoi(optarg), 0, 1);
 					return EXIT_SUCCESS;
 				}
 				else
@@ -129,13 +129,13 @@ int main(int argc, char** argv)
 	uart_init();
 
 	// init the battor 
-	control(CONTROL_TYPE_INIT, 0, 0);
+	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
 	// download file
 	if (down)
 	{
 		// read configuration
-		control(CONTROL_TYPE_READ_FILE, down_file, 0);
+		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
 		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
 	}
 
@@ -143,25 +143,25 @@ int main(int argc, char** argv)
 	if (conf)
 	{
 		srand(time(NULL));
-		control(CONTROL_TYPE_START_REC_CONTROL, rand() & 0xFFFF, 0);
+		control(CONTROL_TYPE_START_REC_CONTROL, rand() & 0xFFFF, 0, 1);
 	}
 
 	// configuration
-	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0);
-	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0);
-	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf);
-	control(CONTROL_TYPE_OVERSAMPLING_SET, ovs_bits, 0);
+	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0, 1);
+	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0, 1);
+	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
+	control(CONTROL_TYPE_OVERSAMPLING_SET, ovs_bits, 0, 1);
 
 	// end configuration recording if enabled
 	if (conf)
 	{
-		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0);
-		control(CONTROL_TYPE_END_REC_CONTROL, 0, 0);
+		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
+		control(CONTROL_TYPE_END_REC_CONTROL, 0, 0, 1);
 	}
 
 	if (usb)
 	{
-		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0);
+		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
 		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
 	}
 	

@@ -15,7 +15,7 @@ void samples_init(uint16_t ovs_bits) //{{{
 double sample_v(sample* s) //{{{
 {
 	if (s->signal == (s_adc_top-1))
-		fprintf(stderr, "warning: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
+		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 	if (s->signal < 0)
 		s->signal = 0;
 	double v_adcv = (((double)(s->signal)) / s_adc_top) * VREF;
@@ -26,7 +26,7 @@ double sample_i(sample* s, double gain, double current_offset) //{{{
 {
 	// current
 	if (s->signal == (s_adc_top-1))
-		fprintf(stderr, "warning: maximum current, won't hurt anything, but you should turn down the gain.\n");
+		fprintf(stderr, "WARNING: maximum current, won't hurt anything, but you should turn down the gain.\n");
 
 	if (s->signal < 0)
 		s->signal = 0;
@@ -56,7 +56,7 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	if (*seqnum != 0)
 	{
 		if (hdr->seqnum != *seqnum + 1)
-			fprintf(stderr, "error: expected sample frame seqnum %d got seqnum %d\n", *seqnum + 1, hdr->seqnum);
+			fprintf(stderr, "warning: expected sample frame seqnum %d got seqnum %d\n", *seqnum + 1, hdr->seqnum);
 	}
 	*seqnum = hdr->seqnum;
 
@@ -86,7 +86,14 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	// read calibration and compute it
 	while (seqnum != 1)
 	{
+		control(CONTROL_TYPE_READ_READY, 0, 0, 0);
 		samples_len = samples_read(v_s, i_s, &seqnum);
+	}
+
+	if (samples_len == 0)
+	{
+		fprintf(stderr, "ERROR: read zero samples\n");
+		exit(EXIT_FAILURE);
 	}
 
 	for (i = 0; i < samples_len; i++)
@@ -104,8 +111,11 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	// main sample read loop
 	while(1)
 	{
+		control(CONTROL_TYPE_READ_READY, 0, 0, 0);
 		if ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0)
 			return;
+
+		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 
 		for (i = 0; i < samples_len; i++)
 		{
@@ -119,12 +129,12 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			double mv = sample_v(v_s+i);
 			double mi = sample_i(i_s+i, gain, current_offset);
 
-			sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 			printf("%f %f %f\n", sec, mi, mv);
-			fflush(stdout);
-			sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
 
 			sample_num++;
 		}
+
+		fflush(stdout);
+		sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
 	}
 }

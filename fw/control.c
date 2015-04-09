@@ -10,6 +10,7 @@
 static control_message message;
 uint8_t g_control_mode;
 uint8_t g_control_calibrated;
+uint8_t g_control_read_ready;
 
 void control_got_uart_bytes() //{{{
 {
@@ -77,6 +78,7 @@ void control_run_message(control_message* m) //{{{
 				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
+				g_control_read_ready = 1;
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				g_control_mode = CONTROL_MODE_STORE;
@@ -107,6 +109,9 @@ void control_run_message(control_message* m) //{{{
 			break;
 			case CONTROL_TYPE_USB_POWER_SET:
 				usbpower_set(m->value1);
+			break;
+			case CONTROL_TYPE_READ_READY:
+				g_control_read_ready = 1;
 			break;
 		}
 	}

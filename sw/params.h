@@ -1,7 +1,7 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#define BAUD_RATE 800000
+#define BAUD_RATE 400000
 
 #define VREF 2.048
 

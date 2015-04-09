@@ -13,7 +13,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_START_REC_CONTROL,   // init recording the control messages to the SD card
 	CONTROL_TYPE_END_REC_CONTROL,     // write the control messages to the SD card
 	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
-	CONTROL_TYPE_OVERSAMPLING_SET     // set the desired number of bits from oversampling
+	CONTROL_TYPE_OVERSAMPLING_SET,    // set the desired number of bits from oversampling
+	CONTROL_TYPE_READ_READY           // ready to start receiving next round of samples
 } CONTROL_TYPE_t;
 
 struct control_message_
@@ -24,6 +25,6 @@ struct control_message_
 } __attribute__((packed));
 typedef struct control_message_ control_message;
 
-void control(uint8_t type, uint16_t value1, uint16_t value2);
+void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t ack);
 
 #endif
