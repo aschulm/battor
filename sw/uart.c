@@ -1,5 +1,5 @@
 #if defined(__linux__)
-	#include <ftdi.h>
+	#include <libftdi1/ftdi.h>
 #endif
 #if defined(__APPLE__)
 	#include <libftdi1/ftdi.h>
@@ -32,10 +32,7 @@ int uart_rx_byte(uint8_t* b) //{{{
 
 		if ((uart_rx_buffer_write_idx = ftdi_read_data(ftdi, uart_rx_buffer, sizeof(uart_rx_buffer))) < 0)
 		{
-			fprintf(stderr, "unable to read from ftdi device: %d (%s)\n",
-				uart_rx_buffer_write_idx,
-				ftdi_get_error_string(ftdi));
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		uart_rx_buffer_read_idx = 0;
 
@@ -61,28 +58,28 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 	uint8_t end_found = 0;
 	uint16_t bytes_read = 0;
 
-	fprintf(stderr,"uart_rx_bytes: start\n");
+	verb_printf("uart_rx_bytes: start\n%s", "");
 
 	while (!(start_found && end_found))
 	{
 		if (uart_rx_byte(&b_tmp) < 0)
 		{
-			fprintf(stderr,"uart_rx_bytes: failed to get byte\n");
+			verb_printf("uart_rx_bytes: failed to get byte\n%s", "");
 			return -1;
 		}
 
 		if (b_tmp == UART_ESC_DELIM)
 		{
-			fprintf(stderr,"uart_rx_bytes: got escape\n");
+			verb_printf("uart_rx_bytes: got escape\n%s", "");
 			if (uart_rx_byte(&b_tmp) < 0)
 			{
-				fprintf(stderr,"uart_rx_bytes: got escape -- failed to get next byte\n");
+				verb_printf("uart_rx_bytes: got escape -- failed to get next byte\n%s", "");
 				return -1;
 			}
 
 			if (bytes_read < b_len)
 			{
-				fprintf(stderr,"uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
+				verb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
 			}
 		}
@@ -93,24 +90,24 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 
 			if (uart_rx_byte(type) < 0)
 			{
-				fprintf(stderr,"uart_rx_byte: got start -- failed to get next byte\n");
+				verb_printf("uart_rx_byte: got start -- failed to get next byte\n%s", "");
 				return -1;
 			}
-			fprintf(stderr,"uart_rx_byte: got start type 0x%X\n", *type);
+			verb_printf("uart_rx_byte: got start type 0x%X\n", *type);
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
-			fprintf(stderr,"uart_rx_byte: got end\n");
+			verb_printf("uart_rx_byte: got end\n%s", "");
 			end_found = 1;
 		}
 		else if (bytes_read < b_len)
 		{
-			fprintf(stderr,"uart_rx_byte: got byte 0x%X\n", b_tmp);
+			verb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
 			b_b[bytes_read++] = b_tmp;
 		}
     else
     {
-			fprintf(stderr,"uart_rx_byte: nothing worked so done\n");
+			verb_printf("uart_rx_byte: nothing worked so done\n%s", "");
       return -1;
     }
 	}
@@ -205,10 +202,6 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	// disable libusb timeouts
-	ftdi->usb_write_timeout = 0;
-	ftdi->usb_read_timeout = 0;
-	
 	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6011)) < 0)
 	{
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
