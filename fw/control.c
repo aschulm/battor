@@ -16,20 +16,26 @@ void control_got_uart_bytes() //{{{
 {
 	uint8_t recv_len;
 	uint8_t type;
+	uint8_t ret = 0;
 
 	recv_len = uart_rx_bytes(&type, (uint8_t*)&message, sizeof(message));
 
 	if (recv_len == sizeof(control_message))
 	{
-		control_run_message(&message);
+		ret = control_run_message(&message);
+
+		// send ack for flow control
 		uart_tx_start(UART_TYPE_CONTROL_ACK);
-		uart_tx_bytes(&message.type, sizeof(message.type)); // send ack for flow control
+		uart_tx_bytes(&message.type, sizeof(message.type)); 
+		uart_tx_bytes(&ret, 1);
 		uart_tx_end();
 	}
 } //}}}
 
-void control_run_message(control_message* m) //{{{
+uint8_t control_run_message(control_message* m) //{{{
 {
+	uint8_t ret = 0;
+
 	printf("control: type %d\r\n", m->type);
 	// record the message if we are in record mode, else run it
 	if (g_control_mode == CONTROL_MODE_REC_CONTROL &&
@@ -45,6 +51,8 @@ void control_run_message(control_message* m) //{{{
 		{
 			case CONTROL_TYPE_INIT:
 				g_control_mode = CONTROL_MODE_IDLE;
+				ret = g_error_last;
+				g_error_last = 0;
 				dma_stop(); // stop getting samples from the ADCs
 			break;
 			case CONTROL_TYPE_AMPPOT_SET:
@@ -115,4 +123,5 @@ void control_run_message(control_message* m) //{{{
 			break;
 		}
 	}
+	return ret;
 } //}}}

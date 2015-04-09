@@ -17,4 +17,6 @@ typedef enum ERROR_enum
 
 void halt(uint8_t code);
 
+extern uint8_t g_error_last;
+
 #endif

@@ -42,6 +42,6 @@ extern uint8_t g_control_calibrated;
 extern uint8_t g_control_read_ready;
 
 void control_got_uart_bytes();
-void control_run_message(control_message* m);
+uint8_t control_run_message(control_message* m);
 
 #endif

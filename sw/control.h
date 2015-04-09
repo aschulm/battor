@@ -25,6 +25,13 @@ struct control_message_
 } __attribute__((packed));
 typedef struct control_message_ control_message;
 
+struct control_ack_
+{
+	uint8_t type;
+	uint8_t value;
+} __attribute__((packed));
+typedef struct control_ack_ control_ack;
+
 void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t ack);
 
 #endif
