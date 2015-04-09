@@ -1,9 +1,6 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_DELIM0 0xBA 
-#define SAMPLES_DELIM1 0x77
-
 struct sample_
 {
 	int16_t signal;
