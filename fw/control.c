@@ -16,7 +16,7 @@ void control_got_uart_bytes() //{{{
 {
 	uint8_t recv_len;
 	uint8_t type;
-	uint8_t ret = 0;
+	int8_t ret = 0;
 
 	recv_len = uart_rx_bytes(&type, (uint8_t*)&message, sizeof(message));
 
@@ -24,15 +24,18 @@ void control_got_uart_bytes() //{{{
 	{
 		ret = control_run_message(&message);
 
-		// send ack for flow control
-		uart_tx_start(UART_TYPE_CONTROL_ACK);
-		uart_tx_bytes(&message.type, sizeof(message.type)); 
-		uart_tx_bytes(&ret, 1);
-		uart_tx_end();
+		if (ret >= 0)
+		{
+			// send ack
+			uart_tx_start(UART_TYPE_CONTROL_ACK);
+			uart_tx_bytes(&message.type, sizeof(message.type)); 
+			uart_tx_bytes(&ret, 1);
+			uart_tx_end();
+		}
 	}
 } //}}}
 
-uint8_t control_run_message(control_message* m) //{{{
+int8_t control_run_message(control_message* m) //{{{
 {
 	uint8_t ret = 0;
 
@@ -120,6 +123,7 @@ uint8_t control_run_message(control_message* m) //{{{
 			break;
 			case CONTROL_TYPE_READ_READY:
 				g_control_read_ready = 1;
+				ret = -1; // don't send ack
 			break;
 		}
 	}
