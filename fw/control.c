@@ -83,22 +83,30 @@ int8_t control_run_message(control_message* m) //{{{
 
 				// setup calibration mode
 				g_control_calibrated = 0;
-				mux_select(MUX_GND); // current measurment input to gnd 
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+				// current measurment input to gnd
+				mux_select(MUX_GND); 
+				// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; 
+				// wait for things to settle
+				timer_sleep_ms(100);
 
 				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				dma_start(); // start getting samples from the ADCs
-				g_control_read_ready = 1;
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				g_control_mode = CONTROL_MODE_STORE;
 				blink_set_led(LED_GREEN_bm | LED_YELLOW_bm);
 				blink_set_strobe_count(store_write_open());
+
 				// setup calibration
 				g_control_calibrated = 0;
-				mux_select(MUX_GND); // current measurement input to gnd
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+				// current measurement input to gnd
+				mux_select(MUX_GND);
+				// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+				// wait for things to settle
+				timer_sleep_ms(100);
 
 				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
