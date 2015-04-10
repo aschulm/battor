@@ -120,11 +120,6 @@ int main() //{{{
 				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc; // voltage measurment
 				mux_select(MUX_R); // current measurement
 				g_control_calibrated = 1;
-
-				// let the ADC settle
-				dma_stop();
-				timer_sleep_ms(10);
-				dma_start();
 			}
 
 			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
