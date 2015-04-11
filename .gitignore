@@ -1,0 +1,17 @@
+# Binaries
+*.o
+*.hex
+*.elf
+battor
+
+# Automake & Autoconf
+*.in
+*.m4
+*.log
+compile
+config.status
+configure
+install-sh
+autom4te.cache
+.deps
+sw/Makefile
