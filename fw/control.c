@@ -4,7 +4,6 @@
 #include "control.h"
 #include "blink.h"
 #include "samples.h"
-#include "usbpower.h"
 #include "store.h"
 
 static control_message message;
@@ -125,9 +124,6 @@ int8_t control_run_message(control_message* m) //{{{
 				g_samples_uart_seqnum = 0;
 				g_samples_read_file = m->value1;
 				dma_stop(); // will get samples from the file
-			break;
-			case CONTROL_TYPE_USB_POWER_SET:
-				usbpower_set(m->value1);
 			break;
 			case CONTROL_TYPE_READ_READY:
 				g_control_read_ready = 1;

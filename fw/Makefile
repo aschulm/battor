@@ -5,8 +5,8 @@
  
 VERSION = 1.0
 
-CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -O2 -DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG 
-OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o blink.o main.o interrupt.o error.o control.o samples.o store.o usbpower.o
+CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -O2 #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG 
+OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o drivers/reset.o blink.o main.o interrupt.o error.o control.o samples.o store.o drivers.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
 DEBUG_PORT = 4242
