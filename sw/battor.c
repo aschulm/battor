@@ -16,7 +16,7 @@ Options:                                                                        
   -r <rate> : sample rate (default %d Hz)                                             \n\
   -g <gain> : current gain (default %dx) set to hit max then reduce                   \n\
   -b <bits> : set the number of bits to obtain through oversampling (default %d max 1)\n\
-  -v : verbose printing for debugging                                                 \n\
+  -v(v) : verbose printing for debugging                                                 \n\
                                                                                       \n\
 ", name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
 } //}}}
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 				}
 			break;
 			case 'v':
-				g_verb = 1;
+				g_verb++;
 			break;
 			case 'h':
 				usage(argv[0]);

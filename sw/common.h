@@ -18,6 +18,8 @@
 extern char g_verb;
 
 #define verb_printf(fmt, ...) \
-	            do { if (g_verb) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+	            do { if (g_verb > 0) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+#define vverb_printf(fmt, ...) \
+	            do { if (g_verb > 1) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
 #endif
