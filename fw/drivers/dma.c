@@ -120,11 +120,12 @@ void dma_start()
 
 void dma_stop()
 {
-	DMA.INTFLAGS = 0xFF; // clear all interrups
 	DMA.CH0.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 0 for ADCA
 	DMA.CH1.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 0 for ADCA
 	DMA.CH2.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
 	DMA.CH3.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
+
+	DMA.INTFLAGS = 0xFF; // clear all interrups
 
 	EVSYS.CH0MUX = 0; // stop event channel 0
 }
