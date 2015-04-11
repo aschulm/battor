@@ -45,7 +45,11 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	uint8_t* frame_ptr;
 	uint8_t type;
 
-	while (uart_rx_bytes(&type, frame, sizeof(frame)) < 0 || type != UART_TYPE_SAMPLES);
+	control(CONTROL_TYPE_READ_READY, 0, 0, 0);
+
+	if (uart_rx_bytes(&type, frame, sizeof(frame)) < 0 || type != UART_TYPE_SAMPLES)
+		return 0;
+
 	frame_ptr = frame;
 
 	hdr = (samples_hdr*)frame_ptr;
@@ -75,7 +79,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	sample v_s[2000], i_s[2000];
 	uint32_t seqnum = 0;
 	uint32_t sample_num = 0;
-	uint16_t samples_len;
+	uint16_t samples_len = 0;
 	int32_t v_cal = 0, i_cal = 0;
 	sigset_t sigs;
 
@@ -84,9 +88,8 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	sigaddset(&sigs, SIGINT);
 
 	// read calibration and compute it
-	while (seqnum != 1)
+	while (samples_len == 0 || seqnum != 1)
 	{
-		control(CONTROL_TYPE_READ_READY, 0, 0, 0);
 		samples_len = samples_read(v_s, i_s, &seqnum);
 	}
 
@@ -111,9 +114,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	// main sample read loop
 	while(1)
 	{
-		control(CONTROL_TYPE_READ_READY, 0, 0, 0);
-		if ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0)
-			return;
+		while ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0)
 
 		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 
@@ -126,8 +127,8 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			v_s[i].signal -= v_cal;
 
 			double sec = sample_num/((double)sample_rate);
-			double mv = sample_v(v_s+i);
-			double mi = sample_i(i_s+i, gain, current_offset);
+			double mv = sample_v(v_s + i);
+			double mi = sample_i(i_s + i, gain, current_offset);
 
 			printf("%f %f %f\n", sec, mi, mv);
 
