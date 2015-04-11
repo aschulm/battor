@@ -19,10 +19,8 @@ static int uart_tx_buffer_idx = 0;
 
 int uart_rx_byte(uint8_t* b) //{{{
 {
-	int i, attempt;
+	int i, attempt = 0;
 
-	attempt = 0;
- 
 	while (uart_rx_buffer_read_idx >= uart_rx_buffer_write_idx)
 	{
 		if (attempt++ >= UART_RX_ATTEMPTS)
@@ -36,17 +34,16 @@ int uart_rx_byte(uint8_t* b) //{{{
 		}
 		uart_rx_buffer_read_idx = 0;
 
-		// verbose
-		verb_printf("uart_rx_byte: len:%d", uart_rx_buffer_write_idx);
+		vverb_printf("uart_rx_byte: len:%d", uart_rx_buffer_write_idx);
 		for (i = 0; i < uart_rx_buffer_write_idx; i++)
 		{
-			verb_printf(" %.2X", uart_rx_buffer[i]);
+			vverb_printf(" %.2X", uart_rx_buffer[i]);
 		}
-		verb_printf("%s\n", "");
+		vverb_printf("%s\n", "");
 	}
 
 	*b = uart_rx_buffer[uart_rx_buffer_read_idx++];
-	return 0;
+	return uart_rx_buffer_write_idx;
 } //}}}
 
 int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
@@ -58,28 +55,28 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 	uint8_t end_found = 0;
 	uint16_t bytes_read = 0;
 
-	verb_printf("uart_rx_bytes: start\n%s", "");
+	vverb_printf("uart_rx_bytes: start\n%s", "");
 
 	while (!(start_found && end_found))
 	{
-		if (uart_rx_byte(&b_tmp) < 0)
+		if (uart_rx_byte(&b_tmp) <= 0)
 		{
-			verb_printf("uart_rx_bytes: failed to get byte\n%s", "");
+			vverb_printf("uart_rx_bytes: failed to get byte\n%s", "");
 			return -1;
 		}
 
 		if (b_tmp == UART_ESC_DELIM)
 		{
-			verb_printf("uart_rx_bytes: got escape\n%s", "");
-			if (uart_rx_byte(&b_tmp) < 0)
+			vverb_printf("uart_rx_bytes: got escape\n%s", "");
+			if (uart_rx_byte(&b_tmp) <= 0)
 			{
-				verb_printf("uart_rx_bytes: got escape -- failed to get next byte\n%s", "");
+				vverb_printf("uart_rx_bytes: got escape -- failed to get next byte\n%s", "");
 				return -1;
 			}
 
 			if (bytes_read < b_len)
 			{
-				verb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
+				vverb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
 			}
 		}
@@ -88,26 +85,26 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 			start_found = 1;
 			bytes_read = 0;
 
-			if (uart_rx_byte(type) < 0)
+			if (uart_rx_byte(type) <= 0)
 			{
-				verb_printf("uart_rx_byte: got start -- failed to get next byte\n%s", "");
+				vverb_printf("uart_rx_byte: got start -- failed to get next byte\n%s", "");
 				return -1;
 			}
-			verb_printf("uart_rx_byte: got start type 0x%X\n", *type);
+			vverb_printf("uart_rx_byte: got start type 0x%X\n", *type);
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
-			verb_printf("uart_rx_byte: got end\n%s", "");
+			vverb_printf("uart_rx_byte: got end\n%s", "");
 			end_found = 1;
 		}
 		else if (bytes_read < b_len)
 		{
-			verb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
+			vverb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
 			b_b[bytes_read++] = b_tmp;
 		}
     else
     {
-			verb_printf("uart_rx_byte: nothing worked so done\n%s", "");
+			vverb_printf("uart_rx_byte: nothing worked so done\n%s", "");
       return -1;
     }
 	}
@@ -229,12 +226,6 @@ void uart_init() //{{{
 	if ((ret = ftdi_setflowctrl(ftdi, SIO_DISABLE_FLOW_CTRL)) < 0)
 	{
 		fprintf(stderr, "unable to disable flow control: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	if ((ret = ftdi_set_latency_timer(ftdi, 1)) < 0)
-	{
-		fprintf(stderr, "unable to set latency timer: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);
 	}
 
