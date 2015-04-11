@@ -3,18 +3,20 @@
 #include "control.h"
 #include "blink.h"
 #include "interrupt.h"
+#include "drivers.h"
 
-uint8_t g_error_last = 0;
+uint8_t g_error_last __attribute__ ((section (".noinit"))); // do not zero out on reset
 
 void halt(uint8_t code) //{{{
 {
+	interrupt_disable();
 	led_off(LED_GREEN_bm | LED_YELLOW_bm | LED_RED_bm);
 	led_on(LED_RED_bm);
 
-	// go back to idle mode and remember error
-	g_control_mode = CONTROL_MODE_IDLE;
+	// remember last error
 	g_error_last = code;
-	dma_stop(); // stop getting samples from the ADCs
+	
+	reset();
 
 	/*blink_set_led(LED_RED_bm);
 	blink_set_strobe_count(code);
