@@ -2,7 +2,7 @@
 #include "error.h"
 #include "interrupt.h"
 
-volatile uint16_t g_interrupt;
+static volatile uint16_t g_interrupt;
 
 void interrupt_init() //{{{
 {

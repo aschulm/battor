@@ -11,8 +11,6 @@ typedef enum INTERRUPT_enum
 	INTERRUPT_DMA_CH3 = (1<<5),
 } INTERRUPT_t;
 
-extern volatile uint16_t g_interrupt;
-
 void interrupt_init();
 void inline interrupt_set(uint16_t interrupt);
 void inline interrupt_clear(uint16_t interrupt);
