@@ -1,7 +1,7 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#define BAUD_RATE 400000
+#define BAUD_RATE 2000000
 
 #define VREF 2.048
 
@@ -26,8 +26,11 @@
 #define V_DEV (5.0/(5.0+10.0))
 
 // oversampling
-#define OVERSAMPLE_BITS_DEFAULT 1
+#define OVERSAMPLE_BITS_DEFAULT 0
 #define OVERSAMPLE_BITS_MAX 1
+
+// control
+#define CONTROL_SLEEP_US 100000
 
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 double param_gain(uint32_t desired_gain, uint16_t* amppot_pos);
