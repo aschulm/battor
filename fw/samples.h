@@ -1,7 +1,7 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN 100
+#define SAMPLES_LEN 500
 
 extern uint32_t g_samples_uart_seqnum;
 extern uint16_t g_samples_read_file;
