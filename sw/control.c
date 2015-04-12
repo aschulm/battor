@@ -2,8 +2,6 @@
 
 #include "uart.h"
 
-#define CONTROL_WAIT_US 10000
-
 void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t wait_for_ack) //{{{
 {
 	int ret;
