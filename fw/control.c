@@ -82,16 +82,16 @@ int8_t control_run_message(control_message* m) //{{{
 
 				// setup calibration mode
 				g_control_calibrated = 0;
+
 				// current measurment input to gnd
 				mux_select(MUX_GND); 
 				// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
 				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc; 
 				// wait for things to settle
-				timer_sleep_ms(100);
+				timer_sleep_ms(10);
 
-				// start dma
+				// init dma, but do not start until control read ready message
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
-				dma_start(); // start getting samples from the ADCs
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				g_control_mode = CONTROL_MODE_STORE;
@@ -105,7 +105,7 @@ int8_t control_run_message(control_message* m) //{{{
 				// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
 				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 				// wait for things to settle
-				timer_sleep_ms(100);
+				timer_sleep_ms(10);
 
 				// start dma
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
@@ -126,6 +126,10 @@ int8_t control_run_message(control_message* m) //{{{
 				dma_stop(); // will get samples from the file
 			break;
 			case CONTROL_TYPE_READ_READY:
+				// first frame, start getting samples from the ADCs
+				if (g_samples_uart_seqnum == 0)
+					dma_start(); 
+
 				g_control_read_ready = 1;
 				ret = -1; // don't send ack
 			break;
