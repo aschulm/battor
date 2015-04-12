@@ -69,8 +69,10 @@ void uart_init() //{{{
 
 inline void uart_tx_byte(uint8_t b) //{{{
 {
+	interrupt_disable();
 	loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
 	USARTD0.DATA = b; // put the data in the tx buffer
+	interrupt_enable();
 } //}}}
 
 void uart_tx_start(uint8_t type) //{{{
@@ -107,9 +109,11 @@ inline uint8_t uart_rx_byte() //{{{
 	// wait for byte to arrive
 	while (uart_rx_buffer_read_idx == uart_rx_buffer_write_idx);
 
+	interrupt_disable();
 	ret = uart_rx_buffer[uart_rx_buffer_read_idx++];
 	if (uart_rx_buffer_read_idx >= UART_BUFFER_LEN)
 		uart_rx_buffer_read_idx = 0;
+	interrupt_enable();
 
 	return ret;
 } //}}}
