@@ -58,8 +58,6 @@ int main() //{{{
 
 			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
 			{
-				len = samples_ovsample(g_adca0, g_adcb0, len);
-
 				samples_uart_write(g_adca0, g_adcb0, len);
 				g_control_read_ready = 0;
 
@@ -68,8 +66,6 @@ int main() //{{{
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{
-				len = samples_ovsample(g_adca0, g_adcb0, len);
-
 				samples_store_write(g_adca0, g_adcb0);
 
 				interrupt_clear(INTERRUPT_DMA_CH0);
@@ -95,8 +91,6 @@ int main() //{{{
 
 			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
 			{
-				len = samples_ovsample(g_adca1, g_adcb1, len);
-
 				samples_uart_write(g_adca1, g_adcb1, len);
 				g_control_read_ready = 0;
 
@@ -105,8 +99,6 @@ int main() //{{{
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{
-				len = samples_ovsample(g_adca1, g_adcb1, len);
-
 				samples_store_write(g_adca1, g_adcb1);
 
 				interrupt_clear(INTERRUPT_DMA_CH1);

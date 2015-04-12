@@ -77,19 +77,6 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
-			case 'u':
-				if (atoi(optarg) == 0 || atoi(optarg) == 1)
-				{
-					uart_init();
-					control(CONTROL_TYPE_USB_POWER_SET, atoi(optarg), 0, 1);
-					return EXIT_SUCCESS;
-				}
-				else
-				{
-					usage(argv[0]);
-					return EXIT_FAILURE;
-				}
-			break;
 			case 'b':
 				ovs_bits = atoi(optarg);
 				if (ovs_bits > OVERSAMPLE_BITS_MAX)
@@ -150,7 +137,6 @@ int main(int argc, char** argv)
 	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0, 1);
 	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0, 1);
 	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
-	control(CONTROL_TYPE_OVERSAMPLING_SET, ovs_bits, 0, 1);
 
 	// end configuration recording if enabled
 	if (conf)

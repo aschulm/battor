@@ -72,9 +72,6 @@ int8_t control_run_message(control_message* m) //{{{
 			case CONTROL_TYPE_SAMPLE_TIMER_SET:
 				timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
 			break;
-			case CONTROL_TYPE_OVERSAMPLING_SET:
-				g_samples_ovsamp_bits = m->value1;
-			break;
 			case CONTROL_TYPE_START_SAMPLING_UART:
 				g_control_mode = CONTROL_MODE_STREAM;
 				g_samples_uart_seqnum = 0;
