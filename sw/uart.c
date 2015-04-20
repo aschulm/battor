@@ -1,9 +1,4 @@
-#if defined(__linux__)
-	#include <libftdi1/ftdi.h>
-#endif
-#if defined(__APPLE__)
-	#include <libftdi1/ftdi.h>
-#endif
+#include <libftdi1/ftdi.h>
 
 #include "common.h"
 #include "uart.h"
@@ -199,7 +194,7 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6011)) < 0)
+	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x8077)) < 0)
 	{
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);
