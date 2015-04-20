@@ -194,7 +194,7 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x8477)) < 0)
+	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x77E0)) < 0)
 	{
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);
