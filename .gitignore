@@ -8,6 +8,7 @@ battor
 *.in
 *.m4
 *.log
+config.h
 compile
 config.status
 configure
