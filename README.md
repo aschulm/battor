@@ -23,7 +23,7 @@ driver.
 ### Firmware
 
 #### Dependencies
-* [AVR toolchain] >3.4 (http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx).
+* [AVR 8-bit toolchain](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx) >3.4
 
 The firmware currently only builds on Linux.
 
