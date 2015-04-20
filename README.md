@@ -7,16 +7,10 @@
 
 ## Build and install instructions
 
-### Firmware
-
-To build the firmware you will need avr-binutils, avr-gcc, and avr-libc; to
-flash it to the BattOr you need avrdude. You can download the latest AVR
-toolchain [here](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx).
-
-    $ make
-    $ make flash (hit the reset button on BattOr as you hit return)
-
 ### Software
+
+#### Dependencies
+* libftdi >1.0 (must build [from source](http://www.intra2net.com/en/developer/libftdi/download.php) for Ubuntu 14.04)
 
 The software should build and run on Linux and OSX. However, if you are
 using OSX 10.9 (Maverics) you will need to disable the OSX FTDI USB-to-serial
@@ -28,3 +22,11 @@ To do so, follow the OSX 10.9 install instructions
     $ ./bootstrap
     $ ./configure
     $ make
+    
+### Firmware
+
+#### Dependencies
+* [AVR toolchain] >3.4 (http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx).
+
+    $ make
+    $ make flash
