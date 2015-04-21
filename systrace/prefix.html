@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+<head i18n-values="dir:textdirection;">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta charset="utf-8"/>
+<title>Android System Trace</title>
+<style>
+  html, body {
+    box-sizing: border-box;
+    overflow: hidden;
+    margin: 0px;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+  body > x-timeline-view {
+    width: 100%;
+    height: 100%;
+  }
+</style>
+{{SYSTRACE_TRACE_VIEWER_HTML}}
+<script language="javascript">
+document.addEventListener('DOMContentLoaded', function() {
+  var traceViewerEl = new tv.TraceViewer();
+  traceViewerEl.viewTitle = 'Android System Trace';
+  var viewInsertionPt = document.body.querySelector('#trace-viewer-insertion-pt');
+  viewInsertionPt.parentElement.replaceChild(traceViewerEl, viewInsertionPt);
+
+  var m = new tv.c.TraceModel();
+
+  var traceDataEls = document.body.querySelectorAll('.trace-data');
+  var traces = [];
+	for (var i = 0; i < traceDataEls.length; i++) {
+	  traceText = traceDataEls[i].textContent;
+		traceText = traceText.substring(1);
+    traces.push(traceText);
+  }
+
+  var p = m.importTracesWithProgressDialog(traces, true);
+  p.then(
+    function() {
+      traceViewerEl.model = m;
+      traceViewerEl.tabIndex = 1;
+      if (traceViewerEl.timeline)
+        traceViewerEl.timeline.focusElement = traceViewerEl;
+    },
+    function(err) {
+      var overlay = new tv.ui.Overlay();
+      overlay.textContent = tv.normalizeException(err).message;
+      overlay.title = 'Import error';
+      overlay.visible = true;
+    });
+});
+</script>
+</head>
+<body>
+  <div id="trace-viewer-insertion-pt">
+  </div>
