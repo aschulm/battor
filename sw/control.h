@@ -12,7 +12,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_START_REC_CONTROL,   // init recording the control messages to the SD card
 	CONTROL_TYPE_END_REC_CONTROL,     // write the control messages to the SD card
 	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
-	CONTROL_TYPE_READ_READY           // ready to start receiving next round of samples
+	CONTROL_TYPE_READ_READY,          // ready to start receiving next round of samples
+	CONTROL_TYPE_RESET                // reset the MCU
 } CONTROL_TYPE_t;
 
 struct control_message_

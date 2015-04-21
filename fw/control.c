@@ -130,6 +130,9 @@ int8_t control_run_message(control_message* m) //{{{
 				g_control_read_ready = 1;
 				ret = -1; // don't send ack
 			break;
+			case CONTROL_TYPE_RESET:
+				reset();
+			break;
 		}
 	}
 	return ret;

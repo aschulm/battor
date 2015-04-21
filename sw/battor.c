@@ -11,6 +11,7 @@ BattOr's PC companion                                                           
 usage: %s -s <options>               stream power measurements over USB               \n\
    or: %s -d                         download power measurement from SD card          \n\
    or: %s -c <options>               format the SD card and upload the configuration  \n\
+   or: %s -k                         restart the MCU                                  \n\
                                                                                       \n\
 Options:                                                                              \n\
   -r <rate> : sample rate (default %d Hz)                                             \n\
@@ -18,7 +19,7 @@ Options:                                                                        
   -b <bits> : set the number of bits to obtain through oversampling (default %d max 1)\n\
   -v(v) : verbose printing for debugging                                                 \n\
                                                                                       \n\
-", name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
+", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -26,7 +27,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char usb = 0, conf = 0, down = 0;
+	char usb = 0, conf = 0, down = 0, reset = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -34,7 +35,7 @@ int main(int argc, char** argv)
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 	double gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
 	double current_offset = 0;
-	uint32_t	sample_rate = SAMPLE_RATE_HZ_DEFAULT;
+	uint32_t sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 
 	// need an option
 	if (argc < 2)
@@ -45,7 +46,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "scd:b:r:g:o:vhu:")) != -1)
+	while ((opt = getopt(argc, argv, "scd:b:r:g:o:vhu:k")) != -1)
 	{
 		switch(opt)
 		{
@@ -85,6 +86,12 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
+			case 'f':
+				
+			break;
+			case 'k':
+				reset = 1;
+			break ; 
 			case 'v':
 				g_verb++;
 			break;
@@ -117,6 +124,11 @@ int main(int argc, char** argv)
 
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
+	if (reset)
+	{
+		control(CONTROL_TYPE_RESET, 0, 0, 0);
+		return EXIT_SUCCESS;
+	}
 
 	// download file
 	if (down)
