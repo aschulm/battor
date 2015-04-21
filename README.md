@@ -4,6 +4,7 @@
 
 * fw - Atmel XMega192A3 firmware for the BattOr hardware
 * sw - PC software for configuring and installing BattOr
+* systrace - Fork of Android systrace for visualizing power measurments synced with phone events
 
 ## Build and install instructions
 
@@ -21,6 +22,10 @@ driver.
     $ make
     $ sudo make install
     
+### Systrace
+
+* 
+
 ### Firmware
 
 #### Dependencies
