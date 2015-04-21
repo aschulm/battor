@@ -119,7 +119,7 @@ int8_t control_run_message(control_message* m) //{{{
 			case CONTROL_TYPE_READ_FILE:
 				g_control_mode = CONTROL_MODE_READ_FILE;
 				g_samples_uart_seqnum = 0;
-				g_samples_read_file = m->value1;
+				store_read_open(m->value1);
 				dma_stop(); // will get samples from the file
 			break;
 			case CONTROL_TYPE_READ_READY:

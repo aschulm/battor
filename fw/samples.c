@@ -5,7 +5,6 @@
 #include "error.h"
 
 uint32_t g_samples_uart_seqnum;
-uint16_t g_samples_read_file;
 int16_t g_adca0[SAMPLES_LEN], g_adca1[SAMPLES_LEN], g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
 
 void samples_uart_write(int16_t* v_s, int16_t* i_s, uint16_t len) //{{{
@@ -55,26 +54,14 @@ void samples_store_write(int16_t* v_s, int16_t* i_s) //{{{
 	store_write_bytes((uint8_t*)i_s, len);
 } //}}}
 
-void samples_store_read(uint16_t file) //{{{
+uint16_t samples_store_read_next(int16_t* v_s, int16_t* i_s) //{{{
 {
-	uint16_t len = SAMPLES_LEN * sizeof(int16_t);
+	uint16_t len = SAMPLES_LEN;
 	int ret_v = 0, ret_i = 0;
 
-	// open file
-	store_read_open(file);
-
 	// read voltage
-	ret_v = store_read_bytes((uint8_t*)g_adca0, len);
+	ret_v = store_read_bytes((uint8_t*)v_s, len);
 	// read current
-	ret_i = store_read_bytes((uint8_t*)g_adcb0, len);
-	while (ret_v >= 0 && ret_i >= 0)
-	{
-		samples_uart_write(g_adca0, g_adcb0, SAMPLES_LEN);
-		// read voltage
-		ret_v = store_read_bytes((uint8_t*)g_adca0, len);
-		// read current
-		ret_i = store_read_bytes((uint8_t*)g_adcb0, len);
-	}
-	samples_uart_write(NULL, NULL, 0); // no more samples
-
+	ret_i = store_read_bytes((uint8_t*)i_s, len);
+	return (ret_v >= 0 && ret_i >= 0) ? len : 0;
 } //}}}

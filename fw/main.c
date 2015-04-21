@@ -107,10 +107,15 @@ int main() //{{{
 		}
 
 		// need to read a file
-		if (g_control_mode == CONTROL_MODE_READ_FILE)
+		if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
 		{
-			g_control_mode = CONTROL_MODE_IDLE;
-			samples_store_read(g_samples_read_file);
+			uint16_t len = samples_store_read_next(g_adca0, g_adcb0);
+
+			if (len > 0)
+				samples_uart_write(g_adca0, g_adcb0, len);
+			else
+				samples_uart_write(NULL, NULL, 0);
+			g_control_read_ready = 0;
 		}
 	}
 

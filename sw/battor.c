@@ -7,18 +7,18 @@ char g_verb = 0;
 void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
-BattOr's PC companion                                                               \n\n\
-usage: %s -s <options>               stream power measurements over USB               \n\
-   or: %s -d                         download power measurement from SD card          \n\
-   or: %s -c <options>               format the SD card and upload the configuration  \n\
-   or: %s -k                         restart the MCU                                  \n\
-                                                                                      \n\
-Options:                                                                              \n\
-  -r <rate> : sample rate (default %d Hz)                                             \n\
-  -g <gain> : current gain (default %dx) set to hit max then reduce                   \n\
-  -b <bits> : set the number of bits to obtain through oversampling (default %d max 1)\n\
-  -v(v) : verbose printing for debugging                                                 \n\
-                                                                                      \n\
+BattOr's PC companion                                                                \n\n\
+usage: %s -s <options>               *stream* power measurements over USB              \n\
+   or: %s -d                         *download* power measurement from SD card         \n\
+   or: %s -f <options>               *format* the SD card and upload the configuration \n\
+   or: %s -k                         *restart* the MCU                                 \n\
+                                                                                       \n\
+Options:                                                                               \n\
+  -r <rate> : sample rate (default %d Hz)                                              \n\
+  -g <gain> : current gain (default %dx) set to hit max then reduce                    \n\
+  -b <bits> : set the number of bits to obtain through oversampling (default %d max 1) \n\
+  -v(v) : verbose printing for debugging                                               \n\
+                                                                                       \n\
 ", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
 } //}}}
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char usb = 0, conf = 0, down = 0, reset = 0;
+	char usb = 0, format = 0, down = 0, reset = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "scd:b:r:g:o:vhu:k")) != -1)
+	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:k")) != -1)
 	{
 		switch(opt)
 		{
@@ -62,8 +62,8 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
-			case 'c':
-				conf = 1;				
+			case 'f':
+				format = 1;				
 			break;
 			case 'd':
 				down = 1;
@@ -85,9 +85,6 @@ int main(int argc, char** argv)
 					usage(argv[0]);
 					return EXIT_FAILURE;
 				}
-			break;
-			case 'f':
-				
 			break;
 			case 'k':
 				reset = 1;
@@ -139,7 +136,7 @@ int main(int argc, char** argv)
 	}
 
 	// start configuration recording if enabled
-	if (conf)
+	if (format)
 	{
 		srand(time(NULL));
 		control(CONTROL_TYPE_START_REC_CONTROL, rand() & 0xFFFF, 0, 1);
@@ -151,7 +148,7 @@ int main(int argc, char** argv)
 	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
 
 	// end configuration recording if enabled
-	if (conf)
+	if (format)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 		control(CONTROL_TYPE_END_REC_CONTROL, 0, 0, 1);
