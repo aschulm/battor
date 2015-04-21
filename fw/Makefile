@@ -11,12 +11,7 @@ FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
 DEBUG_PORT = 4242
 
-UNAME_S = $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	USBDEV = /dev/tty.usbserial-battorv3
-else
-	USBDEV = /dev/ttyUSB0
-endif
+USBDEV = /dev/ttyUSB0
 
 COMPILE = avr-gcc $(CFLAGS) 
 
@@ -36,10 +31,14 @@ all:	main.hex
 .c.s:
 	$(COMPILE) -S $< -o $@
 
-flash:	all
+flash: all
+	@battor -k
+	@modprobe ftdi-sio
+	@echo 0403 77E0 > /sys/bus/usb-serial/drivers/ftdi_sio/new_id
 	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
+	@modprobe -r ftdi-sio
 
-flash_mkII:	all
+flash_mkII: all
 	avrdude -p x192a3u -c avrispmkII -P usb -U flash:w:main.hex
 
 flash_ICE: all
@@ -93,14 +92,6 @@ debug: gdb-config main.elf
 
 dist-gzip:
 	tar cvfz battor-atmel-$(VERSION).tar.gz *.h *.c Makefile
-
-flash_ftdi_eeprom:
-	#
-	# Make sure you are using the git version of libftdi, **not** the Ubuntu package!
-	# 
-	#sudo modprobe -r ftdi_sio
-	sudo ftdi_eeprom --flash-eeprom battor.ftdi
-	#sudo modprobe ftdi_sio
 
 console:
 	picocom -b 115200 $(USBDEV)
