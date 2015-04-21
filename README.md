@@ -19,13 +19,14 @@ driver.
     $ ./bootstrap
     $ ./configure
     $ make
+    $ sudo make install
     
 ### Firmware
 
 #### Dependencies
 * [AVR 8-bit toolchain](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx) >3.4
 
-The firmware currently only builds on Linux.
+The firmware currently only builds on Linux. The BattOr software must be in $PATH to flash the firmware.
 
     $ make
     $ make flash
