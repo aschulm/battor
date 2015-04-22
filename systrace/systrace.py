@@ -198,7 +198,7 @@ def main():
     # Enable voltage regulator tracing
     vregtrace_args = [battor_vregtrace_sh, '1']
     try:
-      vregtrace = subprocess.Popen(battor_vregtrace_args,  stdout=subprocess.PIPE,
+      vregtrace = subprocess.Popen(vregtrace_args,  stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
       vregtrace.wait()
     except:
@@ -302,7 +302,7 @@ def main():
   if battor is not None:
     vregtrace_args = [battor_vregtrace_sh, '0']
     try:
-     vregtrace = subprocess.Popen(battor_vregtrace_args,  stdout=subprocess.PIPE,
+     vregtrace = subprocess.Popen(vregtrace_args,  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
      vregtrace.wait()
     except:
