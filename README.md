@@ -30,7 +30,11 @@ To run BattOr without root on Linux you will need to add the BattOr to your udev
     
 ### Systrace
 
-* 
+#### Dependencies
+* Chrome
+* Android adb
+
+Systrace collects trace data from BattOr and Android and produces an interactive timeline view of the data in html using [trace-viewer](http://github.com/google/trace-viewer).
 
 ### Firmware
 
