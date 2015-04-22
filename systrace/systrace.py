@@ -14,9 +14,9 @@ import errno, optparse, os, re, select, subprocess, signal, sys, time, zlib
 
 flattened_html_file = 'systrace_trace_viewer.html'
 
-battor_exec = os.path.join('battor', 'sw', 'battor')
-battor_charge_sh = os.path.join('battor', 'scripts', 'charge.sh')
-battor_sync_sh = os.path.join('battor', 'scripts', 'sync.sh')
+battor_exec = os.path.join('..', 'sw', 'battor')
+battor_charge_sh = os.path.join('..', 'scripts', 'charge.sh')
+battor_sync_sh = os.path.join('..', 'scripts', 'sync.sh')
 
 class OptionParserIgnoreErrors(optparse.OptionParser):
   def error(self, msg):
@@ -153,7 +153,7 @@ def main():
   isn't needed
   '''
   battor = None
-  battor_args = [os.path.join(script_dir, battor_exec), '-r', '20000', '-s']
+  battor_args = [battor_exec, '-r', '10000', '-s']
   try:
     battor_file_write = open('/tmp/battor', 'w')
     battor = subprocess.Popen(battor_args,  stdout=battor_file_write,
@@ -161,12 +161,13 @@ def main():
     select_rlist += [battor.stderr]
     select_xlist += [battor.stderr]
   except:
-    battor_file.close()
+    print 'Missing battor exec?'
+    battor_file_write.close()
     pass 
 
   # Disable charging
   if (battor is not None):
-    charging_args = [os.path.join(script_dir, battor_charge_sh), '0']
+    charging_args = [battor_charge_sh, '0']
     try:
       charging = subprocess.Popen(charging_args)
       charging.wait()
@@ -205,7 +206,7 @@ def main():
 
   # Execute BattOr sync
   if battor is not None:
-    sync_args = [os.path.join(script_dir, battor_sync_sh)]
+    sync_args = [battor_sync_sh]
     try:
       sync = subprocess.Popen(sync_args,  stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
@@ -294,7 +295,7 @@ def main():
 
   # Enable charging
   if battor is not None:
-    charging_args = [os.path.join(script_dir, battor_charge_sh), '1']
+    charging_args = [battor_charge_sh, '1']
     try:
       charging = subprocess.Popen(charging_args,  stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)

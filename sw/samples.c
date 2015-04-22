@@ -126,11 +126,11 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			i_s[i].signal -= i_cal;
 			v_s[i].signal -= v_cal;
 
-			double sec = sample_num/((double)sample_rate);
+			double msec = (sample_num/((double)sample_rate)) * 1000.0;
 			double mv = sample_v(v_s + i);
 			double mi = sample_i(i_s + i, gain, current_offset);
 
-			printf("%f %f %f\n", sec, mi, mv);
+			printf("%f %f %f\n", msec, mi, mv);
 
 			sample_num++;
 		}

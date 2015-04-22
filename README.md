@@ -4,6 +4,7 @@
 
 * fw - Atmel XMega192A3 firmware for the BattOr hardware
 * sw - PC software for configuring and installing BattOr
+* systrace - Fork of Android systrace for visualizing power measurments synced with phone events
 
 ## Build and install instructions
 
@@ -20,7 +21,17 @@ driver.
     $ ./configure
     $ make
     $ sudo make install
+
+To run BattOr without root on Linux you will need to add the BattOr to your udev rules.
+
+    $ sudo echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", GROUP="plugdev", MODE="0660"' > /etc/udev/rules.d/99-libftdi.rules"
+    $ sudo udevadm control --reload-rules
+    $ sudo udevadm trigger
     
+### Systrace
+
+* 
+
 ### Firmware
 
 #### Dependencies
