@@ -17,6 +17,7 @@ flattened_html_file = 'systrace_trace_viewer.html'
 battor_exec = os.path.join('..', 'sw', 'battor')
 battor_charge_sh = os.path.join('..', 'scripts', 'charge.sh')
 battor_sync_sh = os.path.join('..', 'scripts', 'sync.sh')
+battor_vregtrace_sh = os.path.join('..', 'scripts', 'vregtrace.sh')
 
 class OptionParserIgnoreErrors(optparse.OptionParser):
   def error(self, msg):
@@ -129,8 +130,6 @@ def main():
     if options.kfuncs is not None:
       atrace_args.extend(['-k', options.kfuncs])
 
-    # must trace regulators for battor sync
-    atrace_args.extend(["regulator"])
     atrace_args.extend(args)
 
   script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -196,6 +195,17 @@ def main():
 
     battor_file_read.close()
 
+    # Enable voltage regulator tracing
+    vregtrace_args = [battor_vregtrace_sh, '1']
+    try:
+      vregtrace = subprocess.Popen(battor_vregtrace_args,  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+      vregtrace.wait()
+    except:
+      print "vregtrace.sh missing?"
+      sys.exit(1)
+
+  # Start atrace
   atrace_start_args = ['adb', 'shell', 'atrace', '--async_start'] + atrace_args
   add_adb_serial(atrace_start_args, options.device_serial)
   adb = subprocess.Popen(atrace_start_args)
@@ -287,6 +297,17 @@ def main():
   adb = subprocess.Popen(atrace_stop_args, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
   adb.wait()
+
+  # Enable voltage regulator tracing
+  if battor is not None:
+    vregtrace_args = [battor_vregtrace_sh, '0']
+    try:
+     vregtrace = subprocess.Popen(battor_vregtrace_args,  stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+     vregtrace.wait()
+    except:
+     print "vregtrace.sh missing?"
+     sys.exit(1)
 
   # Stop BattOr collection
   if battor is not None:
