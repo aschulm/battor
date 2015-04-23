@@ -228,6 +228,11 @@ def main():
   # Delay after sync to ensure it is in trace
   time.sleep(2)
 
+  # Stop BattOr collection
+  if battor is not None:
+    battor.send_signal(signal.SIGINT)
+    battor_file_write.close()
+
   atrace_dump_args = ['adb', 'shell', 'atrace', '--async_dump'] + atrace_args
   if options.fix_threads:
     atrace_dump_args.extend([';', 'ps', '-t'])
@@ -298,7 +303,7 @@ def main():
                          stderr=subprocess.PIPE)
   adb.wait()
 
-  # Enable voltage regulator tracing
+  # Disable voltage regulator tracing
   if battor is not None:
     vregtrace_args = [battor_vregtrace_sh, '0']
     try:
@@ -308,11 +313,6 @@ def main():
     except:
      print "vregtrace.sh missing?"
      sys.exit(1)
-
-  # Stop BattOr collection
-  if battor is not None:
-    battor.send_signal(signal.SIGINT)
-    battor_file_write.close()
 
   # Enable charging
   if battor is not None:
