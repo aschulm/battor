@@ -12,9 +12,9 @@ void samples_init(uint16_t ovs_bits) //{{{
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-double sample_v(sample* s) //{{{
+double sample_v(sample* s, uint8_t warning) //{{{
 {
-	if (s->signal == s_adc_top)
+	if (warning && s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 	if (s->signal < 0)
 		s->signal = 0;
@@ -22,10 +22,10 @@ double sample_v(sample* s) //{{{
 	return (v_adcv / V_DEV) * 1000.0; // undo the voltage divider
 } //}}}
 
-double sample_i(sample* s, double gain, double current_offset) //{{{
+double sample_i(sample* s, double gain, double current_offset, uint8_t warning) //{{{
 {
 	// current
-	if (s->signal == s_adc_top)
+	if (warning && s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum current, won't hurt anything, but you should turn down the gain.\n");
 
 	if (s->signal < 0)
@@ -127,8 +127,8 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 			v_s[i].signal -= v_cal;
 
 			double msec = (sample_num/((double)sample_rate)) * 1000.0;
-			double mv = sample_v(v_s + i);
-			double mi = sample_i(i_s + i, gain, current_offset);
+			double mv = sample_v(v_s + i, 1);
+			double mi = sample_i(i_s + i, gain, current_offset, 1);
 
 			printf("%f %f %f\n", msec, mi, mv);
 
