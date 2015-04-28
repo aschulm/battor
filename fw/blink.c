@@ -62,6 +62,9 @@ void blink_ms_timer_update()
 
 void blink_set_led(uint8_t led)
 {
+	// turn of old blink led
+	led_off(blink_led);
+
 	blink_led = led;
 }
 
