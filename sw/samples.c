@@ -8,13 +8,13 @@ static double s_adc_top;
 void samples_init(uint16_t ovs_bits) //{{{
 {
 	// determine ADC_TOP with ovsersampling
-	s_adc_top = pow(2, (ADC_BITS + ovs_bits));
+	s_adc_top = pow(2, (ADC_BITS + ovs_bits)) - 1;
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
 double sample_v(sample* s) //{{{
 {
-	if (s->signal == (s_adc_top-1))
+	if (s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 	if (s->signal < 0)
 		s->signal = 0;
@@ -25,7 +25,7 @@ double sample_v(sample* s) //{{{
 double sample_i(sample* s, double gain, double current_offset) //{{{
 {
 	// current
-	if (s->signal == (s_adc_top-1))
+	if (s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum current, won't hurt anything, but you should turn down the gain.\n");
 
 	if (s->signal < 0)
