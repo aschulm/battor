@@ -12,7 +12,7 @@
 
 #### Dependencies
 * libboost-all-dev >= 1.54 (for libftdi)
-* libusb-dev >= 1.0 (for libftdi)
+* libusb-1.0.0-dev >= 1.0 (for libftdi)
 * libftdi >= 1.0 (must build [from source](http://www.intra2net.com/en/developer/libftdi/download.php) for Ubuntu 14.04)
 
 The software should build and run on Linux and OSX. However, if you are
