@@ -38,7 +38,7 @@ double sample_i(sample* s, double gain, double current_offset, uint8_t warning) 
 	return i_samp;
 } //}}}
 
-uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
+int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 {
 	samples_hdr* hdr;
 	uint8_t frame[50000];
@@ -62,6 +62,11 @@ uint16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 		if (hdr->seqnum != *seqnum + 1)
 			fprintf(stderr, "warning: expected sample frame seqnum %d got seqnum %d\n", *seqnum + 1, hdr->seqnum);
 	}
+
+	// end of file read
+	if (hdr->samples_len == 0)
+		return -1;
+
 	*seqnum = hdr->seqnum;
 
 	memcpy(v_s, frame_ptr, hdr->samples_len);
@@ -79,7 +84,7 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	sample v_s[2000], i_s[2000];
 	uint32_t seqnum = 0;
 	uint32_t sample_num = 0;
-	uint16_t samples_len = 0;
+	int16_t samples_len = 0;
 	int32_t v_cal = 0, i_cal = 0;
 	sigset_t sigs;
 
@@ -114,7 +119,11 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 	// main sample read loop
 	while(1)
 	{
-		while ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0)
+		while ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0);
+
+		// end of file, quit read loop
+		if (samples_len < 0)
+			return;
 
 		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
 
