@@ -48,6 +48,7 @@ int8_t control_run_message(control_message* m) //{{{
 	}
 	else
 	{
+		int8_t filenum;
 		uint16_t pos;
 		switch (m->type)
 		{
@@ -91,22 +92,33 @@ int8_t control_run_message(control_message* m) //{{{
 				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
-				g_control_mode = CONTROL_MODE_STORE;
-				blink_set_led(LED_GREEN_bm | LED_YELLOW_bm);
-				blink_set_strobe_count(store_write_open());
+				filenum = store_write_open();
 
-				// setup calibration
-				g_control_calibrated = 0;
-				// current measurement input to gnd
-				mux_select(MUX_GND);
-				// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
-				// wait for things to settle
-				timer_sleep_ms(10);
+				// max files reached, return to idle
+				if (filenum < 0)
+				{
+					g_control_mode = CONTROL_MODE_IDLE;
+					ret = -1;
+				}
+				else
+				{
+					g_control_mode = CONTROL_MODE_STORE;
+					blink_set_led(LED_RED_bm);
+					blink_set_strobe_count(filenum);
 
-				// start dma
-				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
-				dma_start(); // start getting samples from the ADCs
+					// setup calibration
+					g_control_calibrated = 0;
+					// current measurement input to gnd
+					mux_select(MUX_GND);
+					// voltage to voltage to measure offset, for some reason it's better to do v to v than gnd to gnd
+					ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+					// wait for things to settle
+					timer_sleep_ms(10);
+
+					// start dma
+					dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
+					dma_start(); // start getting samples from the ADCs
+				}
 			break;
 			case CONTROL_TYPE_START_REC_CONTROL:
 				g_control_mode = CONTROL_MODE_REC_CONTROL;

@@ -73,10 +73,11 @@ int main() //{{{
 			}
 		}
 		
+		uint16_t len = SAMPLES_LEN;
+
 		// other ADCA and ADCB DMA channels (double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
-			uint16_t len = SAMPLES_LEN;
 
 			// calibration finished, setup normal measurement operation
 			if (!g_control_calibrated)
@@ -109,9 +110,7 @@ int main() //{{{
 		// need to read a file
 		if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
 		{
-			uint16_t len = samples_store_read_next(g_adca0, g_adcb0);
-
-			if (len > 0)
+			if (samples_store_read_next(g_adca0, g_adcb0) > 0)
 				samples_uart_write(g_adca0, g_adcb0, len);
 			else
 				samples_uart_write(NULL, NULL, 0);

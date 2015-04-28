@@ -17,7 +17,7 @@ static void startblock_init(uint16_t rand) //{{{
 	sb.rand = rand;
 } //}}}
 
-uint8_t store_init() //{{{
+int8_t store_init() //{{{
 {
 	sd_info info;
 	// check to see if there is an SD card, if so init it
@@ -49,11 +49,18 @@ void store_run_commands() //{{{
 
 	// run stored control messages
 	for (i = 0; i < sb.control_len; i++)
-		control_run_message(sb.control + i);
+	{
+		// run commands, if error then stop running commands
+		if (control_run_message(sb.control + i) < 0)
+			return;
+	}
 } //}}}
 
-uint16_t store_write_open() //{{{
+int8_t store_write_open() //{{{
 {
+	if (sb.written >= STORE_MAX_FILES)
+		return -1;
+
 	// new file, increment the written counter and store it
 	sb.written += 1;
 	sd_write_block(&sb, STORE_STARTBLOCK_IDX);
