@@ -14,17 +14,23 @@ static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
 ISR(USARTD0_RXC_vect) //{{{
 {
+	// UART error, just skip it
 	if ((USARTD0.STATUS & USART_FERR_bm) > 0 || (USARTD0.STATUS & USART_BUFOVF_bm) > 0)
-		halt(0);
-
-	// read bytes until USART fifo is empty
-	while ((USARTD0.STATUS & USART_RXCIF_bm) > 0)
 	{
-		uart_rx_buffer[uart_rx_buffer_write_idx++] = USARTD0.DATA;
-		if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
-			uart_rx_buffer_write_idx = 0;
+		uint8_t tmp = USARTD0.DATA;
+		USARTD0.STATUS = 0;
 	}
-	interrupt_set(INTERRUPT_UART_RX);
+	else
+	{
+		// read bytes until USART fifo is empty
+		while ((USARTD0.STATUS & USART_RXCIF_bm) > 0)
+		{
+			uart_rx_buffer[uart_rx_buffer_write_idx++] = USARTD0.DATA;
+			if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
+				uart_rx_buffer_write_idx = 0;
+		}
+		interrupt_set(INTERRUPT_UART_RX);
+	}
 } //}}}
 
 #ifdef DEBUG
