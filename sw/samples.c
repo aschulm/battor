@@ -8,7 +8,7 @@ static double s_adc_top;
 void samples_init(uint16_t ovs_bits) //{{{
 {
 	// determine ADC_TOP with ovsersampling
-	s_adc_top = pow(2, (ADC_BITS + ovs_bits)) - 1;
+	s_adc_top = pow(2, (ADC_BITS + ovs_bits));
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
