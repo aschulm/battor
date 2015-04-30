@@ -12,29 +12,26 @@ void samples_init(uint16_t ovs_bits) //{{{
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-double sample_v(sample* s, uint8_t warning) //{{{
+double sample_v(sample* s, double cal, uint8_t warning) //{{{
 {
 	if (warning && s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
-	if (s->signal < 0)
-		s->signal = 0;
-	double v_adcv = (((double)(s->signal)) / s_adc_top) * VREF;
+
+	double v_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	return (v_adcv / V_DEV) * 1000.0; // undo the voltage divider
 } //}}}
 
-double sample_i(sample* s, double gain, double current_offset, uint8_t warning) //{{{
+double sample_i(sample* s, double cal, double gain, uint8_t warning) //{{{
 {
 	// current
 	if (warning && s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum current, won't hurt anything, but you should turn down the gain.\n");
 
-	if (s->signal < 0)
-		s->signal = 0;
-	double i_adcv = (((double)(s->signal)) / s_adc_top) * VREF;
+	double i_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	double i_adcv_unamp = i_adcv / gain; // undo the current gain
-	double i_samp = ((i_adcv_unamp / IRES_OHM) * 1000.0) - current_offset;
-	if (i_samp < 0)
-		i_samp = 0;
+	double i_samp = ((i_adcv_unamp / IRES_OHM) * 1000.0);
+	//if (i_samp < 0)
+		//i_samp = 0;
 	return i_samp;
 } //}}}
 
@@ -78,14 +75,14 @@ int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(double gain, double current_offset, double ovs_bits, char verb, uint32_t sample_rate) //{{{
+void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample_rate) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
 	uint32_t seqnum = 0;
 	uint32_t sample_num = 0;
 	int16_t samples_len = 0;
-	int32_t v_cal = 0, i_cal = 0;
+	double v_cal = 0, i_cal = 0;
 	sigset_t sigs;
 
 	// will block and unblock SIGINT
@@ -106,15 +103,15 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 
 	for (i = 0; i < samples_len; i++)
 	{
-		verb_printf("i_cal %d\n", i_s[i].signal);
 		verb_printf("v_cal %d\n", v_s[i].signal);
+		verb_printf("i_cal %d\n", i_s[i].signal);
 
 		v_cal += v_s[i].signal;
 		i_cal += i_s[i].signal;
 	}
 	v_cal = v_cal / samples_len;
 	i_cal = i_cal / samples_len;
-	verb_printf("v_cal_avg %d, i_cal_avg %d\n", v_cal, i_cal);	
+	verb_printf("v_cal_avg %f, i_cal_avg %f\n", v_cal, i_cal);	
 
 	// main sample read loop
 	while(1)
@@ -129,15 +126,12 @@ void samples_print_loop(double gain, double current_offset, double ovs_bits, cha
 
 		for (i = 0; i < samples_len; i++)
 		{
-			verb_printf("i %d %d\n", i_s[i].signal, i_s[i].signal - i_cal);
-			verb_printf("v %d %d\n", v_s[i].signal, v_s[i].signal - v_cal);
-
-			i_s[i].signal -= i_cal;
-			v_s[i].signal -= v_cal;
+			verb_printf("i %d %f\n", i_s[i].signal, i_s[i].signal - i_cal);
+			verb_printf("v %d %f\n", v_s[i].signal, v_s[i].signal - v_cal);
 
 			double msec = (sample_num/((double)sample_rate)) * 1000.0;
-			double mv = sample_v(v_s + i, 1);
-			double mi = sample_i(i_s + i, gain, current_offset, 1);
+			double mv = sample_v(v_s + i, v_cal, 1);
+			double mi = sample_i(i_s + i, i_cal, gain, 1);
 
 			printf("%f %f %f\n", msec, mi, mv);
 

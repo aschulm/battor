@@ -34,7 +34,6 @@ int main(int argc, char** argv)
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 	double gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
-	double current_offset = 0;
 	uint32_t sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 
 	// need an option
@@ -112,8 +111,8 @@ int main(int argc, char** argv)
 	min_s.signal = 0;
 	max_s.signal = (1 << (ADC_BITS + ovs_bits)) - 1;
 	printf("# BattOr\n");
-	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, 0), sample_v(&max_s, 0));
-	printf("# current range [%f, %f] mA\n", sample_i(&min_s, gain, current_offset, 0), sample_i(&max_s, gain, current_offset, 0));
+	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, 0.0, 0), sample_v(&max_s, 0.0, 0));
+	printf("# current range [%f, %f] mA\n", sample_i(&min_s, 0.0, gain, 0), sample_i(&max_s, 0.0, gain, 0));
 	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 
@@ -132,7 +131,7 @@ int main(int argc, char** argv)
 	{
 		// read configuration
 		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
-		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
+		samples_print_loop(gain, ovs_bits, g_verb, sample_rate);
 	}
 
 	// start configuration recording if enabled
@@ -157,7 +156,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-		samples_print_loop(gain, current_offset, ovs_bits, g_verb, sample_rate);
+		samples_print_loop(gain, ovs_bits, g_verb, sample_rate);
 	}
 	
 	return EXIT_SUCCESS;
