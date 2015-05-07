@@ -31,7 +31,7 @@ driver.
 To run BattOr without root on Linux you will need to add the BattOr to your udev rules.
 
     $ sudo su
-    $ echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", GROUP="plugdev", MODE="0660"' > /etc/udev/rules.d/99-libftdi.rules"
+    $ echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", GROUP="plugdev", MODE="0660"' > /etc/udev/rules.d/99-libftdi.rules
     $ udevadm control --reload-rules
     $ udevadm trigger
     
