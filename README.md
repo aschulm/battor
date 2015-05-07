@@ -45,7 +45,9 @@ Systrace collects trace data from BattOr and Android and produces an interactive
 ### Firmware
 
 #### Dependencies
+* BattOr software installed
 * [AVR 8-bit toolchain](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx) >3.4
+* avrdude
 
 The firmware currently only builds on Linux. The BattOr software must be in $PATH to flash the firmware.
 
