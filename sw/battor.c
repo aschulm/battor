@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char usb = 0, format = 0, down = 0, reset = 0;
+	char usb = 0, format = 0, down = 0, reset = 0, test = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:k")) != -1)
+	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:kt")) != -1)
 	{
 		switch(opt)
 		{
@@ -87,7 +87,10 @@ int main(int argc, char** argv)
 			break;
 			case 'k':
 				reset = 1;
-			break ; 
+			break; 
+			case 't':
+				test = 1;
+			break;
 			case 'v':
 				g_verb++;
 			break;
@@ -131,7 +134,7 @@ int main(int argc, char** argv)
 	{
 		// read configuration
 		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
-		samples_print_loop(gain, ovs_bits, g_verb, sample_rate);
+		samples_print_loop(gain, ovs_bits, g_verb, sample_rate, 0);
 	}
 
 	// start configuration recording if enabled
@@ -156,7 +159,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-		samples_print_loop(gain, ovs_bits, g_verb, sample_rate);
+		samples_print_loop(gain, ovs_bits, g_verb, sample_rate, test);
 	}
 	
 	return EXIT_SUCCESS;

@@ -75,7 +75,7 @@ int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample_rate) //{{{
+void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample_rate, char test) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
@@ -84,6 +84,7 @@ void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample
 	int16_t samples_len = 0;
 	double v_cal = 0, i_cal = 0;
 	sigset_t sigs;
+	double test_val = 0.0;
 
 	// will block and unblock SIGINT
 	sigemptyset(&sigs);
@@ -133,7 +134,29 @@ void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample
 			double mv = sample_v(v_s + i, v_cal, 1);
 			double mi = sample_i(i_s + i, i_cal, gain, 1);
 
-			printf("%f %f %f\n", msec, mi, mv);
+			printf("%f %f %f", msec, mi, mv);
+
+			// check for test value on STDIN and print
+			if (test)
+			{
+				struct timeval tv;
+				fd_set fds;
+				int ret;
+
+				tv.tv_sec = 0;
+				tv.tv_usec = 0;
+				FD_ZERO(&fds);
+				FD_SET(STDIN_FILENO, &fds);
+				select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+
+				if (FD_ISSET(STDIN_FILENO, &fds))
+				{
+					ret = fscanf(stdin, "%lf", &test_val);
+				}
+				printf(" %f", test_val);
+			}
+
+			printf("\n");
 
 			sample_num++;
 		}
