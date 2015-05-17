@@ -14,9 +14,8 @@
 #define ADC_BITS 11  // because it's a signed 12-bit ADC
 
 // current measurement
-#define AMPPOT_POS_DEFAULT 200
+#define CURRENT_GAIN_DEFAULT 40
 #define AMPPOT_OHM 100000.0
-#define CURRENT_GAIN_DEFAULT 5 // paired with gain settings above
 #define IRES_OHM 0.018 // current sense resistor resistance
 #define FILPOT_OHM 100000.0
 #define FILCAP_F 0.0000001
