@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 			case 'g':
 				gain_c = optarg[0]; 
 
-				if(gain_c != 'L' || gain_c != 'H')
+				if(gain_c != 'L' && gain_c != 'H')
 				{
 					usage(argv[0]);
 					return EXIT_FAILURE;
