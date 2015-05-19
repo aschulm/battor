@@ -15,11 +15,11 @@ usage: %s -s <options>               *stream* power measurements over USB       
                                                                                        \n\
 Options:                                                                               \n\
   -r <rate> : sample rate (default %d Hz)                                              \n\
-  -g <gain> : current gain (default %dx) set to hit max then reduce                    \n\
+  -g <[L]ow or [H]igh> : current gain (default %c)                   \n\
   -b <bits> : set the number of bits to obtain through oversampling (default %d max 1) \n\
   -v(v) : verbose printing for debugging                                               \n\
                                                                                        \n\
-", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, CURRENT_GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
+", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -33,8 +33,10 @@ int main(int argc, char** argv)
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	double gain = param_gain(CURRENT_GAIN_DEFAULT, &amppot_pos);
+	double gain;
+	char gain_c = GAIN_DEFAULT;
 	uint32_t sample_rate = SAMPLE_RATE_HZ_DEFAULT;
+	eeprom_params eeparams;
 
 	// need an option
 	if (argc < 2)
@@ -69,9 +71,9 @@ int main(int argc, char** argv)
 				down_file = atoi(optarg);
 			break;
 			case 'g':
-				if (atoi(optarg) != 0)
-					gain = atoi(optarg); 
-				else
+				gain_c = optarg[0]; 
+
+				if(gain_c != 'L' || gain_c != 'H')
 				{
 					usage(argv[0]);
 					return EXIT_FAILURE;
@@ -103,21 +105,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	// get actual parameters
-	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
-	gain = param_gain(gain, &amppot_pos);
-
 	samples_init(ovs_bits);
-
-	sample min_s;
-	sample max_s;
-	min_s.signal = 0;
-	max_s.signal = (1 << (ADC_BITS + ovs_bits)) - 1;
-	printf("# BattOr\n");
-	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, 0.0, 0), sample_v(&max_s, 0.0, 0));
-	printf("# current range [%f, %f] mA\n", sample_i(&min_s, 0.0, gain, 0), sample_i(&max_s, 0.0, gain, 0));
-	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
-	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 
 	uart_init();
 
@@ -129,12 +117,39 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 
+	// read the BattOr's calibration params from its EEPROM
+	memset(&eeparams, 0, sizeof(eeparams));
+	if (param_read_eeprom(&eeparams) < 0)
+	{
+		printf("Error: BattOr not calibrated or EEPROM failure\n");
+		return EXIT_FAILURE;
+	}
+
+	// get actual sample rate
+	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
+	// set gain based on values in EEPROM
+	gain = ((gain_c == 'L') ? eeparams.gainL : eeparams.gainH);
+	// get actual gain
+	gain = param_gain(gain, &amppot_pos);
+
+	// print settings
+	sample min_s;
+	sample max_s;
+	min_s.signal = 0;
+	max_s.signal = (1 << (ADC_BITS + ovs_bits)) - 1;
+	printf("# BattOr\n");
+	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &eeparams, 0.0, 0), sample_v(&max_s, &eeparams, 0.0, 0));
+	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &eeparams, 0.0, gain, 0), sample_i(&max_s, &eeparams, 0.0, gain, 0));
+	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
+	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
+	
+
 	// download file
 	if (down)
 	{
 		// read configuration
 		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
-		samples_print_loop(gain, ovs_bits, g_verb, sample_rate, 0);
+		samples_print_loop(&eeparams, gain, ovs_bits, g_verb, sample_rate, 0);
 	}
 
 	// start configuration recording if enabled
@@ -159,7 +174,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-		samples_print_loop(gain, ovs_bits, g_verb, sample_rate, test);
+		samples_print_loop(&eeparams, gain, ovs_bits, g_verb, sample_rate, test);
 	}
 	
 	return EXIT_SUCCESS;

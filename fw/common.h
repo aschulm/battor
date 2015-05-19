@@ -19,3 +19,4 @@
 #include "drivers/dma.h"
 #include "drivers/spi.h"
 #include "drivers/reset.h"
+#include "drivers/eeprom.h"

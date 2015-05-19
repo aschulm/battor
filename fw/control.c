@@ -50,6 +50,7 @@ int8_t control_run_message(control_message* m) //{{{
 	{
 		int8_t filenum;
 		uint16_t pos;
+		uint8_t buf[100];
 		switch (m->type)
 		{
 			case CONTROL_TYPE_INIT:
@@ -144,6 +145,11 @@ int8_t control_run_message(control_message* m) //{{{
 			break;
 			case CONTROL_TYPE_RESET:
 				reset();
+			break;
+			case CONTROL_TYPE_READ_EEPROM:
+				EEPROM_read_block(0x0000, buf, m->value1);	
+				uart_tx_bytes(buf, m->value1);
+				ret = -1;
 			break;
 		}
 	}

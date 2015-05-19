@@ -60,3 +60,18 @@ double param_gain(uint32_t desired_gain, uint16_t* amppot_pos) //{{{
 	}
 	return (100000.0 / ((((double)*amppot_pos)/1024.0) * AMPPOT_OHM)) + 1.0;
 } //}}}
+
+// read parameters from the battor's eeprom
+int param_read_eeprom(eeprom_params* params)
+{
+	uint8_t magic[4] = {0x31, 0x10, 0x31, 0x10};
+	uint8_t type;
+	control(CONTROL_TYPE_READ_EEPROM, sizeof(eeprom_params), 0, 0);	
+	uart_rx_bytes(&type, params, sizeof(eeprom_params));
+
+	if (memcmp(magic, params->magic, sizeof(magic)) != 0)
+		return -1;
+
+	// TODO check the EEPROM CRC
+	return 0;
+}

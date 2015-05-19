@@ -12,16 +12,16 @@ void samples_init(uint16_t ovs_bits) //{{{
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-double sample_v(sample* s, double cal, uint8_t warning) //{{{
+double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning) //{{{
 {
 	if (warning && s->signal == s_adc_top)
 		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
 
 	double v_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
-	return (v_adcv / V_DEV) * 1000.0; // undo the voltage divider
+	return (v_adcv / V_DEV(eeparams->R2, eeparams->R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-double sample_i(sample* s, double cal, double gain, uint8_t warning) //{{{
+double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uint8_t warning) //{{{
 {
 	// current
 	if (warning && s->signal == s_adc_top)
@@ -29,7 +29,7 @@ double sample_i(sample* s, double cal, double gain, uint8_t warning) //{{{
 
 	double i_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	double i_adcv_unamp = i_adcv / gain; // undo the current gain
-	double i_samp = ((i_adcv_unamp / IRES_OHM) * 1000.0);
+	double i_samp = ((i_adcv_unamp / eeparams->R1) * 1000.0);
 	//if (i_samp < 0)
 		//i_samp = 0;
 	return i_samp;
@@ -75,7 +75,7 @@ int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample_rate, char test) //{{{
+void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, char verb, uint32_t sample_rate, char test) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
@@ -131,8 +131,8 @@ void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample
 			verb_printf("v %d %f\n", v_s[i].signal, v_s[i].signal - v_cal);
 
 			double msec = (sample_num/((double)sample_rate)) * 1000.0;
-			double mv = sample_v(v_s + i, v_cal, 1);
-			double mi = sample_i(i_s + i, i_cal, gain, 1);
+			double mv = sample_v(v_s + i, eeparams, v_cal, 1);
+			double mi = sample_i(i_s + i, eeparams, i_cal, gain, 1);
 
 			printf("%f %f %f", msec, mi, mv);
 

@@ -15,8 +15,8 @@ struct samples_hdr_
 typedef struct samples_hdr_ samples_hdr;
 
 void samples_init(uint16_t ovs_bits);
-double sample_v(sample* s, double cal, uint8_t warning);
-double sample_i(sample* s, double cal, double gain, uint8_t warning);
-void samples_print_loop(double gain, double ovs_bits, char verb, uint32_t sample_rate, char test);
+double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning);
+double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uint8_t warning);
+void samples_print_loop(eeprom_params* params, double gain, double ovs_bits, char verb, uint32_t sample_rate, char test);
 
 #endif
