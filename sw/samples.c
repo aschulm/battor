@@ -32,8 +32,16 @@ double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uin
 	double i_samp = ((i_adcv_unamp / eeparams->R1) * 1000.0);
 
 	// the ordering of these is important
-	i_samp -= eeparams->gainL_U1off;
-	i_samp = i_samp / eeparams->gainL_R1corr;
+	if (gain == eeparams->gainL)
+	{
+		i_samp -= eeparams->gainL_U1off;
+		i_samp = i_samp / eeparams->gainL_R1corr;
+	}
+	if (gain == eeparams->gainH)
+	{
+		i_samp -= eeparams->gainH_U1off;
+		i_samp = i_samp / eeparams->gainH_R1corr;
+	}
 	return i_samp;
 } //}}}
 
