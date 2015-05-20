@@ -7,19 +7,21 @@ char g_verb = 0;
 void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
-BattOr's PC companion                                                                \n\n\
-usage: %s -s <options>               *stream* power measurements over USB              \n\
-   or: %s -d                         *download* power measurement from SD card         \n\
-   or: %s -f <options>               *format* the SD card and upload the configuration \n\
-   or: %s -k                         *restart* the MCU                                 \n\
-                                                                                       \n\
-Options:                                                                               \n\
-  -r <rate> : sample rate (default %d Hz)                                              \n\
-  -g <[L]ow or [H]igh> : current gain (default %c)                   \n\
-  -b <bits> : set the number of bits to obtain through oversampling (default %d max 1) \n\
-  -v(v) : verbose printing for debugging                                               \n\
-                                                                                       \n\
-", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT, OVERSAMPLE_BITS_DEFAULT);
+BattOr's PC companion     \n\n\
+usage: %s -s <options>    *stream* power measurements over USB              \n\
+   or: %s -d              *download* power measurement from SD card         \n\
+   or: %s -f <options>    *format* the SD card and upload the configuration \n\
+   or: %s -k              *restart* the MCU                                 \n\
+                                                                            \n\
+Options:                                                                    \n\
+  -r <rate> : sample rate (default %d Hz)                                   \n\
+  -g <[L]ow or [H]igh> : current gain (default %c)                          \n\
+  -v(v) : verbose printing for debugging                                    \n\
+                                                                            \n\
+Output:                                                                     \n\
+  Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
+  Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
+", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
