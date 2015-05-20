@@ -99,7 +99,7 @@ void uart_tx_bytes(void* b, uint16_t len) //{{{
 
 	for (i = 0; i < len; i++)
 	{
-		if (b_b[i] == UART_START_DELIM || b_b[i] == UART_END_DELIM || b_b[i] == UART_ESC_DELIM)
+		if (b_b[i] <= UART_ESC_DELIM)
 		{
 			uart_tx_byte(UART_ESC_DELIM);	
 		}
