@@ -14,8 +14,11 @@ void samples_init(uint16_t ovs_bits) //{{{
 
 double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning) //{{{
 {
+	// warnings for minimum and maximum voltage
 	if (warning && s->signal == s_adc_top)
-		fprintf(stderr, "WARNING: maximum voltage, won't hurt anything, but what phone battery has such a high voltage?\n");
+		fprintf(stderr, "[Mv]");
+	if (warning && s->signal <= cal)
+		fprintf(stderr, "[mv]");
 
 	double v_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	return (v_adcv / V_DEV(eeparams->R2, eeparams->R3)) * 1000.0; // undo the voltage divider
@@ -23,9 +26,11 @@ double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning)
 
 double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uint8_t warning) //{{{
 {
-	// current
+	// warnings for minimum and maximum current
 	if (warning && s->signal == s_adc_top)
-		fprintf(stderr, "WARNING: maximum current, won't hurt anything, but you should turn down the gain.\n");
+		fprintf(stderr, "[MI]");
+	if (warning && s->signal <= cal)
+		fprintf(stderr, "[mI]");
 
 	double i_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	double i_adcv_unamp = i_adcv / gain; // undo the current gain

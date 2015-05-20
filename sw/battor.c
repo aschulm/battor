@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 	memset(&eeparams, 0, sizeof(eeparams));
 	if (param_read_eeprom(&eeparams) < 0)
 	{
-		printf("Error: BattOr not calibrated or EEPROM failure\n");
+		fprintf(stderr, "Error: BattOr not calibrated or EEPROM failure\n");
 		return EXIT_FAILURE;
 	}
 
