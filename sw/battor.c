@@ -127,10 +127,11 @@ int main(int argc, char** argv)
 
 	// get actual sample rate
 	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
-	// set gain based on values in EEPROM
+
+	// set gain based on values in EEPROM, and set actual gain
+	eeparams.gainL = param_gain(eeparams.gainL, &amppot_pos);
+	eeparams.gainH = param_gain(eeparams.gainH, &amppot_pos);
 	gain = ((gain_c == 'L') ? eeparams.gainL : eeparams.gainH);
-	// get actual gain
-	gain = param_gain(gain, &amppot_pos);
 
 	// print settings
 	sample min_s;
