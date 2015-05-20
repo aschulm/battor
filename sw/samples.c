@@ -30,8 +30,10 @@ double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uin
 	double i_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
 	double i_adcv_unamp = i_adcv / gain; // undo the current gain
 	double i_samp = ((i_adcv_unamp / eeparams->R1) * 1000.0);
-	i_samp *= eeparams->gainL_R1corr;
+
+	// the ordering of these is important
 	i_samp -= eeparams->gainL_U1off;
+	i_samp = i_samp / eeparams->gainL_R1corr;
 	return i_samp;
 } //}}}
 
