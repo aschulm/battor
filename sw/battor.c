@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	double gain;
+	double gain = 0.0;
 	char gain_c = GAIN_DEFAULT;
 	uint32_t sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 	eeprom_params eeparams;
@@ -129,9 +129,16 @@ int main(int argc, char** argv)
 	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
 
 	// set gain based on values in EEPROM, and set actual gain
-	eeparams.gainL = param_gain(eeparams.gainL, &amppot_pos);
-	eeparams.gainH = param_gain(eeparams.gainH, &amppot_pos);
-	gain = ((gain_c == 'L') ? eeparams.gainL : eeparams.gainH);
+	if (gain_c == 'L')
+	{
+		eeparams.gainL = param_gain((uint32_t)eeparams.gainL, &amppot_pos);
+		gain = eeparams.gainL;
+	}
+	if (gain_c == 'H')
+	{
+		eeparams.gainH = param_gain((uint32_t)eeparams.gainH, &amppot_pos);
+		gain = eeparams.gainH;
+	}
 
 	// print settings
 	sample min_s;
