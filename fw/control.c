@@ -54,6 +54,10 @@ int8_t control_run_message(control_message* m) //{{{
 		switch (m->type)
 		{
 			case CONTROL_TYPE_INIT:
+				// already ran, force reset
+				if (g_control_mode != 0)
+					reset();
+
 				g_control_mode = CONTROL_MODE_IDLE;
 				ret = g_error_last;
 				g_error_last = 0;
