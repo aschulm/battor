@@ -224,6 +224,12 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
+	/* I am not sure why increasing the latency timer to 50ms makes it
+	 * so that there are no more received frames with droped bytes in
+	 * the middle, but it works so I am not going to complain.
+         */
+	ftdi_set_latency_timer(ftdi, 50);
+
 	ftdi_usb_purge_buffers(ftdi);
 
 	// on some libftdi installs the first write always fails, worst case this

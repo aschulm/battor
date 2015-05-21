@@ -1,7 +1,7 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN 500
+#define SAMPLES_LEN 1000
 
 extern uint32_t g_samples_uart_seqnum;
 extern int16_t g_adca0[], g_adca1[], g_adcb0[], g_adcb1[];
