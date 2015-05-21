@@ -149,7 +149,7 @@ void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, c
 			double mv = sample_v(v_s + i, eeparams, v_cal, 1);
 			double mi = sample_i(i_s + i, eeparams, i_cal, gain, 1);
 
-			printf("%f %f %f", msec, mi, mv);
+			printf("%0.1f %0.1f %0.1f", msec, mi, mv);
 
 			// check for test value on STDIN and print
 			if (test)
