@@ -228,7 +228,7 @@ void uart_init() //{{{
 	 * so that there are no more received frames with droped bytes in
 	 * the middle, but it works so I am not going to complain.
          */
-	ftdi_set_latency_timer(ftdi, 50);
+	ftdi_set_latency_timer(ftdi, 30);
 
 	ftdi_usb_purge_buffers(ftdi);
 
