@@ -90,7 +90,7 @@ int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, char verb, uint32_t sample_rate, char test) //{{{
+void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, uint32_t sample_rate, char test) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
