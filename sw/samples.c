@@ -12,8 +12,6 @@ void samples_init(samples_config* conf) //{{{
 	conf->gain = 0.0;
 	conf->sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	conf->adb_fd_stdin = -1;
-	conf->adb_fd_stdout = -1;
 	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
 
 	// determine ADC_TOP with ovsersampling
