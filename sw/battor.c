@@ -35,10 +35,11 @@ int main(int argc, char** argv)
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	double gain = 0.0;
 	char gain_c = GAIN_DEFAULT;
-	uint32_t sample_rate = SAMPLE_RATE_HZ_DEFAULT;
-	eeprom_params eeparams;
+	samples_config sconf;
+	eeprom_params* eeparams = &sconf.eeparams;
+
+	samples_init(&sconf);
 
 	// need an option
 	if (argc < 2)
@@ -58,7 +59,7 @@ int main(int argc, char** argv)
 			break;
 			case 'r':
 				if (atoi(optarg) != 0)
-					sample_rate = atoi(optarg);
+					sconf.sample_rate = atoi(optarg);
 				else
 				{
 					usage(argv[0]);
@@ -107,7 +108,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	samples_init(ovs_bits);
 
 	uart_init();
 
@@ -120,26 +120,25 @@ int main(int argc, char** argv)
 	}
 
 	// read the BattOr's calibration params from its EEPROM
-	memset(&eeparams, 0, sizeof(eeparams));
-	if (param_read_eeprom(&eeparams) < 0)
+	if (param_read_eeprom(eeparams) < 0)
 	{
 		fprintf(stderr, "Error: EEPROM read failure or BattOr not calibrated\n");
 		return EXIT_FAILURE;
 	}
 
 	// get actual sample rate
-	sample_rate = param_sample_rate(sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
+	sconf.sample_rate = param_sample_rate(sconf.sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
 
 	// set gain based on values in EEPROM, and set actual gain
 	if (gain_c == 'L')
 	{
-		eeparams.gainL = param_gain((uint32_t)eeparams.gainL, &amppot_pos);
-		gain = eeparams.gainL;
+		eeparams->gainL = param_gain((uint32_t)eeparams->gainL, &amppot_pos);
+		sconf.gain = eeparams->gainL;
 	}
 	if (gain_c == 'H')
 	{
-		eeparams.gainH = param_gain((uint32_t)eeparams.gainH, &amppot_pos);
-		gain = eeparams.gainH;
+		eeparams->gainH = param_gain((uint32_t)eeparams->gainH, &amppot_pos);
+		sconf.gain = eeparams->gainH;
 	}
 
 	// print settings
@@ -148,9 +147,9 @@ int main(int argc, char** argv)
 	min_s.signal = 0;
 	max_s.signal = (1 << (ADC_BITS + ovs_bits)) - 1;
 	printf("# BattOr\n");
-	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &eeparams, 0.0, 0), sample_v(&max_s, &eeparams, 0.0, 0));
-	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &eeparams, 0.0, gain, 0), sample_i(&max_s, &eeparams, 0.0, gain, 0));
-	printf("# sample_rate=%dHz, gain=%fx\n", sample_rate, gain);
+	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &sconf, 0.0, 0), sample_v(&max_s, &sconf, 0.0, 0));
+	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &sconf, 0.0, 0), sample_i(&max_s, &sconf, 0.0, 0));
+	printf("# sample_rate=%dHz, gain=%fx\n", sconf.sample_rate, sconf.gain);
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 	
 
@@ -159,7 +158,7 @@ int main(int argc, char** argv)
 	{
 		// read configuration
 		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
-		samples_print_loop(&eeparams, gain, ovs_bits, sample_rate, 0);
+		samples_print_loop(&sconf);
 	}
 
 	// start configuration recording if enabled
@@ -184,7 +183,7 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-		samples_print_loop(&eeparams, gain, ovs_bits, sample_rate, test);
+		samples_print_loop(&sconf);
 	}
 	
 	return EXIT_SUCCESS;

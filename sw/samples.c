@@ -5,14 +5,23 @@
 
 static double s_adc_top;
 
-void samples_init(uint16_t ovs_bits) //{{{
+void samples_init(samples_config* conf) //{{{
 {
+	// fill conf with default parameters
+	conf->test = 0;
+	conf->gain = 0.0;
+	conf->sample_rate = SAMPLE_RATE_HZ_DEFAULT;
+	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
+	conf->adb_fd_stdin = -1;
+	conf->adb_fd_stdout = -1;
+	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
+
 	// determine ADC_TOP with ovsersampling
-	s_adc_top = pow(2, (ADC_BITS + ovs_bits));
+	s_adc_top = pow(2, (ADC_BITS + conf->ovs_bits));
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning) //{{{
+double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
 {
 	// warnings for minimum and maximum voltage
 	if (warning && s->signal == s_adc_top)
@@ -21,10 +30,10 @@ double sample_v(sample* s, eeprom_params* eeparams, double cal, uint8_t warning)
 		fprintf(stderr, "[mv]");
 
 	double v_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
-	return (v_adcv / V_DEV(eeparams->R2, eeparams->R3)) * 1000.0; // undo the voltage divider
+	return (v_adcv / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uint8_t warning) //{{{
+double sample_i(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
 {
 	// warnings for minimum and maximum current
 	if (warning && s->signal == s_adc_top)
@@ -33,24 +42,24 @@ double sample_i(sample* s, eeprom_params* eeparams, double cal, double gain, uin
 		fprintf(stderr, "[mI]");
 
 	double i_adcv = (((double)s->signal - cal) / s_adc_top) * VREF;
-	double i_adcv_unamp = i_adcv / gain; // undo the current gain
-	double i_samp = ((i_adcv_unamp / eeparams->R1) * 1000.0);
+	double i_adcv_unamp = i_adcv / conf->gain; // undo the current gain
+	double i_samp = ((i_adcv_unamp / conf->eeparams.R1) * 1000.0);
 
 	// the ordering of these is important
-	if (gain == eeparams->gainL)
+	if (conf->gain == conf->eeparams.gainL)
 	{
-		i_samp -= eeparams->gainL_U1off;
-		i_samp = i_samp / eeparams->gainL_R1corr;
+		i_samp -= conf->eeparams.gainL_U1off;
+		i_samp = i_samp / conf->eeparams.gainL_R1corr;
 	}
-	if (gain == eeparams->gainH)
+	if (conf->gain == conf->eeparams.gainH)
 	{
-		i_samp -= eeparams->gainH_U1off;
-		i_samp = i_samp / eeparams->gainH_R1corr;
+		i_samp -= conf->eeparams.gainH_U1off;
+		i_samp = i_samp / conf->eeparams.gainH_R1corr;
 	}
 	return i_samp;
 } //}}}
 
-int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
+int16_t samples_read(sample* v_s, sample* i_s, samples_config* conf, uint32_t* seqnum) //{{{
 {
 	samples_hdr* hdr;
 	uint8_t frame[50000];
@@ -90,7 +99,7 @@ int16_t samples_read(sample* v_s, sample* i_s, uint32_t* seqnum) //{{{
 	return hdr->samples_len / sizeof(sample);
 } //}}}
 
-void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, uint32_t sample_rate, char test) //{{{
+void samples_print_loop(samples_config* conf) //{{{
 {
 	int i;
 	sample v_s[2000], i_s[2000];
@@ -108,7 +117,7 @@ void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, u
 	// read calibration and compute it
 	while (samples_len == 0 || seqnum != 1)
 	{
-		samples_len = samples_read(v_s, i_s, &seqnum);
+		samples_len = samples_read(v_s, i_s, conf, &seqnum);
 	}
 
 	if (samples_len == 0)
@@ -132,7 +141,7 @@ void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, u
 	// main sample read loop
 	while(1)
 	{
-		while ((samples_len = samples_read(v_s, i_s, &seqnum)) == 0);
+		while ((samples_len = samples_read(v_s, i_s, conf, &seqnum)) == 0);
 
 		// end of file, quit read loop
 		if (samples_len < 0)
@@ -145,14 +154,14 @@ void samples_print_loop(eeprom_params* eeparams, double gain, double ovs_bits, u
 			verb_printf("i %d %f\n", i_s[i].signal, i_s[i].signal - i_cal);
 			verb_printf("v %d %f\n", v_s[i].signal, v_s[i].signal - v_cal);
 
-			double msec = (sample_num/((double)sample_rate)) * 1000.0;
-			double mv = sample_v(v_s + i, eeparams, v_cal, 1);
-			double mi = sample_i(i_s + i, eeparams, i_cal, gain, 1);
+			double msec = (sample_num/((double)conf->sample_rate)) * 1000.0;
+			double mv = sample_v(v_s + i, conf, v_cal, 1);
+			double mi = sample_i(i_s + i, conf, i_cal, 1);
 
 			printf("%0.1f %0.1f %0.1f", msec, mi, mv);
 
 			// check for test value on STDIN and print
-			if (test)
+			if (conf->test)
 			{
 				struct timeval tv;
 				fd_set fds;
