@@ -11,7 +11,7 @@
 #define UART_RX_BUFFER_LEN (64*2)
 #define UART_TX_BUFFER_LEN (64*2) 
 
-#define UART_RX_ATTEMPTS 10
+#define UART_RX_ATTEMPTS 20
 
 typedef enum UART_TYPE_enum
 {
