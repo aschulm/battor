@@ -46,9 +46,8 @@ then
 		chmod 644 /sys/class/power_supply/battery/test_mode
 		echo 1 > /sys/class/power_supply/battery/test_mode
 		chmod 644 /sys/class/power_supply/max77843-charger/current_now
-		# current_now seems to only go down to 100 mA, but with test mode
-		# enabled the current draw over USB appears to only be at most 50 mA.
-		# todo(aschulm) test the USB cable to see what the draw is
+		# current_now only says it goes down to 100, but a BattOr intercepted USB
+		# cable indiciates < 10mA, so USB power appears to be sufficiently disabled
 		echo 0 > /sys/class/power_supply/max77843-charger/current_now
 		'
 	fi
