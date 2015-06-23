@@ -28,4 +28,13 @@ void drivers_init() //{{{
 	// sample timer
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
+
+	// gpio output for debugging
+#ifdef GPIO_SAMPLE_WRITE_DONE
+	PORTE.DIR |= (1<<GPIO_SAMPLE_WRITE_DONE);
+#endif
+
+#ifdef GPIO_DMA_INT
+	PORTE.DIR |= (1<<GPIO_DMA_INT);
+#endif
 } //}}}

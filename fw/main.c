@@ -63,6 +63,10 @@ int main() //{{{
 
 				interrupt_clear(INTERRUPT_DMA_CH0);
 				interrupt_clear(INTERRUPT_DMA_CH2);
+
+#ifdef GPIO_SAMPLE_WRITE_DONE
+				gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));
+#endif
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{
@@ -97,6 +101,10 @@ int main() //{{{
 
 				interrupt_clear(INTERRUPT_DMA_CH1);
 				interrupt_clear(INTERRUPT_DMA_CH3);
+
+#ifdef GPIO_SAMPLE_WRITE_DONE
+				gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));
+#endif
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{

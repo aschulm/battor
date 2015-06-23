@@ -8,9 +8,14 @@
 #include "adc.h"
 #include "timer.h"
 #include "dma.h"
+#include "gpio.h"
 
 ISR(DMA_CH0_vect)
 {
+#ifdef GPIO_DMA_INT
+	gpio_toggle(&PORTE, (1<<GPIO_DMA_INT));
+#endif
+
 	if (interrupt_is_set(INTERRUPT_DMA_CH0))
 		halt(ERROR_DMA_CH0_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH0);
@@ -18,6 +23,10 @@ ISR(DMA_CH0_vect)
 }
 ISR(DMA_CH1_vect)
 {
+#ifdef GPIO_DMA_INT
+	gpio_toggle(&PORTE, (1<<GPIO_DMA_INT));
+#endif
+
 	if (interrupt_is_set(INTERRUPT_DMA_CH1))
 		halt(ERROR_DMA_CH1_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH1);
