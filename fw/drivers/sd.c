@@ -138,6 +138,7 @@ int sd_init(sd_info* info) //{{{
 	// set the SPI clock to a much higher rate
 	SPIE.CTRL &= ~SPI_PRESCALER_gm;
 	SPIE.CTRL |= SPI_PRESCALER_DIV4_gc; 
+	SPIE.CTRL |= SPI_CLK2X_bm;
 
 	// get the CSR register 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
