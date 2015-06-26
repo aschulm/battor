@@ -26,6 +26,11 @@ then
 		echo 9999 > /sys/class/power_supply/max77843-charger/current_now
 		'
 	fi
+  if [ $PRODUCT = "flounder" ]
+  adb shell'
+    echo "D" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
+  '
+  fi
 fi
 
 # disable charging
@@ -51,4 +56,9 @@ then
 		echo 0 > /sys/class/power_supply/max77843-charger/current_now
 		'
 	fi
+  if [ $PRODUCT = "flounder" ]
+  adb shell'
+    echo "C" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
+  '
+  fi
 fi
