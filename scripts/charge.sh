@@ -27,9 +27,10 @@ then
 		'
 	fi
   if [ $PRODUCT = "flounder" ]
-  adb shell'
-    echo "D" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
-  '
+	then
+		adb shell '
+			echo "D" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
+		'
   fi
 fi
 
@@ -57,8 +58,9 @@ then
 		'
 	fi
   if [ $PRODUCT = "flounder" ]
-  adb shell'
-    echo "C" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
-  '
+	then
+		adb shell '
+			echo "C" > /sys/bus/i2c/drivers/bq2419x/0-006b/input_cable_state
+		'
   fi
 fi
