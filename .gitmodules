@@ -1,0 +1,3 @@
+[submodule "sw/libftdi"]
+	path = sw/libftdi
+	url = git://developer.intra2net.com/libftdi
