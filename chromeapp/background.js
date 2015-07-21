@@ -14,13 +14,16 @@ chrome.app.runtime.onLaunched.addListener(function() {
 	chrome.serial.getDevices(onGetDevices);	
 
 	var onConnect = function(connectionInfo) {
-		connectionId = connectionInfo.conectionId;
+		console.log("connected!")
+		connectionId = connectionInfo.connectionId;
+		data = new Uint8Array([0x51, 0x51, 0x51, 0x51, 0x51]);
+		data = data.buffer;
 
-		var onSend = function(moo) {
+		var onSend = function(i) {
+			console.log(i);
+			chrome.serial.flush(connectionId, function(i) {});
 		}
-		chrome.serial.send(connectionId, Uint8Array([0x00, 0x00, 0x00]), onSend);
-		chrome.serial.flush(connectionId, onFlush);
+		chrome.serial.send(connectionId, data, function(i) {console.log(i)});
 	}
-
-	chrome.serial.connect("/dev/ttyUSB0", {bitrate: 2000000}, onConnect);
+	chrome.serial.connect('/dev/ttyUSB0', {bitrate: 2000000}, onConnect);
 });
