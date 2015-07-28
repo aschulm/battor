@@ -152,7 +152,7 @@ def main():
   isn't needed
   '''
   battor = None
-  battor_args = [battor_exec, '-r', '10000', '-g', '5', '-s']
+  battor_args = [battor_exec, '-r', '10000', '-s']
   try:
     battor_file_write = open('/tmp/battor', 'w')
     battor = subprocess.Popen(battor_args,  stdout=battor_file_write,
