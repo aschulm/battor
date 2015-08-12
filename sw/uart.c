@@ -20,11 +20,13 @@ int uart_rx_byte(uint8_t* b) //{{{
 	{
 		if (attempt++ >= UART_RX_ATTEMPTS)
 		{
+            vverb_printf("uart_rx_byte: timeout\n%s", "");
 			return -1;
 		}
 
 		if ((uart_rx_buffer_write_idx = ftdi_read_data(ftdi, uart_rx_buffer, sizeof(uart_rx_buffer))) < 0)
 		{
+            vverb_printf("uart_rx_byte: ftdi_read_data error\n%s", "");
 			return -1;
 		}
 		uart_rx_buffer_read_idx = 0;
@@ -44,11 +46,14 @@ int uart_rx_byte(uint8_t* b) //{{{
 int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 {
 	int i, ret;
-	uint8_t* b_b = (uint8_t*)b;
+    uint8_t b_b[UART_RX_BUFFER_LEN];
 	uint8_t b_tmp;
 	uint8_t start_found = 0;
 	uint8_t end_found = 0;
 	uint16_t bytes_read = 0;
+
+uart_rx_bytes_start:
+    start_found = end_found = bytes_read = 0;
 
 	vverb_printf("uart_rx_bytes: start\n%s", "");
 
@@ -69,7 +74,7 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 				return -1;
 			}
 
-			if (bytes_read < b_len)
+			if (bytes_read < UART_RX_BUFFER_LEN)
 			{
 				vverb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
@@ -77,6 +82,10 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 		}
 		else if (b_tmp == UART_START_DELIM)
 		{
+            if (start_found) {
+                vverb_printf("uart_rx_byte: got two start delimiters\n%s", "");
+                return -1;
+            }
 			start_found = 1;
 			bytes_read = 0;
 
@@ -89,28 +98,44 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
+            if (!start_found) {
+                vverb_printf("uart_rx_byte: got end delimiter without start\n%s", "");
+                return -1;
+            }
 			vverb_printf("uart_rx_byte: got end\n%s", "");
 			end_found = 1;
 		}
-		else if (bytes_read < b_len)
+		else if (bytes_read < UART_RX_BUFFER_LEN)
 		{
-			vverb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
-			b_b[bytes_read++] = b_tmp;
+            if (!start_found) {
+                vverb_printf("uart_rx_byte: got data before start 0x%X\n", b_tmp);
+            } else {
+                vverb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
+                b_b[bytes_read++] = b_tmp;
+            }
 		}
-    else
-    {
+        /*else
+        {
 			vverb_printf("uart_rx_byte: nothing worked so done\n%s", "");
-      return -1;
-    }
+            return -1;
+        }*/
 	}
 
 	// verbose
-	verb_printf("uart_rx_bytes: recv%s", "");
-	for (i = 0; i < bytes_read; i++)
-	{
-		verb_printf(" %.2X", b_b[i]);
-	}
-	verb_printf("%s\n", "");
+    if (*type == UART_TYPE_PRINT) {
+        b_b[bytes_read] = '\0';
+        printf("[DEBUG] %s", b_b);
+        goto uart_rx_bytes_start;
+    } else {
+        verb_printf("uart_rx_bytes: recv%s", "");
+        for (i = 0; i < bytes_read; i++)
+        {
+            verb_printf(" %.2X", b_b[i]);
+        }
+        verb_printf("%s\n", "");
+    }
+
+    memcpy(b, b_b, b_len); // Copy as many bytes as was asked for
 
 	return bytes_read;
 } //}}}
@@ -194,7 +219,7 @@ void uart_init() //{{{
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x77E0)) < 0)
+	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6001)) < 0)
 	{
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
 		exit(EXIT_FAILURE);

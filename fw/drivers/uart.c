@@ -12,6 +12,8 @@
 static volatile uint8_t uart_rx_buffer[UART_BUFFER_LEN];
 static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
+static int uart_initialized = 0;
+
 ISR(USARTD0_RXC_vect) //{{{
 {
 	// UART error, just skip it
@@ -46,13 +48,8 @@ void uart_init() //{{{
 	PORTD.DIR &= ~USARTD0_RXD_PIN; // set the RX pin to input
 
 	// set baud rate with BSEL and BSCALE values
-#ifdef DEBUG
-	USARTD0.BAUDCTRLB = USART_BSCALE_115200BPS << USART_BSCALE_gp;
-	USARTD0.BAUDCTRLA = USART_BSEL_115200BPS & USART_BSEL_gm;
-#else
 	USARTD0.BAUDCTRLB = USART_BSCALE_2000000BPS << USART_BSCALE_gp;
 	USARTD0.BAUDCTRLA = USART_BSEL_2000000BPS & USART_BSEL_gm;
-#endif
 
 	USARTD0.CTRLC = USART_CMODE_ASYNCHRONOUS_gc | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc; // set transfer parameters
 	USARTD0.CTRLA = USART_RXCINTLVL_HI_gc; // interrupt for receive 
@@ -71,6 +68,8 @@ void uart_init() //{{{
 #endif
 	
 	interrupt_enable();
+
+    uart_initialized = 1;
 } //}}}
 
 inline void uart_tx_byte(uint8_t b) //{{{
@@ -167,9 +166,25 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 // for c FILE* interface
 int uart_putchar(char c, FILE* stream) //{{{
 {
-	if (c == '\n')
-		uart_putchar('\r', stream);
+    static int in_message = 0;
+
+    if (!uart_initialized)
+        return 0;
+
+    if (!in_message) {
+        uart_tx_start(UART_TYPE_PRINT);
+        in_message = 1;
+    }
+	if (c == '\n' || c == '\0') {
+        in_message = 0;
+    }
+
 	uart_tx_byte(c);
+
+    if (!in_message) {
+        uart_tx_end();
+    }
+
 	return 0;
 } //}}}
 
