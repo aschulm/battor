@@ -17,7 +17,8 @@ typedef enum UART_TYPE_enum
 {
 	UART_TYPE_CONTROL = 0x03,
 	UART_TYPE_CONTROL_ACK,
-	UART_TYPE_SAMPLES
+	UART_TYPE_SAMPLES,
+    UART_TYPE_PRINT,
 } UART_TYPE_t;
 
 void uart_init(char* tty);
