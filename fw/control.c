@@ -148,7 +148,9 @@ int8_t control_run_message(control_message* m) //{{{
 			break;
 			case CONTROL_TYPE_READ_EEPROM:
 				EEPROM_read_block(0x0000, buf, m->value1);	
+				uart_tx_start(UART_TYPE_CONTROL_ACK);
 				uart_tx_bytes(buf, m->value1);
+				uart_tx_end();
 				ret = -1;
 			break;
 		}
