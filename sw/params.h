@@ -19,7 +19,7 @@
 // current measurement
 #define AMPPOT_OHM 100000.0
 #define FILPOT_OHM 100000.0
-#define FILCAP_F 0.0000001
+#define FILCAP_F 0.01e-6
 #define FILPOT_POS 81 // with 0.1 uF cap corner is 1006.5 Hz, must correspond to the sample rate
 
 // voltage measurement
