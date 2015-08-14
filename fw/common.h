@@ -20,3 +20,4 @@
 #include "drivers/spi.h"
 #include "drivers/reset.h"
 #include "drivers/eeprom.h"
+#include "drivers/sram.h"
