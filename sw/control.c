@@ -2,7 +2,7 @@
 
 #include "uart.h"
 
-void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t wait_for_ack) //{{{
+int control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t wait_for_ack) //{{{
 {
 	int ret;
 	control_message message;
@@ -26,10 +26,11 @@ void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t wait_for_ac
 			usleep(CONTROL_SLEEP_US);
 			ret = uart_rx_bytes(&uart_type, &ack, sizeof(ack));
 			verb_printf("control: got ack ret:%d type:%d value:%d\n", ret, ack.type, ack.value);
+            return ack.value;
 		}
 		else
 		{
-			return;
+			return -1;
 		}
 	}
 } //}}}

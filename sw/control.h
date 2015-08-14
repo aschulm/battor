@@ -14,7 +14,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
 	CONTROL_TYPE_READ_READY,          // ready to start receiving next round of samples
 	CONTROL_TYPE_RESET,               // reset the MCU
-	CONTROL_TYPE_READ_EEPROM          // read the EEPROM
+	CONTROL_TYPE_READ_EEPROM,         // read the EEPROM
+    CONTROL_TYPE_SELF_TEST,           // self test
 } CONTROL_TYPE_t;
 
 struct control_message_
@@ -32,6 +33,6 @@ struct control_ack_
 } __attribute__((packed));
 typedef struct control_ack_ control_ack;
 
-void control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t ack);
+int control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t ack);
 
 #endif

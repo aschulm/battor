@@ -116,8 +116,22 @@ int main(int argc, char** argv)
 
 	uart_init(tty);
 
+    // run self test
+    if (test)
+    {
+        int ret;
+        if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
+            fprintf(stderr, "Error: self test failed %d\n", ret);
+            return EXIT_FAILURE;
+        }
+        fprintf(stderr, "Self test passed\n");
+        return EXIT_SUCCESS;
+    }
+
+
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
+
 	if (reset)
 	{
 		control(CONTROL_TYPE_RESET, 0, 0, 0);
@@ -184,6 +198,7 @@ int main(int argc, char** argv)
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 		control(CONTROL_TYPE_END_REC_CONTROL, 0, 0, 1);
 	}
+
 
 	if (usb)
 	{

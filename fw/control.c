@@ -153,6 +153,12 @@ int8_t control_run_message(control_message* m) //{{{
 				uart_tx_end();
 				ret = -1;
 			break;
+            case CONTROL_TYPE_SELF_TEST:
+                // step 1. test the sram
+                printf("self test started\n");
+
+                ret = drivers_self_test();
+            break;
 		}
 	}
 	return ret;

@@ -20,6 +20,8 @@ void drivers_init() //{{{
 	uart_init();
 	printf("drivers_init: pot_init()\r\n");
 	pot_init();
+    printf("drivers_init: sram_init()\r\n");
+    sram_init();
 	printf("drivers_init: adc_init(ADCA)\r\n");
 	adc_init(&ADCA); // voltage ADC
 	printf("drivers_init: adc_init(ADCB)\r\n");
@@ -38,3 +40,8 @@ void drivers_init() //{{{
 	PORTE.DIR |= (1<<GPIO_DMA_INT);
 #endif
 } //}}}
+
+int drivers_self_test()
+{
+    return sram_self_test();
+}
