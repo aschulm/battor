@@ -6,6 +6,11 @@
 
 #include "sram.h"
 
+void sram_config_spi()
+{
+	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_3_gc | SPI_PRESCALER_DIV4_gc; 
+}
+
 void sram_init() {
     printf("sram_init\n");
     
@@ -18,7 +23,7 @@ void sram_init() {
 	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm;
     PORTE.DIR |= SRAM_CS_PIN_gm;
 
-	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_3_gc | SPI_PRESCALER_DIV4_gc; 
+    sram_config_spi();
 }
 
 int sram_self_test() {
@@ -26,6 +31,7 @@ int sram_self_test() {
     uint8_t response_write[4];
     uint8_t command_read[] = { 0x03, 0x00, 0x00, 0xFE };
     uint8_t response_read[4];
+    sram_config_spi();
     printf("sram_self_test\n");
     gpio_off(&PORTE, SRAM_CS_PIN_gm);
     spi_txrx(&SPIC, command_write, response_write, sizeof(command_write));

@@ -5,6 +5,7 @@
 #include "blink.h"
 #include "samples.h"
 #include "store.h"
+#include "drivers.h"
 
 static control_message message;
 uint8_t g_control_mode;
