@@ -32,9 +32,8 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash: all
-	@battor -k > /dev/null
+	#@battor -k > /dev/null
 	@modprobe ftdi-sio
-	@echo 0403 77E0 > /sys/bus/usb-serial/drivers/ftdi_sio/new_id
 	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
 	@modprobe -r ftdi-sio
 
