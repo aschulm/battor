@@ -11,11 +11,18 @@ static inline uint16_t byte_swap16(uint16_t b)
 	return ((b & 0xFF) << 8) | ((b & 0xFF00) >> 8);
 }
 
+void pot_config_spi()
+{
+	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
+}
+
 // the pots are not normal SPI devices, you have to put the output pin in high impedience mode when done
 // else two pots on the same MISO can not output
 static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 {
 	uint8_t tx[2], rx[2];
+
+    pot_config_spi();
 
 	tx[0]=0x80;
 	tx[1]=0x01;
@@ -33,6 +40,8 @@ static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t data)
 {
 	uint8_t tx[2], rx[2];
+
+    pot_config_spi();
 
 	tx[0] = (command << 2) | ((data & 0x300) >> 8);
 	tx[1] = (data & 0xFF);
@@ -65,7 +74,7 @@ void pot_init()
 	gpio_on(&PORTC, POT_FIL_CS_PIN_gm);
 	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm | POT_AMP_CS_PIN_gm | POT_FIL_CS_PIN_gm; // put the SPI pins in output mode
 
-	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
+    pot_config_spi();
 
 	// start with both SDOs in high-impedience mode
 	pot_high_impedience_sdo(POT_AMP_CS_PIN_gm);
