@@ -6,6 +6,9 @@ void drivers_init() //{{{
 {
 	// ** order of init is very important **
 
+	printf("drivers_init: uart_init()\r\n");
+	uart_init();
+
 	// ms timer for blinking led and other real time tasks
 	printf("drivers_init: timer_init()\r\n");
 	timer_init(&TCC0, TC_OVFINTLVL_LO_gc);
@@ -16,12 +19,10 @@ void drivers_init() //{{{
 	led_init();
 	printf("drivers_init: mux_init()\r\n");
 	mux_init();
-	printf("drivers_init: uart_init()\r\n");
-	uart_init();
 	printf("drivers_init: pot_init()\r\n");
 	pot_init();
-    printf("drivers_init: sram_init()\r\n");
-    sram_init();
+	printf("drivers_init: sram_init()\r\n");
+	sram_init();
 	printf("drivers_init: adc_init(ADCA)\r\n");
 	adc_init(&ADCA); // voltage ADC
 	printf("drivers_init: adc_init(ADCB)\r\n");
