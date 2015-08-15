@@ -2,10 +2,6 @@ AC_INIT([BattOr Reader], [1.0], [aschulm@stanford.edu], [battor-reader], [http:/
 
 AM_INIT_AUTOMAKE([1.10 no-define])
 
-AC_SEARCH_LIBS([ftdi_usb_open], [ftdi1], [], [
-	AC_MSG_ERROR([unable to find libftdi1])
-])
-
 AC_SEARCH_LIBS([pow], [m], [], [
 	AC_MSG_ERROR([unable to find math library])
 ])

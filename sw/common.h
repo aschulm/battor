@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+#include <termios.h>
+#include <fcntl.h>
 
 #include "params.h"
 #include "samples.h"

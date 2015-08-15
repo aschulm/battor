@@ -1,11 +1,9 @@
-#include <libftdi1/ftdi.h>
-
 #include "common.h"
 #include "uart.h"
 #include "params.h"
 #include "samples.h"
 
-static struct ftdi_context *ftdi;
+static int fd;
 static uint8_t uart_rx_buffer[UART_RX_BUFFER_LEN];
 static uint8_t uart_tx_buffer[UART_RX_BUFFER_LEN];
 static int uart_rx_buffer_write_idx = 0;
@@ -23,7 +21,7 @@ int uart_rx_byte(uint8_t* b) //{{{
 			return -1;
 		}
 
-		if ((uart_rx_buffer_write_idx = ftdi_read_data(ftdi, uart_rx_buffer, sizeof(uart_rx_buffer))) < 0)
+		if ((uart_rx_buffer_write_idx = read(fd, uart_rx_buffer, sizeof(uart_rx_buffer))) < 0)
 		{
 			return -1;
 		}
@@ -132,11 +130,12 @@ void uart_tx_byte(uint8_t b) //{{{
 		to_write_len = uart_tx_buffer_idx;
 		while (to_write_len > 0)
 		{
-			if ((write_len = ftdi_write_data(ftdi, uart_tx_buffer + (uart_tx_buffer_idx - to_write_len), to_write_len)) < 0)
+			if ((write_len = write(fd, uart_tx_buffer + (uart_tx_buffer_idx - to_write_len), to_write_len)) < 0)
 			{
-				fprintf(stderr, "unable to write to ftdi device: %d (%s)\n", write_len, ftdi_get_error_string(ftdi));
+				perror("write()");
 				exit(EXIT_FAILURE);
 			}
+			fsync(fd);
 
 			// verbose
 			verb_printf("uart_tx_byte: sent %s", "");
@@ -181,58 +180,55 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 	uart_tx_byte(UART_END_DELIM);
 } //}}}
 
-void uart_init() //{{{
+void uart_init(char* tty) //{{{
 {
-	int ret, i;
-	uint8_t zeros[10];
-
-	memset(zeros, 0, sizeof(zeros));
-
-	if ((ftdi = ftdi_new()) == 0)
+	struct termios tio;
+	speed_t baud_rate = BAUD_RATE;
+	
+#ifdef __APPLE__
+	if ((fd = open(tty, O_RDWR | O_NOCTTY)) < 0)
+#elif __linux__
+	if ((fd = open(tty, O_RDWR | O_NOCTTY)) < 0)
+#endif
 	{
-		fprintf(stderr, "ftdi_new failed\n");
+		perror("open()");
+		exit(EXIT_FAILURE);
+	}
+	if (tcgetattr(fd, &tio) == -1)
+	{
+		perror("tcgetattr()");
 		exit(EXIT_FAILURE);
 	}
 
-	if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x77E0)) < 0)
+#ifdef __APPLE__
+	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
+	cfmakeraw(&tio); // read one byte or timeout
+	tio.c_cc[VMIN] = 1; // 
+	tio.c_cc[VTIME] = 10; //
+	tio.c_cflag = CS8; // 8-bit mode
+#elif __linux__
+	cfsetspeed(&tio, B38400); // don't care, we  the baud rate anyway
+	cfmakeraw(&tio); // read one byte or timeout
+	tio.c_cflag |= B38400 | CS8;
+#endif
+
+	tcsetattr(fd, TCSANOW, &tio); // set the options now
+
+#if __APPLE__
+	#include <IOKit/serial/ioss.h>
+	#include <sys/ioctl.h>
+	if (ioctl(fd, IOSSIOSPEED, &baud_rate) == -1) // set a non-standard baud rate on os X
 	{
-		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+		perror("ioctl()");
 		exit(EXIT_FAILURE);
 	}
-
-	if ((ret = ftdi_usb_reset(ftdi)) < 0)
-	{
-		fprintf(stderr, "unable to reset: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	if ((ret = ftdi_set_baudrate(ftdi, BAUD_RATE)) < 0)
-	{
-		fprintf(stderr, "unable to set baudrate: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	if ((ret = ftdi_set_line_property(ftdi, BITS_8, STOP_BIT_1, NONE)) < 0)
-	{
-		fprintf(stderr, "unable to set line properties: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	if ((ret = ftdi_setflowctrl(ftdi, SIO_DISABLE_FLOW_CTRL)) < 0)
-	{
-		fprintf(stderr, "unable to disable flow control: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-		exit(EXIT_FAILURE);
-	}
-
-	/* I am not sure why increasing the latency timer to 50ms makes it
-	 * so that there are no more received frames with droped bytes in
-	 * the middle, but it works so I am not going to complain.
-         */
-	ftdi_set_latency_timer(ftdi, 5);
-
-	ftdi_usb_purge_buffers(ftdi);
-
-	// on some libftdi installs the first write always fails, worst case this
-	// is a bunch of start delimiters so it will have no effect
-	ftdi_write_data(ftdi, zeros, sizeof(zeros));
+#elif __linux__
+	#include <linux/serial.h>
+	#include <asm-generic/ioctls.h>
+	struct serial_struct ss;
+	ioctl(fd, TIOCGSERIAL, &ss);
+	ss.flags |= ASYNC_SPD_CUST;
+	ss.custom_divisor = ss.baud_base / BAUD_RATE;
+	ioctl(fd, TIOCSSERIAL, &ss);
+#endif
 } //}}}

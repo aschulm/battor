@@ -20,7 +20,7 @@ typedef enum UART_TYPE_enum
 	UART_TYPE_SAMPLES
 } UART_TYPE_t;
 
-void uart_init();
+void uart_init(char* tty);
 int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len);
 void uart_tx_bytes(uint8_t type, void* b, uint16_t b_len);
 

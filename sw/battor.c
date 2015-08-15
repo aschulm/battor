@@ -8,10 +8,10 @@ void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
 BattOr's PC companion     \n\n\
-usage: %s -s <options>    *stream* power measurements over USB              \n\
-   or: %s -d              *download* power measurement from SD card         \n\
-   or: %s -f <options>    *format* the SD card and upload the configuration \n\
-   or: %s -k              *restart* the MCU                                 \n\
+usage: %s <tty> -s <options>    *stream* power measurements over USB              \n\
+   or: %s <tty> -d              *download* power measurement from SD card         \n\
+   or: %s <tty> -f <options>    *format* the SD card and upload the configuration \n\
+   or: %s <tty> -k              *restart* the MCU                                 \n\
                                                                             \n\
 Options:                                                                    \n\
   -r <rate> : sample rate (default %d Hz)                                   \n\
@@ -29,6 +29,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
+	char* tty;
 	char usb = 0, format = 0, down = 0, reset = 0, test = 0;
 
 	uint16_t down_file;
@@ -42,11 +43,16 @@ int main(int argc, char** argv)
 	samples_init(&sconf);
 
 	// need an option
-	if (argc < 2)
+	if (argc < 3)
 	{
 		usage(argv[0]);
 		return EXIT_FAILURE;
 	}
+
+	// process the tty
+	tty = argv[1];
+	argv++;
+	argc--;
 
 	// process the options
 	opterr = 0;
@@ -108,8 +114,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-
-	uart_init();
+	uart_init(tty);
 
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
