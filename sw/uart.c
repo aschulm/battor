@@ -212,15 +212,12 @@ void uart_init(char* tty) //{{{
 	struct termios tio;
 	speed_t baud_rate = BAUD_RATE;
 	
-#ifdef __APPLE__
 	if ((fd = open(tty, O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
-#elif __linux__
-	if ((fd = open(tty, O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
-#endif
 	{
 		perror("open()");
 		exit(EXIT_FAILURE);
 	}
+
 	if (tcgetattr(fd, &tio) == -1)
 	{
 		perror("tcgetattr()");
@@ -228,18 +225,24 @@ void uart_init(char* tty) //{{{
 	}
 
 	// set parameters
-	cfsetspeed(&tio, B38400); // don't care, we  the baud rate anyway
 	cfmakeraw(&tio); // read one byte or timeout
 	tio.c_cc[VMIN] = 1; // 
 	tio.c_cc[VTIME] = 0; //
-	tio.c_cflag = CS8 | B38400; // 8-bit mode
+  tio.c_iflag &= ~(IXON | IXOFF);
+  tio.c_cflag &= ~(CRTSCTS | CSTOPB | PARENB | CSIZE);
+	tio.c_cflag |= CS8 | CREAD; // 8-bit mode
+#if __APPLE__
+	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
+#elif __linux__
+	cfsetspeed(&tio, B38400); // linux needs this for custom baud rate
+#endif
 	tcsetattr(fd, TCSANOW, &tio); // set the options now
 
 	// set baud rate
 #if __APPLE__
 	#include <IOKit/serial/ioss.h>
 	#include <sys/ioctl.h>
-	if (ioctl(fd, IOSSIOSPEED, &baud_rate) == -1) // set a non-standard baud rate on os X
+	if (ioctl(fd, IOSSIOSPEED, &baud_rate) < 0) // set a non-standard baud rate on os X
 	{
 		perror("ioctl()");
 		exit(EXIT_FAILURE);
