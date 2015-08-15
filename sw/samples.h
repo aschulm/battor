@@ -3,14 +3,15 @@
 
 struct sample_
 {
-	int16_t signal;
+	int16_t v;
+	int16_t i;
 } __attribute__((packed)); 
 typedef struct sample_ sample;
 
 struct samples_hdr_
 {
 	uint32_t seqnum;
-	uint16_t samples_len;
+	uint16_t len;
 } __attribute__((packed));
 typedef struct samples_hdr_ samples_hdr;
 

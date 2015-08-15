@@ -28,12 +28,19 @@ void adc_init(ADC_t* adc)
 	}
 	adc->CAL = adc_cal; // load the calibration value into the ADC adc_cal
 
+	// setup channels
 	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // no gain needed due to low impedience
-	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+	adc->CH1.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // no gain needed due to low impedience
+	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+	adc->CH1.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 
-	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_0_gc | ADC_EVACT_SYNCSWEEP_gc; // read channel 0 for event 0 
+	// setup interrupts
+	adc->CH0.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_OFF_gc;
+	adc->CH1.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_OFF_gc;
 
-	adc->CTRLA = ADC_ENABLE_bm; // turn on the ADC
+	adc->EVCTRL = ADC_EVSEL_0123_gc | ADC_SWEEP_01_gc | ADC_EVACT_SYNCSWEEP_gc; // read channel 0 for event 0 
+
+	adc->CTRLA = ADC_DMASEL_CH01_gc | ADC_ENABLE_bm; // turn on the ADC
 
 	// wait for the adc to settle
 	timer_sleep_ms(10);
