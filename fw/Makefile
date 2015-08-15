@@ -5,7 +5,7 @@
  
 VERSION = 1.0
 
-CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -O2 -DDEBUG #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0
+CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -O2 #-DDEBUG #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0
 OBJECTS    = drivers/led.o drivers/clock.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o drivers/reset.o drivers/eeprom.o drivers/sram.o blink.o main.o drivers.o interrupt.o error.o control.o samples.o store.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
@@ -32,7 +32,7 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash: all
-	#@battor -k > /dev/null
+	@battor -k > /dev/null
 	@modprobe ftdi-sio
 	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
 	@modprobe -r ftdi-sio
