@@ -1,7 +1,7 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN 100
+#define SAMPLES_LEN 500
 
 typedef struct sample_
 {
