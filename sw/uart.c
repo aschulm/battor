@@ -38,20 +38,26 @@ int uart_rx_byte(uint8_t* b) //{{{
 	}
 
 	*b = uart_rx_buffer[uart_rx_buffer_read_idx++];
+	vverb_printf("uart_rx_byte: read:0x%.2X read_idx:%d\n", *b, uart_rx_buffer_read_idx);
 	return uart_rx_buffer_write_idx;
 } //}}}
 
 int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 {
 	int i, ret;
-    uint8_t b_b[UART_RX_BUFFER_LEN];
+	uint8_t* b_b = NULL;
+	uint16_t b_b_len = 0;
+	uint8_t b_print[UART_RX_BUFFER_LEN];
 	uint8_t b_tmp;
+
 	uint8_t start_found = 0;
 	uint8_t end_found = 0;
 	uint16_t bytes_read = 0;
 
 uart_rx_bytes_start:
     start_found = end_found = bytes_read = 0;
+		b_b = (uint8_t*)b;
+		b_b_len = b_len;
 
 	vverb_printf("uart_rx_bytes: start\n%s", "");
 
@@ -72,7 +78,7 @@ uart_rx_bytes_start:
 				return -1;
 			}
 
-			if (bytes_read < UART_RX_BUFFER_LEN)
+			if (bytes_read < b_b_len)
 			{
 				vverb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
@@ -81,7 +87,7 @@ uart_rx_bytes_start:
 		else if (b_tmp == UART_START_DELIM)
 		{
             if (start_found) {
-                vverb_printf("uart_rx_byte: got two start delimiters\n%s", "");
+                vverb_printf("uart_rx_byte: got two START delimiters\n%s", "");
                 return -1;
             }
 			start_found = 1;
@@ -89,51 +95,49 @@ uart_rx_bytes_start:
 
 			if (uart_rx_byte(type) <= 0)
 			{
-				vverb_printf("uart_rx_byte: got start -- failed to get next byte\n%s", "");
+				vverb_printf("uart_rx_byte: got START -- failed to get next byte\n%s", "");
 				return -1;
 			}
-			vverb_printf("uart_rx_byte: got start type 0x%X\n", *type);
+
+			// frame is a print type, so swap in print buffer
+			if (*type == UART_TYPE_PRINT) 
+				b_b = b_print;
+				
+			vverb_printf("uart_rx_byte: got START type 0x%X\n", *type);
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
             if (!start_found) {
-                vverb_printf("uart_rx_byte: got end delimiter without start\n%s", "");
+                vverb_printf("uart_rx_byte: got end delimiter without START\n%s", "");
                 return -1;
             }
-			vverb_printf("uart_rx_byte: got end\n%s", "");
+			vverb_printf("uart_rx_byte: got END\n%s", "");
 			end_found = 1;
 		}
-		else if (bytes_read < UART_RX_BUFFER_LEN)
+		else if (bytes_read < b_b_len)
 		{
-            if (!start_found) {
-                vverb_printf("uart_rx_byte: got data before start 0x%X\n", b_tmp);
-            } else {
-                vverb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
-                b_b[bytes_read++] = b_tmp;
-            }
+			if (!start_found) {
+				vverb_printf("uart_rx_byte: got data before START 0x%X\n", b_tmp);
+			} else {
+				vverb_printf("uart_rx_byte: got byte 0x%X\n", b_tmp);
+			 	b_b[bytes_read++] = b_tmp;
+			}
 		}
-        /*else
-        {
-			vverb_printf("uart_rx_byte: nothing worked so done\n%s", "");
-            return -1;
-        }*/
 	}
 
 	// verbose
-    if (*type == UART_TYPE_PRINT) {
-        b_b[bytes_read] = '\0';
-        printf("[DEBUG] %s", b_b);
-        goto uart_rx_bytes_start;
-    } else {
-        verb_printf("uart_rx_bytes: recv%s", "");
-        for (i = 0; i < bytes_read; i++)
-        {
-            verb_printf(" %.2X", b_b[i]);
-        }
-        verb_printf("%s\n", "");
-    }
-
-    memcpy(b, b_b, b_len); // Copy as many bytes as was asked for
+	if (*type == UART_TYPE_PRINT) {
+		b_b[bytes_read] = '\0';
+		printf("[DEBUG] %s", b_b);
+		goto uart_rx_bytes_start;
+	} else {
+		verb_printf("uart_rx_bytes: recv%s", "");
+		for (i = 0; i < bytes_read; i++)
+		{
+			verb_printf(" %.2X", b_b[i]);
+		}
+		verb_printf("%s\n", "");
+	}
 
 	return bytes_read;
 } //}}}
