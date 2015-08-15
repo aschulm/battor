@@ -22,7 +22,7 @@ static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 {
 	uint8_t tx[2], rx[2];
 
-    pot_config_spi();
+	pot_config_spi();
 
 	tx[0]=0x80;
 	tx[1]=0x01;
@@ -41,7 +41,7 @@ static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t d
 {
 	uint8_t tx[2], rx[2];
 
-    pot_config_spi();
+	pot_config_spi();
 
 	tx[0] = (command << 2) | ((data & 0x300) >> 8);
 	tx[1] = (data & 0xFF);
@@ -74,11 +74,12 @@ void pot_init()
 	gpio_on(&PORTC, POT_FIL_CS_PIN_gm);
 	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm | POT_AMP_CS_PIN_gm | POT_FIL_CS_PIN_gm; // put the SPI pins in output mode
 
-    pot_config_spi();
+	pot_config_spi();
 
 	// start with both SDOs in high-impedience mode
 	pot_high_impedience_sdo(POT_AMP_CS_PIN_gm);
 	pot_high_impedience_sdo(POT_FIL_CS_PIN_gm);
+
 	// software reset and unprotect the RDAC register
 	pot_send_command(POT_AMP_CS_PIN_gm, 0x4, 0);
 	pot_send_command(POT_AMP_CS_PIN_gm, 0x7, 0x2); 

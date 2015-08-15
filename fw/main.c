@@ -51,17 +51,14 @@ int main() //{{{
 			interrupt_clear(INTERRUPT_UART_RX);
 		}
 
-		// ADCA and ADCB DMA channels
-		if (interrupt_is_set(INTERRUPT_DMA_CH0) && interrupt_is_set(INTERRUPT_DMA_CH2))
+		// ADCB DMA (channel 2)
+		if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
-			uint16_t len = SAMPLES_LEN;
-
 			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
 			{
-				samples_uart_write(g_adca0, g_adcb0, len);
+				samples_uart_write(g_adcb0, SAMPLES_LEN);
 				g_control_read_ready = 0;
 
-				interrupt_clear(INTERRUPT_DMA_CH0);
 				interrupt_clear(INTERRUPT_DMA_CH2);
 
 #ifdef GPIO_SAMPLE_WRITE_DONE
@@ -70,19 +67,15 @@ int main() //{{{
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{
-				samples_store_write(g_adca0, g_adcb0);
+				samples_store_write(g_adcb0);
 
-				interrupt_clear(INTERRUPT_DMA_CH0);
 				interrupt_clear(INTERRUPT_DMA_CH2);
 			}
 		}
 		
-		uint16_t len = SAMPLES_LEN;
-
-		// other ADCA and ADCB DMA channels (double buffered)
-		if (interrupt_is_set(INTERRUPT_DMA_CH1) && interrupt_is_set(INTERRUPT_DMA_CH3))
+		// other ADCB DMA (channel 3, double buffered)
+		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
-
 			// calibration finished, setup normal measurement operation
 			if (!g_control_calibrated)
 			{
@@ -96,10 +89,9 @@ int main() //{{{
 
 			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
 			{
-				samples_uart_write(g_adca1, g_adcb1, len);
+				samples_uart_write(g_adcb1, SAMPLES_LEN);
 				g_control_read_ready = 0;
 
-				interrupt_clear(INTERRUPT_DMA_CH1);
 				interrupt_clear(INTERRUPT_DMA_CH3);
 
 #ifdef GPIO_SAMPLE_WRITE_DONE
@@ -108,9 +100,8 @@ int main() //{{{
 			}
 			if (g_control_mode == CONTROL_MODE_STORE)
 			{
-				samples_store_write(g_adca1, g_adcb1);
+				samples_store_write(g_adcb1);
 
-				interrupt_clear(INTERRUPT_DMA_CH1);
 				interrupt_clear(INTERRUPT_DMA_CH3);
 			}
 		}
@@ -118,10 +109,10 @@ int main() //{{{
 		// need to read a file
 		if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
 		{
-			if (samples_store_read_next(g_adca0, g_adcb0) > 0)
-				samples_uart_write(g_adca0, g_adcb0, len);
+			if (samples_store_read_next(g_adcb0) > 0)
+				samples_uart_write(g_adcb0, SAMPLES_LEN);
 			else
-				samples_uart_write(NULL, NULL, 0);
+				samples_uart_write(NULL, 0);
 			g_control_read_ready = 0;
 		}
 	}
