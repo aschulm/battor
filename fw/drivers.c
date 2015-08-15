@@ -23,10 +23,8 @@ void drivers_init() //{{{
 	pot_init();
 	printf("drivers_init: sram_init()\r\n");
 	sram_init();
-	printf("drivers_init: adc_init(ADCA)\r\n");
-	adc_init(&ADCA); // voltage ADC
 	printf("drivers_init: adc_init(ADCB)\r\n");
-	adc_init(&ADCB); // current ADC
+	adc_init(&ADCB);
 
 	// sample timer
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);

@@ -77,7 +77,7 @@ void dma_init(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
 void dma_start()
 {
 	DMA.INTFLAGS = 0xFF; // clear all interrups
-	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 0 for ADCA, will auto double buffer with channel 1
+	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 0 for ADCB, will auto double buffer with channel 1
 	DMA.CH2.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 2 for ADCB, will auto double buffer with channel 3
 
 	// interrupt when the transaction is complete

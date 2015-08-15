@@ -80,7 +80,7 @@ int main() //{{{
 			if (!g_control_calibrated)
 			{
 				// voltage measurment
-				ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE3_gc; 
+				ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE3_gc; 
  				// current measurement
 				mux_select(MUX_R);
 
