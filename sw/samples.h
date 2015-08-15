@@ -21,7 +21,7 @@ struct samples_config_
 	uint32_t sample_rate;
 	eeprom_params eeparams;
 	uint8_t ovs_bits;
-	char test;
+	char cal;
 };
 typedef struct samples_config_ samples_config;
 

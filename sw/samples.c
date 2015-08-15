@@ -8,7 +8,7 @@ static double s_adc_top;
 void samples_init(samples_config* conf) //{{{
 {
 	// fill conf with default parameters
-	conf->test = 0;
+	conf->cal = 0;
 	conf->gain = 0.0;
 	conf->sample_rate = SAMPLE_RATE_HZ_DEFAULT;
 	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
@@ -19,7 +19,7 @@ void samples_init(samples_config* conf) //{{{
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
+inline double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
 {
 	// warnings for minimum and maximum voltage
 	if (warning && s->v == s_adc_top)
@@ -31,7 +31,7 @@ double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning) //
 	return (v_adcv / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-double sample_i(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
+inline double sample_i(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
 {
 	// warnings for minimum and maximum current
 	if (warning && s->i == s_adc_top)
@@ -157,7 +157,7 @@ void samples_print_loop(samples_config* conf) //{{{
 			printf("%0.1f %0.1f %0.1f", msec, mi, mv);
 
 			// check for test value on STDIN and print
-			if (conf->test)
+			if (conf->cal)
 			{
 				struct timeval tv;
 				fd_set fds;
@@ -181,7 +181,8 @@ void samples_print_loop(samples_config* conf) //{{{
 			sample_num++;
 		}
 
+		// flush the samples and enable interrupts again
 		fflush(stdout);
-		sigprocmask(SIG_UNBLOCK, &sigs, NULL); // enable interrupts before print
+		sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 	}
 }

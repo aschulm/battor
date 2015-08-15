@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	FILE* file;
 	char opt;
 	char* tty;
-	char usb = 0, format = 0, down = 0, reset = 0, test = 0;
+	char usb = 0, format = 0, down = 0, reset = 0, test = 0, cal = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -56,10 +56,13 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:kt")) != -1)
+	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:ktc")) != -1)
 	{
 		switch(opt)
 		{
+			case 'c':
+				sconf.cal = 1;
+			break;
 			case 's':
 				usb = 1;
 			break;
@@ -116,31 +119,17 @@ int main(int argc, char** argv)
 
 	uart_init(tty);
 
-    // run self test
-    if (test)
-    {
-        int ret;
-        if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
-            fprintf(stderr, "Error: self test failed %d\n", ret);
-            return EXIT_FAILURE;
-        }
-        fprintf(stderr, "Self test passed\n");
-        return EXIT_SUCCESS;
-    }
-
-
-    // run self test
-    if (test)
-    {
-        int ret;
-        if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
-            fprintf(stderr, "Error: self test failed %d\n", ret);
-            return EXIT_FAILURE;
-        }
-        fprintf(stderr, "Self test passed\n");
-        return EXIT_SUCCESS;
-    }
-
+	// run self test
+	if (test)
+	{
+		int ret;
+		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
+			fprintf(stderr, "Error: self test failed %d\n", ret);
+			return EXIT_FAILURE;
+		}
+		fprintf(stderr, "Self test passed\n");
+		return EXIT_SUCCESS;
+	}
 
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
