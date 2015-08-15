@@ -129,6 +129,19 @@ int main(int argc, char** argv)
     }
 
 
+    // run self test
+    if (test)
+    {
+        int ret;
+        if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
+            fprintf(stderr, "Error: self test failed %d\n", ret);
+            return EXIT_FAILURE;
+        }
+        fprintf(stderr, "Self test passed\n");
+        return EXIT_SUCCESS;
+    }
+
+
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
