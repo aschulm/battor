@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char* tty;
+	char tty[] = "/dev/cu.usbserial-0001";
 	char usb = 0, format = 0, down = 0, reset = 0, test = 0, cal = 0;
 
 	uint16_t down_file;
@@ -43,16 +43,11 @@ int main(int argc, char** argv)
 	samples_init(&sconf);
 
 	// need an option
-	if (argc < 3)
+	if (argc < 2)
 	{
 		usage(argv[0]);
 		return EXIT_FAILURE;
 	}
-
-	// process the tty
-	tty = argv[1];
-	argv++;
-	argc--;
 
 	// process the options
 	opterr = 0;
@@ -111,6 +106,7 @@ int main(int argc, char** argv)
 			case 'h':
 				usage(argv[0]);
 				return EXIT_FAILURE;
+      break;
 			default:
 				usage(argv[0]);
 				return EXIT_FAILURE;
