@@ -18,15 +18,19 @@ int uart_rx_byte(uint8_t* b) //{{{
 	{
 		if (attempt++ >= UART_RX_ATTEMPTS)
 		{
-            vverb_printf("uart_rx_byte: timeout\n%s", "");
+			vverb_printf("uart_rx_byte: timeout\n%s", "");
 			return -1;
 		}
 
-		if ((uart_rx_buffer_write_idx = read(fd, uart_rx_buffer, sizeof(uart_rx_buffer))) < 0)
+		// try non-blocking read
+		if ((uart_rx_buffer_write_idx = read(fd, uart_rx_buffer, sizeof(uart_rx_buffer))) <= 0)
 		{
-            vverb_printf("uart_rx_byte: ftdi_read_data error\n%s", "");
-			return -1;
+			vverb_printf("uart_rx_byte: read() ret:%d\n", uart_rx_buffer_write_idx);
+			// read failed or did not return any data, wait a bit and try again
+			usleep(UART_READ_SLEEP_US);
+			continue;
 		}
+		vverb_printf("uart_rx_byte: read() ret:%d\n", uart_rx_buffer_write_idx);
 		uart_rx_buffer_read_idx = 0;
 
 		vverb_printf("uart_rx_byte: len:%d", uart_rx_buffer_write_idx);
@@ -59,7 +63,7 @@ uart_rx_bytes_start:
 		b_b = (uint8_t*)b;
 		b_b_len = b_len;
 
-	vverb_printf("uart_rx_bytes: start\n%s", "");
+	vverb_printf("uart_rx_bytes: begin\n%s", "");
 
 	while (!(start_found && end_found))
 	{
@@ -86,10 +90,6 @@ uart_rx_bytes_start:
 		}
 		else if (b_tmp == UART_START_DELIM)
 		{
-            if (start_found) {
-                vverb_printf("uart_rx_byte: got two START delimiters\n%s", "");
-                return -1;
-            }
 			start_found = 1;
 			bytes_read = 0;
 
@@ -101,16 +101,15 @@ uart_rx_bytes_start:
 
 			// frame is a print type, so swap in print buffer
 			if (*type == UART_TYPE_PRINT) 
+			{
 				b_b = b_print;
+				b_b_len = sizeof(b_print);
+			}
 				
 			vverb_printf("uart_rx_byte: got START type 0x%X\n", *type);
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
-            if (!start_found) {
-                vverb_printf("uart_rx_byte: got end delimiter without START\n%s", "");
-                return -1;
-            }
 			vverb_printf("uart_rx_byte: got END\n%s", "");
 			end_found = 1;
 		}
@@ -128,7 +127,7 @@ uart_rx_bytes_start:
 	// verbose
 	if (*type == UART_TYPE_PRINT) {
 		b_b[bytes_read] = '\0';
-		printf("[DEBUG] %s", b_b);
+		fprintf(stderr, "[DEBUG] %s", b_b);
 		goto uart_rx_bytes_start;
 	} else {
 		verb_printf("uart_rx_bytes: recv%s", "");
@@ -164,7 +163,6 @@ void uart_tx_byte(uint8_t b) //{{{
 				perror("write()");
 				exit(EXIT_FAILURE);
 			}
-			fsync(fd);
 
 			// verbose
 			verb_printf("uart_tx_byte: sent %s", "");
@@ -215,9 +213,9 @@ void uart_init(char* tty) //{{{
 	speed_t baud_rate = BAUD_RATE;
 	
 #ifdef __APPLE__
-	if ((fd = open(tty, O_RDWR | O_NOCTTY)) < 0)
+	if ((fd = open(tty, O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
 #elif __linux__
-	if ((fd = open(tty, O_RDWR | O_NOCTTY)) < 0)
+	if ((fd = open(tty, O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
 #endif
 	{
 		perror("open()");
@@ -229,20 +227,15 @@ void uart_init(char* tty) //{{{
 		exit(EXIT_FAILURE);
 	}
 
-#ifdef __APPLE__
-	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
-	cfmakeraw(&tio); // read one byte or timeout
-	tio.c_cc[VMIN] = 1; // 
-	tio.c_cc[VTIME] = 10; //
-	tio.c_cflag = CS8; // 8-bit mode
-#elif __linux__
+	// set parameters
 	cfsetspeed(&tio, B38400); // don't care, we  the baud rate anyway
 	cfmakeraw(&tio); // read one byte or timeout
-	tio.c_cflag |= B38400 | CS8;
-#endif
-
+	tio.c_cc[VMIN] = 1; // 
+	tio.c_cc[VTIME] = 0; //
+	tio.c_cflag = CS8 | B38400; // 8-bit mode
 	tcsetattr(fd, TCSANOW, &tio); // set the options now
 
+	// set baud rate
 #if __APPLE__
 	#include <IOKit/serial/ioss.h>
 	#include <sys/ioctl.h>
@@ -260,4 +253,6 @@ void uart_init(char* tty) //{{{
 	ss.custom_divisor = ss.baud_base / BAUD_RATE;
 	ioctl(fd, TIOCSSERIAL, &ss);
 #endif
+
+	tcflush(fd, TCIOFLUSH); // flush the buffers in the FTDI
 } //}}}

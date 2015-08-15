@@ -32,10 +32,8 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash: all
-	@battor -k > /dev/null
-	@modprobe ftdi-sio
+	battor /dev/ttyUSB0 -k
 	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
-	@modprobe -r ftdi-sio
 
 flash_mkII: all
 	avrdude -p x192a3u -c avrispmkII -P usb -U flash:w:main.hex

@@ -66,7 +66,8 @@ int param_read_eeprom(eeprom_params* params)
 {
 	uint8_t magic[4] = {0x31, 0x10, 0x31, 0x10};
 	uint8_t type;
-	control(CONTROL_TYPE_READ_EEPROM, sizeof(eeprom_params), 0, 0);	
+	control(CONTROL_TYPE_READ_EEPROM, sizeof(eeprom_params), 0, 0);
+	usleep(CONTROL_SLEEP_US); // since EEPROM is sent in ACK, wait for it
 	uart_rx_bytes(&type, params, sizeof(eeprom_params));
 
 	if (memcmp(magic, params->magic, sizeof(magic)) != 0)
