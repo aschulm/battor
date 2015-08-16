@@ -26,8 +26,10 @@ int uart_rx_byte(uint8_t* b) //{{{
 		if ((uart_rx_buffer_write_idx = read(fd, uart_rx_buffer, sizeof(uart_rx_buffer))) <= 0)
 		{
 			vverb_printf("uart_rx_byte: read() ret:%d\n", uart_rx_buffer_write_idx);
+
 			// read failed or did not return any data, wait a bit and try again
-			usleep(UART_READ_SLEEP_US);
+			struct timespec to_sleep = {0, UART_READ_SLEEP_NS};
+			while (nanosleep(&to_sleep, &to_sleep) < 0);
 			continue;
 		}
 		vverb_printf("uart_rx_byte: read() ret:%d\n", uart_rx_buffer_write_idx);
@@ -244,7 +246,7 @@ void uart_init(char* tty) //{{{
 	#include <sys/ioctl.h>
 	if (ioctl(fd, IOSSIOSPEED, &baud_rate) < 0) // set a non-standard baud rate on os X
 	{
-		perror("ioctl()");
+		perror("ioctl(IOSSIOSPEED)");
 		exit(EXIT_FAILURE);
 	}
 #elif __linux__
@@ -255,6 +257,16 @@ void uart_init(char* tty) //{{{
 	ss.flags |= ASYNC_SPD_CUST;
 	ss.custom_divisor = ss.baud_base / BAUD_RATE;
 	ioctl(fd, TIOCSSERIAL, &ss);
+#endif
+
+	// set latency (this doesn't seem to work)
+#if __APPLE__
+	unsigned long ms = 1;
+	if (ioctl(fd, IOSSDATALAT, &ms) < 0)
+	{
+		perror("ioctl(IOSSDATALAT)");
+		exit(EXIT_FAILURE);
+	}
 #endif
 
 	tcflush(fd, TCIOFLUSH); // flush the buffers in the FTDI
