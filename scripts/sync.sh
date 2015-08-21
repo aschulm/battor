@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 SUCHECK=`adb shell 'ls /system/xbin/su >/dev/null 2>/dev/null; echo $?'`
-SUCHECK=${SUCHECK::-1} # remove extra '\r'
+SUCHECK=`echo $SUCHECK | rev | cut -c 2- | rev`  # remove extra '\r'
 
 function adbshell 
 {
@@ -9,6 +9,7 @@ function adbshell
 	if [ $SUCHECK = "0" ]
 	then
 		adb shell "su -c \"$cmd\""
+    echo "SU"
 	else
 		adb shell "$cmd"
 	fi
