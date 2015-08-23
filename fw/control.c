@@ -6,6 +6,7 @@
 #include "samples.h"
 #include "store.h"
 #include "drivers.h"
+#include "ringbuf.h"
 
 static control_message message;
 uint8_t g_control_mode;
@@ -153,13 +154,18 @@ int8_t control_run_message(control_message* m) //{{{
 				uart_tx_end();
 				ret = -1;
 			break;
-            case CONTROL_TYPE_SELF_TEST:
-                // step 1. test the sram
-                printf("self test started\n");
+			case CONTROL_TYPE_SELF_TEST:
+				// step 1. test the sram
+				printf("self test started\n");
+				if (!(ret = drivers_self_test()))
+					break;
 
-                ret = drivers_self_test();
-            break;
+				// step 2. test the ringbuf
+				if (!(ret = ringbuf_self_test()))
+					break;
+			break;
 		}
 	}
 	return ret;
 } //}}}
+
