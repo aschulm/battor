@@ -156,12 +156,12 @@ int8_t control_run_message(control_message* m) //{{{
 			break;
 			case CONTROL_TYPE_SELF_TEST:
 				// step 1. test the sram
-				printf("self test started\n");
-				if (!(ret = drivers_self_test()))
+				printf("====== self test started ======\n");
+				if ((ret = drivers_self_test()) > 0)
 					break;
 
 				// step 2. test the ringbuf
-				if (!(ret = ringbuf_self_test()))
+				if ((ret = ringbuf_self_test()) > 0)
 					break;
 			break;
 		}
