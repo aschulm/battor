@@ -3,7 +3,7 @@
 
 #include "spi.h"
 
-void spi_txrx(SPI_t* spi, void* txd, void* rxd, uint16_t len)
+void spi_txrx(SPI_t* spi, const void* txd, void* rxd, uint16_t len)
 {
 	uint8_t rx_null = 0;
 	uint8_t* txd_b = (uint8_t*)txd;
