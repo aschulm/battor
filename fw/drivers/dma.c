@@ -12,6 +12,10 @@
 
 ISR(DMA_CH2_vect)
 {
+#ifdef GPIO_DMA_INT
+	gpio_toggle(&PORTE, (1<<GPIO_DMA_INT));
+#endif
+
 	if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		halt(ERROR_DMA_CH2_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH2);
@@ -19,6 +23,10 @@ ISR(DMA_CH2_vect)
 }
 ISR(DMA_CH3_vect)
 {
+#ifdef GPIO_DMA_INT
+	gpio_toggle(&PORTE, (1<<GPIO_DMA_INT));
+#endif
+
 	if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		halt(ERROR_DMA_CH3_OVERFLOW);
 	interrupt_set(INTERRUPT_DMA_CH3);
