@@ -163,6 +163,12 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 	return bytes_read;
 } //}}}
 
+void uart_rx_flush() //{{{
+{
+	uart_rx_buffer_read_idx = 0;
+	uart_rx_buffer_write_idx = 0;
+} //}}}
+
 // for c FILE* interface
 int uart_putchar(char c, FILE* stream) //{{{
 {
