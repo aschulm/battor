@@ -16,6 +16,7 @@
 #include "samples.h"
 #include "xmega.h"
 #include "control.h"
+#include "uart.h"
 
 extern char g_verb;
 

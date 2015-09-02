@@ -30,11 +30,12 @@
 #define OVERSAMPLE_BITS_MAX 1
 
 // control
-#define CONTROL_SLEEP_US 50000 // needs at least the latency of the FTDI, so 20ms is plenty
+#define CONTROL_SLEEP_US 50000
 
 // uart
-#define UART_RX_ATTEMPTS 10
-#define UART_READ_SLEEP_US 100
+// needs at least the latency of the FTDI, so 20ms is plenty
+#define UART_RX_ATTEMPTS 20
+#define UART_READ_SLEEP_NS 1000000 
 
 struct eeprom_params_
 {
