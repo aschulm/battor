@@ -29,7 +29,8 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char tty[] = "/dev/cu.usbserial-0001";
+	//char tty[] = "/dev/cu.usbserial-0001";
+	char tty[] = "/dev/ttyUSB0";
 	char usb = 0, format = 0, down = 0, reset = 0, test = 0, cal = 0;
 
 	uint16_t down_file;
@@ -120,21 +121,21 @@ int main(int argc, char** argv)
 	{
 		int ret;
 		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
-			fprintf(stderr, "Error: self test failed %d\n", ret);
+			fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
 			return EXIT_FAILURE;
 		}
-		fprintf(stderr, "Self test passed\n");
+		fprintf(stderr, "------ Self Test PASSED ------\n");
 		return EXIT_SUCCESS;
 	}
-
-	// init the battor 
-	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
 	if (reset)
 	{
 		control(CONTROL_TYPE_RESET, 0, 0, 0);
 		return EXIT_SUCCESS;
 	}
+
+	// init the battor 
+	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
 	// read the BattOr's calibration params from its EEPROM
 	if (param_read_eeprom(eeparams) < 0)

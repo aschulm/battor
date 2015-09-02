@@ -15,7 +15,7 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_READ_READY,          // ready to start receiving next round of samples
 	CONTROL_TYPE_RESET,               // reset the MCU
 	CONTROL_TYPE_READ_EEPROM,         // read the EEPROM
-    CONTROL_TYPE_SELF_TEST,           // self test
+	CONTROL_TYPE_SELF_TEST,           // self test
 } CONTROL_TYPE_t;
 
 struct control_message_
