@@ -5,7 +5,7 @@
 void drivers_init() //{{{
 {
 	// ** order of init is very important **
-
+	
 	printf("drivers_init: uart_init()\n");
 	uart_init();
 
@@ -28,6 +28,9 @@ void drivers_init() //{{{
 	// sample timer
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
+
+	printf("drivers_init: led_init()\n");
+	led_init();
 
 	// gpio output for debugging
 #ifdef GPIO_SAMPLE_WRITE_DONE
