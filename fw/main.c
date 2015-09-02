@@ -56,25 +56,11 @@ int main() //{{{
 		// ADCB DMA (channel 2)
 		if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
-			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
-			{
-				samples_uart_write(g_adcb0, SAMPLES_LEN);
-				g_control_read_ready = 0;
-
-				interrupt_clear(INTERRUPT_DMA_CH2);
-
-#ifdef GPIO_SAMPLE_WRITE_DONE
-				gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));
-#endif
-			}
-			if (g_control_mode == CONTROL_MODE_STORE)
-			{
-				samples_store_write(g_adcb0);
-
-				interrupt_clear(INTERRUPT_DMA_CH2);
-			}
+			// put samples on FIFO
+			samples_ringbuf_write(g_adcb0, SAMPLES_LEN);
+			interrupt_clear(INTERRUPT_DMA_CH2);
 		}
-		
+
 		// other ADCB DMA (channel 3, double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
@@ -83,40 +69,46 @@ int main() //{{{
 			{
 				// voltage measurment
 				ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE3_gc; 
- 				// current measurement
+				// current measurement
 				mux_select(MUX_R);
 
 				g_control_calibrated = 1;
 			}
 
-			if (g_control_mode == CONTROL_MODE_STREAM && g_control_read_ready)
-			{
-				samples_uart_write(g_adcb1, SAMPLES_LEN);
-				g_control_read_ready = 0;
+			// put samples on FIFO
+			samples_ringbuf_write(g_adcb1, SAMPLES_LEN);
+			interrupt_clear(INTERRUPT_DMA_CH3);
+		}
 
-				interrupt_clear(INTERRUPT_DMA_CH3);
+		if (g_control_mode == CONTROL_MODE_STREAM &&
+			g_control_read_ready &&
+			(DMA.CH0.CTRLB & DMA_CH_CHBUSY_bm) == 0)
+		{
+			g_control_read_ready = 0;
+
+			samples_uart_write();
+			//interrupt_clear(INTERRUPT_DMA_CH0);
 
 #ifdef GPIO_SAMPLE_WRITE_DONE
-				gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));
+			gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));
 #endif
-			}
-			if (g_control_mode == CONTROL_MODE_STORE)
-			{
-				samples_store_write(g_adcb1);
-
-				interrupt_clear(INTERRUPT_DMA_CH3);
-			}
 		}
 
-		// need to read a file
-		if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
-		{
-			if (samples_store_read_next(g_adcb0) > 0)
-				samples_uart_write(g_adcb0, SAMPLES_LEN);
-			else
-				samples_uart_write(NULL, 0);
-			g_control_read_ready = 0;
-		}
+		// TODO implement store
+		//if (g_control_mode == CONTROL_MODE_STORE)
+		//{
+		//	samples_store_write(g_adcb0);
+		//}
+
+		// TODO implement need to read a file
+		//if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
+		//{
+		//	if (samples_store_read_next(g_adcb0) > 0)
+		//		samples_uart_write(g_adcb0, SAMPLES_LEN);
+		//	else
+		//		samples_uart_write(NULL, 0);
+		//	g_control_read_ready = 0;
+		//}
 	}
 
 	return 0;

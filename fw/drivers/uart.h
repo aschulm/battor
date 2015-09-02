@@ -21,7 +21,7 @@ typedef enum UART_TYPE_enum
 	UART_TYPE_PRINT,
 } UART_TYPE_t;
 
-#define UART_BUFFER_LEN 100
+#define UART_BUFFER_LEN 800
 
 #define USARTD0_TXD_PIN (1<<3)
 #define USARTD0_RXD_PIN (1<<2)

@@ -1,6 +1,8 @@
 #ifndef SRAM_H
 #define SRAM_H
 
+#define SRAM_SIZE_BYTES 64000
+
 #define SRAM_CS_PIN_gm (1<<2)
 
 #define SRAM_MODE_BYTE 0
