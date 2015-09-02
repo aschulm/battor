@@ -7,12 +7,17 @@
 
 #include "sram.h"
 
-void sram_config_spi()
+inline void sram_config_spi()
 {
-	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_3_gc | SPI_PRESCALER_DIV4_gc; 
+	SPIC.CTRL = SPI_ENABLE_bm |
+		SPI_MASTER_bm |
+		SPI_MODE_3_gc |
+		SPI_CLK2X_bm |
+		SPI_PRESCALER_DIV4_gc; 
 }
 
-void sram_init() {
+void sram_init()
+{
 	PORTE.PIN3CTRL |= PORT_OPC_PULLUP_gc; // pull up on CS Hold Pin
 
 	// NOTE: this happens two times, once here and once for the POT SPI
@@ -22,8 +27,6 @@ void sram_init() {
 
 	PORTE.DIR |= SRAM_CS_PIN_gm;
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
-
- 	sram_config_spi();
 }
 
 void* sram_write(void* addr, const void* src, size_t len)
