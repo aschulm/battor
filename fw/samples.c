@@ -44,7 +44,7 @@ void samples_store_write(sample* s) //{{{
 {
 	uint16_t len = SAMPLES_LEN * sizeof(sample);
 
-	printf("samples: store_write_bytes\r\n");
+	printf("samples: store_write_bytes\n");
 	// write samples
 	store_write_bytes((uint8_t*)s, len);
 } //}}}

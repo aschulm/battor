@@ -10,12 +10,14 @@
 
 int main() //{{{
 {
-	printf("main: clock_set_crystal()\r\n");
+	printf("main: clock_set_crystal()\n");
 	clock_set_crystal();
-	printf("main: interrupt_init()\r\n");
+	printf("main: interrupt_init()\n");
 	interrupt_init();
-	printf("main: drivers_init()\r\n");
+	printf("main: drivers_init()\n");
 	drivers_init();
+	printf("main: samples_init()\n");
+	samples_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
 	blink_init(1000, LED_YELLOW_bm); 
@@ -24,7 +26,7 @@ int main() //{{{
 	g_control_mode = 0;
 	if (store_init() >= 0)
 	{
-		printf("main: store init successful\r\n");
+		printf("main: store init successful\n");
 		store_run_commands();
 	}
 

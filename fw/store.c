@@ -29,11 +29,11 @@ int8_t store_init() //{{{
 	sd_read_block(&sb, STORE_STARTBLOCK_IDX);
 	if (sb.magic == STORE_MAGIC && sb.version == STORE_VERSION)
 	{
-		printf("store: startblock found\r\n");	
+		printf("store: startblock found\n");	
 	}
 	else
 	{
-		printf("store: startblock not found\r\n");	
+		printf("store: startblock not found\n");	
 		startblock_init(0);
 		sd_write_block(&sb, STORE_STARTBLOCK_IDX);
 	}
@@ -99,10 +99,10 @@ int store_read_bytes(uint8_t* buf, uint16_t len) //{{{
 
 	// assumes the same size that was written is also read
 	sd_read_block(&fb, read_block_idx);
-	printf("store: #1 rands sb %X fb %X\r\n", sb.rand, fb.rand);
+	printf("store: #1 rands sb %X fb %X\n", sb.rand, fb.rand);
 	while (sb.rand == fb.rand && idx < len)
 	{
-		printf("store: rands sb %X fb %X fb.len %d idx %d len %d\r\n", sb.rand, fb.rand, fb.len, idx, len);
+		printf("store: rands sb %X fb %X fb.len %d idx %d len %d\n", sb.rand, fb.rand, fb.len, idx, len);
 		memcpy(buf + idx, fb.buf, fb.len);
 		idx += fb.len;
 		read_block_idx++;

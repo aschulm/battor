@@ -40,7 +40,7 @@ int8_t control_run_message(control_message* m) //{{{
 {
 	uint8_t ret = 0;
 
-	printf("control: type %d\r\n", m->type);
+	printf("control: type %d\n", m->type);
 	// record the message if we are in record mode, else run it
 	if (g_control_mode == CONTROL_MODE_REC_CONTROL &&
 			m->type != CONTROL_TYPE_START_REC_CONTROL &&
