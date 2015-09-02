@@ -32,6 +32,11 @@ void control_got_uart_bytes() //{{{
 			uart_tx_bytes(&message.type, sizeof(message.type)); 
 			uart_tx_bytes(&ret, 1);
 			uart_tx_end();
+
+			// flush rx buffer to avoid running control messages
+			// that came in during the execution of the last one
+			// (e.g., another read ready)
+			uart_rx_flush();
 		}
 	}
 } //}}}
