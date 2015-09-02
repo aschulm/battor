@@ -77,13 +77,11 @@ int sram_self_test() {
 		uint8_t test_src[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
 		uint8_t buf[10];
 
-    sram_config_spi();
+		printf("sram self test\n");
 
-    printf("sram self test\n");
-
-    printf("sram write 1...");
+		printf("sram write 1...");
 		memset(buf, 0, sizeof(buf));
-		sram_write(0x0000, test_src + 1, 1); // +1 to get non-zero src
+		sram_write((void*)0x0000, test_src + 1, 1); // +1 to get non-zero src
 		sram_read(buf, 0x0000, 1);
 		if (memcmp(test_src + 1, buf, 1) != 0)
 		{
@@ -92,9 +90,9 @@ int sram_self_test() {
 		}
 		printf("PASSED\n");
 
-    printf("sram write 10...");
+		printf("sram write 10...");
 		memset(buf, 0, sizeof(buf));
-		sram_write(0x0000, test_src, 10);
+		sram_write((void*)0x0000, test_src, 10);
 		sram_read(buf, 0x0000, 10);
 		if (memcmp(test_src, buf, 10) != 0)
 		{
@@ -103,10 +101,10 @@ int sram_self_test() {
 		}
 		printf("PASSED\n");
 
-    printf("sram write 10 high address...");
+		printf("sram write 10 high address...");
 		memset(buf, 0, sizeof(buf));
-		sram_write(63000, test_src, 10);
-		sram_read(buf, 63000, 10);
+		sram_write((void*)63000, test_src, 10);
+		sram_read(buf, (void*)63000, 10);
 		if (memcmp(test_src, buf, 10) != 0)
 		{
 			printf("FAILED (memcmp)\n");
