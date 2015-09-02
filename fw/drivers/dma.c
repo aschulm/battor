@@ -10,6 +10,11 @@
 #include "dma.h"
 #include "gpio.h"
 
+ISR(DMA_CH0_vect)
+{
+	DMA.INTFLAGS = DMA_CH0TRNIF_bm; // clear the interrupt
+}
+
 ISR(DMA_CH2_vect)
 {
 #ifdef GPIO_DMA_INT
@@ -103,4 +108,16 @@ void dma_stop()
 	DMA.INTFLAGS = 0xFF; // clear all interrups
 
 	EVSYS.CH0MUX = 0; // stop event channel 0
+}
+
+void dma_uart_tx(uint8_t* data, uint16_t len)
+{
+	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BURST_gc | DMA_CH_DESTDIR_FIXED_gc;
+	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+	DMA.CH0.TRFCNT = len;
+	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)(data));
+	set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA));
+	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
+	DMA.CH0.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
 }
