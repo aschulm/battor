@@ -6,7 +6,13 @@
 
 #define UART_START_DELIM 0x00
 #define UART_END_DELIM 0x01
-#define UART_ESC_DELIM 0x02
+#define UART_XONXOFF_DELIM 0x02
+#define UART_ESC_DELIM 0x03
+
+#define UART_XON_REPL 0x00
+#define UART_XOFF_REPL 0x01
+#define UART_XON 0x11
+#define UART_XOFF 0x13
 
 #define UART_RX_BUFFER_LEN (64*2)
 #define UART_TX_BUFFER_LEN (64*2) 

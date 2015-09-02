@@ -61,9 +61,9 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 	uint16_t bytes_read = 0;
 
 uart_rx_bytes_start:
-    start_found = end_found = bytes_read = 0;
-		b_b = (uint8_t*)b;
-		b_b_len = b_len;
+	start_found = end_found = bytes_read = 0;
+	b_b = (uint8_t*)b;
+	b_b_len = b_len;
 
 	vverb_printf("uart_rx_bytes: begin\n%s", "");
 
@@ -88,6 +88,23 @@ uart_rx_bytes_start:
 			{
 				vverb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
+			}
+		}
+		else if (b_tmp == UART_XONXOFF_DELIM)
+		{
+			vverb_printf("uart_rx_bytes: got xonxoff escape\n%s", "");
+			if (uart_rx_byte(&b_tmp) <= 0)
+			{
+				vverb_printf("uart_rx_bytes: got xonxoff escape -- failed to get next byte\n%s", "");
+				return -1;
+			}
+
+			if (bytes_read < b_len)
+			{
+				if (b_tmp == UART_XON_REPL)
+					b_b[bytes_read++] = UART_XON;
+				if (b_tmp == UART_XOFF_REPL)
+					b_b[bytes_read++] = UART_XOFF;
 			}
 		}
 		else if (b_tmp == UART_START_DELIM)
@@ -127,11 +144,14 @@ uart_rx_bytes_start:
 	}
 
 	// verbose
-	if (*type == UART_TYPE_PRINT) {
+	if (*type == UART_TYPE_PRINT) 
+	{
 		b_b[bytes_read] = '\0';
 		fprintf(stderr, "[DEBUG] %s", b_b);
 		goto uart_rx_bytes_start;
-	} else {
+	} 
+	else 
+	{
 		verb_printf("uart_rx_bytes: recv%s", "");
 		for (i = 0; i < bytes_read; i++)
 		{
@@ -160,6 +180,7 @@ void uart_tx_byte(uint8_t b) //{{{
 		to_write_len = uart_tx_buffer_idx;
 		while (to_write_len > 0)
 		{
+			// try write until it works, XON/XOFF may kill it?
 			if ((write_len = write(fd, uart_tx_buffer + (uart_tx_buffer_idx - to_write_len), to_write_len)) < 0)
 			{
 				perror("write()");
@@ -198,12 +219,24 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 
 	for (i = 0; i < len; i++)
 	{
-		if (b_b[i] == UART_START_DELIM || b_b[i] == UART_END_DELIM || b_b[i] == UART_ESC_DELIM)
-		{
+		if (b_b[i] == UART_START_DELIM ||
+			b_b[i] == UART_END_DELIM ||
+			b_b[i] == UART_XONXOFF_DELIM ||
+			b_b[i] == UART_ESC_DELIM)
 			uart_tx_byte(UART_ESC_DELIM);	
-		}
 
-		uart_tx_byte(b_b[i]);
+		if (b_b[i] == UART_XON)
+		{
+			uart_tx_byte(UART_XONXOFF_DELIM);
+			uart_tx_byte(UART_XON_REPL);
+		}
+		else if (b_b[i] == UART_XOFF)
+		{
+			uart_tx_byte(UART_XONXOFF_DELIM);
+			uart_tx_byte(UART_XOFF_REPL);
+		}
+		else
+			uart_tx_byte(b_b[i]);
 	}
 
 	uart_tx_byte(UART_END_DELIM);
@@ -230,7 +263,10 @@ void uart_init(char* tty) //{{{
 	cfmakeraw(&tio); // read one byte or timeout
 	tio.c_cc[VMIN] = 1; // 
 	tio.c_cc[VTIME] = 0; //
-  tio.c_iflag &= ~(IXON | IXOFF);
+	tio.c_cc[VSTART] = 0x11; //
+	tio.c_cc[VSTOP] = 0x13; //
+  tio.c_iflag &= ~(IXON | IXOFF | IXANY);
+  tio.c_iflag |= IXON | IXOFF; // XON/XOFF input flow control
   tio.c_cflag &= ~(CRTSCTS | CSTOPB | PARENB | CSIZE);
 	tio.c_cflag |= CS8 | CREAD; // 8-bit mode
 #if __APPLE__

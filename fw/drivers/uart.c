@@ -4,6 +4,7 @@
 #include <avr/interrupt.h>
 
 #include "uart.h"
+#include "dma.h"
 #include "led.h"
 #include "../interrupt.h"
 #include "../error.h"
@@ -12,6 +13,8 @@
 static volatile uint8_t uart_rx_buffer[UART_BUFFER_LEN];
 static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
+static volatile uint8_t uart_tx_fc_ready = 0;
+static uint8_t uart_tx_buffer[UART_BUFFER_LEN];
 static int uart_initialized = 0;
 
 ISR(USARTD0_RXC_vect) //{{{
@@ -27,9 +30,20 @@ ISR(USARTD0_RXC_vect) //{{{
 		// read bytes until USART fifo is empty
 		while ((USARTD0.STATUS & USART_RXCIF_bm) > 0)
 		{
-			uart_rx_buffer[uart_rx_buffer_write_idx++] = USARTD0.DATA;
-			if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
-				uart_rx_buffer_write_idx = 0;
+			uint8_t tmp = USARTD0.DATA;
+			// flow control XON
+			if (tmp == UART_XON)
+				uart_tx_fc_ready = 1;
+			// flow control XOFF
+			else if (tmp == UART_XOFF)
+				uart_tx_fc_ready = 0;
+			else
+			{
+				// store byte
+				uart_rx_buffer[uart_rx_buffer_write_idx++] = tmp;
+				if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
+					uart_rx_buffer_write_idx = 0;
+			}
 		}
 		interrupt_set(INTERRUPT_UART_RX);
 	}
@@ -62,6 +76,8 @@ void uart_init() //{{{
 	uart_rx_buffer_write_idx = 0; // reset the receive buffer pointer
 	uart_rx_buffer_read_idx = 0; // reset the receive buffer pointer
 
+	uart_tx_fc_ready = 1; // start with not waiting for flow control
+
 	// set stdout to uart so we can use printf for debugging
 #ifdef DEBUG
 	stdout = &g_uart_stream;
@@ -69,11 +85,14 @@ void uart_init() //{{{
 	
 	interrupt_enable();
 
-    uart_initialized = 1;
+	uart_initialized = 1;
 } //}}}
 
 inline void uart_tx_byte(uint8_t b) //{{{
 {
+	// wait for flow control
+	while (!uart_tx_fc_ready);
+
 	interrupt_disable();
 	loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
 	USARTD0.DATA = b; // put the data in the tx buffer
@@ -99,12 +118,53 @@ void uart_tx_bytes(void* b, uint16_t len) //{{{
 	for (i = 0; i < len; i++)
 	{
 		if (b_b[i] <= UART_ESC_DELIM)
-		{
 			uart_tx_byte(UART_ESC_DELIM);	
-		}
 
-		uart_tx_byte(b_b[i]);
+		if (b_b[i] == UART_XON)
+		{
+			uart_tx_byte(UART_XONXOFF_DELIM);	
+			uart_tx_byte(UART_XON_REPL);	
+		}
+		else if (b_b[i] == UART_XOFF)
+		{
+			uart_tx_byte(UART_XONXOFF_DELIM);	
+			uart_tx_byte(UART_XOFF_REPL);
+		}
+		else
+			uart_tx_byte(b_b[i]);
 	}
+} //}}}
+
+void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len) //{{{
+{
+	uint16_t b_i = 0, tx_buffer_i = 0;
+	uint8_t* b_b = (uint8_t*)b;
+
+	// prepare frame
+	uart_tx_buffer[tx_buffer_i++] = UART_START_DELIM;
+	uart_tx_buffer[tx_buffer_i++] = type;
+	for (b_i = 0; b_i < len; b_i++)
+	{
+		if (b_b[b_i] <= UART_ESC_DELIM)
+			uart_tx_buffer[tx_buffer_i++] = UART_ESC_DELIM;
+
+		if (b_b[b_i] == UART_XON)
+		{
+			uart_tx_buffer[tx_buffer_i++] = UART_XONXOFF_DELIM;
+			uart_tx_buffer[tx_buffer_i++] = UART_XON_REPL;
+		}
+		else if (b_b[b_i] == UART_XOFF)
+		{
+			uart_tx_buffer[tx_buffer_i++] = UART_XONXOFF_DELIM;
+			uart_tx_buffer[tx_buffer_i++] = UART_XOFF_REPL;
+		}
+		else
+			uart_tx_buffer[tx_buffer_i++] = b_b[b_i];
+	}
+	uart_tx_buffer[tx_buffer_i++] = UART_END_DELIM;
+
+	// transmit with DMA
+	dma_uart_tx(uart_tx_buffer, tx_buffer_i);
 } //}}}
 
 inline uint8_t uart_rx_byte() //{{{
@@ -141,6 +201,18 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 			if (bytes_read < b_len)
 			{
 				b[bytes_read++] = b_tmp;
+			}
+		}
+		else if (b_tmp == UART_XONXOFF_DELIM)
+		{
+			b_tmp = uart_rx_byte();
+
+			if (bytes_read < b_len)
+			{
+				if (b_tmp == UART_XON_REPL)
+					b[bytes_read++] = UART_XON;
+				if (b_tmp == UART_XOFF_REPL)
+					b[bytes_read++] = UART_XOFF;
 			}
 		}
 		else if (b_tmp == UART_START_DELIM)
