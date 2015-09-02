@@ -28,14 +28,20 @@ void sram_init() {
 
 void* sram_write(void* addr, const void* src, size_t len)
 {
-	sram_hdr hdr = {SRAM_CMD_WRITE, (uint16_t)addr};
+	uint16_t addr_int = (uint16_t)addr;
+	uint8_t hdr[] =
+	{
+		SRAM_CMD_WRITE,
+		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
+	};
 
+	sram_config_spi();
 	// begin transaction by setting CS and sendng write header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
- 	spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
+	spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
 
 	// send bytes
- 	spi_txrx(&SPIC, src, NULL, len);
+	spi_txrx(&SPIC, src, NULL, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
@@ -45,7 +51,14 @@ void* sram_write(void* addr, const void* src, size_t len)
 
 void* sram_read(void* dst, const void* addr, size_t len)
 {
-	sram_hdr hdr = {SRAM_CMD_READ, (uint16_t)addr};
+	uint16_t addr_int = (uint16_t)addr;
+	uint8_t hdr[] =
+	{
+		SRAM_CMD_READ,
+		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
+	};
+
+	sram_config_spi();
 
 	// begin transaction by setting CS and sendng read header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);

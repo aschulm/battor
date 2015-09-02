@@ -10,12 +10,6 @@
 #define SRAM_CMD_READ 0x03
 #define SRAM_CMD_WRITE 0x02
 
-typedef struct sram_hdr_
-{
-	uint8_t cmd;
-	uint16_t addr;
-} sram_hdr;
-
 void sram_init();
 
 int sram_self_test();
