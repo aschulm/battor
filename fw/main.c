@@ -76,12 +76,6 @@ int main() //{{{
 				interrupt_clear(INTERRUPT_DMA_CH0);
 				interrupt_clear(INTERRUPT_DMA_CH2);
 			}
-
-#ifdef GPIO_TRIGGER
-			dma_stop();
-			while (!gpio_read(&PORTE, GPIO_TRIGGER));
-			dma_start();
-#endif
 		}
 		
 		uint16_t len = SAMPLES_LEN;
@@ -120,6 +114,17 @@ int main() //{{{
 				interrupt_clear(INTERRUPT_DMA_CH1);
 				interrupt_clear(INTERRUPT_DMA_CH3);
 			}
+
+#ifdef GPIO_TRIGGER
+			static int triggered = 0;
+			if (!triggered)
+			{
+				dma_stop();
+				while (!gpio_read(&PORTE, GPIO_TRIGGER));
+				dma_start();
+				triggered = 1;
+			}
+#endif
 		}
 
 		// need to read a file
