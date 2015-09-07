@@ -120,6 +120,7 @@ int main() //{{{
 			if (!triggered)
 			{
 				dma_stop();
+				dma_init(g_adca0, g_adca1, g_adcb0, g_adcb1, SAMPLES_LEN);
 				while (!gpio_read(&PORTE, GPIO_TRIGGER));
 				dma_start();
 				triggered = 1;
