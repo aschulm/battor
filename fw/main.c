@@ -7,6 +7,7 @@
 #include "interrupt.h"
 #include "samples.h"
 #include "drivers.h"
+#include "drivers/gpio.h"
 
 int main() //{{{
 {
@@ -75,6 +76,12 @@ int main() //{{{
 				interrupt_clear(INTERRUPT_DMA_CH0);
 				interrupt_clear(INTERRUPT_DMA_CH2);
 			}
+
+#ifdef GPIO_TRIGGER
+			dma_stop();
+			while (!gpio_read(&PORTE, GPIO_TRIGGER));
+			dma_start();
+#endif
 		}
 		
 		uint16_t len = SAMPLES_LEN;
