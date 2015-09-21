@@ -212,7 +212,7 @@ def main():
   adb.wait()
 
   # Delay while collecting trace
-  time.sleep(options.trace_time)
+  time.sleep(options.trace_time-1.0)
 
   # Execute BattOr sync
   if battor is not None:
