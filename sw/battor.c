@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char usb = 0, format = 0, down = 0, reset = 0, test = 0;
+	char usb = 0, format = 0, down = 0, reset = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 				reset = 1;
 			break; 
 			case 't':
-				test = 1;
+				sconf.test = 1;
 			break;
 			case 'v':
 				g_verb++;
