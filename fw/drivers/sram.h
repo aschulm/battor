@@ -12,6 +12,9 @@
 #define SRAM_CMD_READ 0x03
 #define SRAM_CMD_WRITE 0x02
 
+#define USARTC1_TXD_PIN (1<<7)
+#define USARTC1_RXD_PIN (1<<6)
+
 void sram_init();
 
 int sram_self_test();

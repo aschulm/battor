@@ -7,26 +7,57 @@
 
 #include "sram.h"
 
-inline void sram_config_spi()
-{
-	SPIC.CTRL = SPI_ENABLE_bm |
-		SPI_MASTER_bm |
-		SPI_MODE_3_gc |
-		SPI_CLK2X_bm |
-		SPI_PRESCALER_DIV4_gc; 
-}
-
 void sram_init()
 {
+	PORTC.OUT |= USARTC1_TXD_PIN; // set the TXD pin high
+	PORTC.DIR |= USARTC1_TXD_PIN; // set the TXD pin to output
+	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
+
+	// set baud rate with BSEL and BSCALE values
+	USARTC1.BAUDCTRLB = USART_BSCALE_2000000BPS << USART_BSCALE_gp;
+	USARTC1.BAUDCTRLA = USART_BSEL_2000000BPS & USART_BSEL_gm;
+
+	PORTC.PIN5CTRL |= PORT_INVEN_gc; // invert the SCK pin for SPI mode 3
+
+	// set transfer parameters
+	USARTC1.CTRLC =
+		USART_CMODE_MSPI_gc |
+		USART_PMODE_DISABLED_gc |
+		USART_CHSIZE_8BIT_gc |
+		USART_UCPHA_gc; 
+
+	USARTC1.CTRLA = USART_RXCINTLVL_HI_gc; // interrupt for receive 
+	USARTC1.CTRLB |= USART_RXEN_bm; // enable receiver
+	USARTC1.CTRLB |= USART_TXEN_bm; // enable transmitter
+
 	PORTE.PIN3CTRL |= PORT_OPC_PULLUP_gc; // pull up on CS Hold Pin
-
-	// NOTE: this happens two times, once here and once for the POT SPI
-	// interface.  We think it's not a big deal but we will see when it's
-	// not 10PM on a Thursday.
-	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm;
-
 	PORTE.DIR |= SRAM_CS_PIN_gm;
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
+}
+
+void usart-spi_txrx(const void* txd, void* rxd, uint16_t len)
+{
+	uint8_t rx_null = 0;
+	uint8_t* txd_b = (uint8_t*)txd;
+	uint8_t* rxd_b = (uint8_t*)rxd;
+
+	int i;
+	for (i = 0; i < len; i++)
+	{
+		// transmit on the wire
+		loop_until_bit_is_set(USARTC1.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
+		if (txd_b != NULL)
+			USARTC1.DATA = txd_b[i];
+		else
+			USARTC1.DATA = 0xFF;
+
+		// read from the wire
+		loop_until_bit_is_set(USARTC1.STATUS, USART_RXCIF_bp); // wait for rx byte to be ready
+		if (rxd_b != NULL)
+			rxd_b[i] = USARTC1.DATA;
+		else
+			rx_null = USARTC1.DATA;
+	}
 }
 
 void* sram_write(void* addr, const void* src, size_t len)
@@ -38,13 +69,13 @@ void* sram_write(void* addr, const void* src, size_t len)
 		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
 	};
 
-	sram_config_spi();
+	//sram_config_spi();
 	// begin transaction by setting CS and sendng write header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
-	spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
+	usart-spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
 
 	// send bytes
-	spi_txrx(&SPIC, src, NULL, len);
+	usart-spi_txrx(&SPIC, src, NULL, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
@@ -61,14 +92,14 @@ void* sram_read(void* dst, const void* addr, size_t len)
 		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
 	};
 
-	sram_config_spi();
+	//sram_config_spi();
 
 	// begin transaction by setting CS and sendng read header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
- 	spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
+ 	usart-spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
 
 	// recv bytes
- 	spi_txrx(&SPIC, NULL, dst, len);
+ 	usart-spi_txrx(&SPIC, NULL, dst, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
