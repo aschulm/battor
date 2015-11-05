@@ -167,8 +167,8 @@ int main(int argc, char** argv)
 	max_s.v = (1 << (ADC_BITS + ovs_bits)) - 1;
 	max_s.i = (1 << (ADC_BITS + ovs_bits)) - 1;
 	printf("# BattOr\n");
-	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &sconf, 0.0, 0), sample_v(&max_s, &sconf, 0.0, 0));
-	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &sconf, 0.0, 0), sample_i(&max_s, &sconf, 0.0, 0));
+	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &sconf, 0.0), sample_v(&max_s, &sconf, 0.0));
+	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &sconf, 0.0), sample_i(&max_s, &sconf, 0.0));
 	printf("# sample_rate=%dHz, gain=%fx\n", sconf.sample_rate, sconf.gain);
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 	

@@ -19,25 +19,25 @@ void samples_init(samples_config* conf) //{{{
 	verb_printf("adc_top %f\n", s_adc_top);
 } //}}}
 
-inline double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
+inline double sample_v(sample* s, samples_config* conf, double cal) //{{{
 {
 	// warnings for minimum and maximum voltage
-	if (warning && s->v == s_adc_top)
-		fprintf(stderr, "[Mv]");
-	if (warning && s->v <= cal)
-		fprintf(stderr, "[mv]");
+	if (s->v == s_adc_top)
+		verb_printf("%s\n", "[Mv]");
+	if (s->v <= cal)
+		verb_printf("%s\n", "[mv]");
 
 	double v_adcv = (((double)s->v - cal) / s_adc_top) * VREF;
 	return (v_adcv / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-inline double sample_i(sample* s, samples_config* conf, double cal, uint8_t warning) //{{{
+inline double sample_i(sample* s, samples_config* conf, double cal) //{{{
 {
 	// warnings for minimum and maximum current
-	if (warning && s->i == s_adc_top)
-		fprintf(stderr, "[MI]");
-	if (warning && s->i <= cal)
-		fprintf(stderr, "[mI]");
+	if (s->i == s_adc_top)
+		verb_printf("%s\n", "[MI]");
+	if (s->i <= cal)
+		verb_printf("%s\n", "[mI]");
 
 	double i_adcv = (((double)s->i - cal) / s_adc_top) * VREF;
 	double i_adcv_unamp = i_adcv / conf->gain; // undo the current gain
@@ -151,8 +151,8 @@ void samples_print_loop(samples_config* conf) //{{{
 			verb_printf("adc_i %d %f\n", samples[i].i, samples[i].i - i_cal);
 
 			double msec = (sample_num/((double)conf->sample_rate)) * 1000.0;
-			double mv = sample_v(samples + i, conf, v_cal, 1);
-			double mi = sample_i(samples + i, conf, i_cal, 1);
+			double mv = sample_v(samples + i, conf, v_cal);
+			double mi = sample_i(samples + i, conf, i_cal);
 
 			printf("%0.1f %0.1f %0.1f", msec, mi, mv);
 

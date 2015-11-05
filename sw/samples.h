@@ -26,8 +26,8 @@ struct samples_config_
 typedef struct samples_config_ samples_config;
 
 void samples_init(samples_config* conf);
-double sample_v(sample* s, samples_config* conf, double cal, uint8_t warning);
-double sample_i(sample* s, samples_config* conf, double cal, uint8_t warning);
+double sample_v(sample* s, samples_config* conf, double cal);
+double sample_i(sample* s, samples_config* conf, double cal);
 void samples_print_loop(samples_config* conf);
 
 #endif
