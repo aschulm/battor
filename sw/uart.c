@@ -90,23 +90,6 @@ uart_rx_bytes_start:
 				b_b[bytes_read++] = b_tmp;
 			}
 		}
-		else if (b_tmp == UART_XONXOFF_DELIM)
-		{
-			vverb_printf("uart_rx_bytes: got xonxoff escape\n%s", "");
-			if (uart_rx_byte(&b_tmp) <= 0)
-			{
-				vverb_printf("uart_rx_bytes: got xonxoff escape -- failed to get next byte\n%s", "");
-				return -1;
-			}
-
-			if (bytes_read < b_len)
-			{
-				if (b_tmp == UART_XON_REPL)
-					b_b[bytes_read++] = UART_XON;
-				if (b_tmp == UART_XOFF_REPL)
-					b_b[bytes_read++] = UART_XOFF;
-			}
-		}
 		else if (b_tmp == UART_START_DELIM)
 		{
 			start_found = 1;
@@ -221,22 +204,10 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 	{
 		if (b_b[i] == UART_START_DELIM ||
 			b_b[i] == UART_END_DELIM ||
-			b_b[i] == UART_XONXOFF_DELIM ||
 			b_b[i] == UART_ESC_DELIM)
 			uart_tx_byte(UART_ESC_DELIM);	
 
-		if (b_b[i] == UART_XON)
-		{
-			uart_tx_byte(UART_XONXOFF_DELIM);
-			uart_tx_byte(UART_XON_REPL);
-		}
-		else if (b_b[i] == UART_XOFF)
-		{
-			uart_tx_byte(UART_XONXOFF_DELIM);
-			uart_tx_byte(UART_XOFF_REPL);
-		}
-		else
-			uart_tx_byte(b_b[i]);
+		uart_tx_byte(b_b[i]);
 	}
 
 	uart_tx_byte(UART_END_DELIM);
@@ -263,11 +234,9 @@ void uart_init(char* tty) //{{{
 	cfmakeraw(&tio); // read one byte or timeout
 	tio.c_cc[VMIN] = 1; // 
 	tio.c_cc[VTIME] = 0; //
-	tio.c_cc[VSTART] = 0x11; //
-	tio.c_cc[VSTOP] = 0x13; //
-  tio.c_iflag &= ~(IXON | IXOFF | IXANY);
-  tio.c_iflag |= IXON | IXOFF; // XON/XOFF input flow control
-  tio.c_cflag &= ~(CRTSCTS | CSTOPB | PARENB | CSIZE);
+  tio.c_iflag &= ~(IXON | IXOFF | IXANY); // disable software flow control
+  tio.c_cflag |= CRTSCTS; // enable hardware flow control
+  tio.c_cflag &= ~(CSTOPB | PARENB | CSIZE);
 	tio.c_cflag |= CS8 | CREAD; // 8-bit mode
 #if __APPLE__
 	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
