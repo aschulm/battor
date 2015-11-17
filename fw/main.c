@@ -33,6 +33,10 @@ int main() //{{{
 	// main loop for interrupt bottom halves 
 	while (1) 
 	{
+#ifdef GPIO_MAIN_LOOP
+			gpio_toggle(&PORTE, (1<<GPIO_MAIN_LOOP));
+#endif
+
 		// turn off the CPU between interrupts 
 		set_sleep_mode(SLEEP_SMODE_IDLE_gc); 
 		sleep_enable();

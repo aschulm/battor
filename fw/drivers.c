@@ -32,13 +32,15 @@ void drivers_init() //{{{
 	printf("drivers_init: led_init()\n");
 	led_init();
 
-	// gpio output for debugging
+	// gpio outputs for debugging
 #ifdef GPIO_SAMPLE_WRITE_DONE
 	PORTE.DIR |= (1<<GPIO_SAMPLE_WRITE_DONE);
 #endif
-
 #ifdef GPIO_DMA_INT
 	PORTE.DIR |= (1<<GPIO_DMA_INT);
+#endif
+#ifdef GPIO_MAIN_LOOP
+	PORTE.DIR |= (1<<GPIO_MAIN_LOOP);
 #endif
 } //}}}
 
