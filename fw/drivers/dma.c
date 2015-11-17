@@ -10,11 +10,6 @@
 #include "dma.h"
 #include "gpio.h"
 
-ISR(DMA_CH0_vect)
-{
-	DMA.INTFLAGS = DMA_CH0TRNIF_bm; // clear the interrupt
-}
-
 ISR(DMA_CH2_vect)
 {
 #ifdef GPIO_DMA_INT
@@ -45,24 +40,27 @@ void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
 	d[2] = 0;
 }
 
-void dma_init(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
+void dma_init()
 {
-	// clear the buffers
-	memset(adcb_samples0, 0, samples_len);
-	memset(adcb_samples1, 0, samples_len);
-
 	// reset the DMA controller
 	DMA.CTRL = 0;
 	DMA.CTRL = DMA_RESET_bm;
 	loop_until_bit_is_clear(DMA.CTRL, DMA_RESET_bp);
 	
 	DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 2,3 (ADCB)
+}
+
+void dma_start(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
+{
+	// clear the buffers
+	memset(adcb_samples0, 0, samples_len);
+	memset(adcb_samples1, 0, samples_len);
 
 	// repeat forevr
 	DMA.CH2.REPCNT = 0;
 	DMA.CH3.REPCNT = 0;
 
-	// setup the channels to copy 4 byte bursts (ADC CH0 + CH1) and one burst blocks, trigger only fires burst
+	// setup the channels to copy 4 byte bursts (ADC CH2 + CH3) and one burst blocks, trigger only fires burst
 	DMA.CH2.CTRLA = DMA_CH_REPEAT_bm | DMA_CH_BURSTLEN_4BYTE_gc | DMA_CH_SINGLE_bm;
 	DMA.CH3.CTRLA = DMA_CH_REPEAT_bm | DMA_CH_BURSTLEN_4BYTE_gc | DMA_CH_SINGLE_bm;
 
@@ -74,7 +72,7 @@ void dma_init(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
 	DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
 	DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
 
-	// 4 bytes per block transfter (ADC CH0 + CH1 16bit values)
+	// 4 bytes per block transfter (ADC CH2 + CH3 16bit values)
 	DMA.CH2.TRFCNT = samples_len;
 	DMA.CH3.TRFCNT = samples_len;
 
@@ -85,12 +83,8 @@ void dma_init(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
 	// setup the dst addr to the passed in buffers
 	set_24_bit_addr(&(DMA.CH2.DESTADDR0), (uint16_t)adcb_samples0);
 	set_24_bit_addr(&(DMA.CH3.DESTADDR0), (uint16_t)adcb_samples1);
-}
 
-void dma_start()
-{
 	DMA.INTFLAGS = 0xFF; // clear all interrups
-	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 0 for ADCB, will auto double buffer with channel 1
 	DMA.CH2.CTRLA |= DMA_CH_ENABLE_bm; // start DMA channel 2 for ADCB, will auto double buffer with channel 3
 
 	// interrupt when the transaction is complete
@@ -110,7 +104,7 @@ void dma_stop()
 	EVSYS.CH0MUX = 0; // stop event channel 0
 }
 
-void dma_uart_tx(uint8_t* data, uint16_t len)
+void dma_uart_tx(const void* data, uint16_t len)
 {
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BURST_gc | DMA_CH_DESTDIR_FIXED_gc;
@@ -119,5 +113,77 @@ void dma_uart_tx(uint8_t* data, uint16_t len)
 	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)(data));
 	set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA));
 	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
-	DMA.CH0.CTRLB = DMA_CH_TRNINTLVL_MED_gc;
+}
+
+void inline dma_uart_tx_pause(uint8_t on_off)
+{
+	if (on_off)
+		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+	else
+		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+}
+
+uint8_t inline dma_uart_tx_ready()
+{
+	return (DMA.CH0.CTRLA & DMA_CH_ENABLE_bm) == 0;
+}
+
+void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
+{
+	if (rxd != NULL)
+	{
+		// clear out all rx data
+		while ((USARTC1.STATUS & USART_RXCIF_bm) > 0)
+			USARTC1.DATA;
+
+		// setup receive DMA
+		DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+		DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc |
+			DMA_CH_SRCDIR_FIXED_gc |
+			DMA_CH_DESTRELOAD_NONE_gc |
+			DMA_CH_DESTDIR_INC_gc;
+		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
+		DMA.CH0.TRFCNT = len;
+		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(USARTC1.DATA));
+		set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)(rxd));
+		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
+	}
+
+	uint8_t ff = 0xFF;
+
+	// clear transfer complete flag, needed to wait for last byte
+	USARTC1.STATUS = USART_TXCIF_bm;
+
+	// setup transmit DMA
+	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+
+	DMA.CH1.ADDRCTRL = DMA_CH_DESTRELOAD_BURST_gc |
+		DMA_CH_DESTDIR_FIXED_gc;
+
+	// either write bytes or just 0xFF
+	if (txd != NULL)
+	{
+		DMA.CH1.ADDRCTRL |= DMA_CH_SRCRELOAD_NONE_gc |
+			DMA_CH_SRCDIR_INC_gc;
+		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(txd));
+	}
+	else
+	{
+		DMA.CH1.ADDRCTRL |= DMA_CH_SRCRELOAD_BURST_gc |
+			DMA_CH_SRCDIR_FIXED_gc;
+		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
+	}
+
+	DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_DRE_gc;
+	DMA.CH1.TRFCNT = len;
+	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(USARTC1.DATA));
+	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
+
+	// wait for transfer to complete
+	loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
+	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+
+	// wait for last byte
+	loop_until_bit_is_set(USARTC1.STATUS, USART_TXCIF_bp);
+	USARTC1.STATUS = USART_TXCIF_bm;
 }

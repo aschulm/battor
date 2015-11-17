@@ -9,9 +9,10 @@
 #include "ringbuf.h"
 
 static control_message message;
-uint8_t g_control_mode;
-uint8_t g_control_calibrated;
-uint8_t g_control_read_ready;
+uint8_t g_control_mode = 0;
+uint8_t g_control_calibrated = 0;
+
+static uint8_t dma_started = 0;
 
 void control_got_uart_bytes() //{{{
 {
@@ -62,6 +63,8 @@ int8_t control_run_message(control_message* m) //{{{
 		{
 			case CONTROL_TYPE_INIT:
 				g_control_mode = CONTROL_MODE_IDLE;
+				dma_started = 0;
+
 				ret = g_error_last;
 				g_error_last = 0;
 				dma_stop(); // stop getting samples from the ADCs
@@ -94,9 +97,6 @@ int8_t control_run_message(control_message* m) //{{{
 				ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 				// wait for things to settle
 				timer_sleep_ms(10);
-
-				// init dma, but do not start until control read ready message
-				dma_init(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
 			break;
 			case CONTROL_TYPE_START_SAMPLING_SD:
 				filenum = store_write_open();
@@ -122,9 +122,8 @@ int8_t control_run_message(control_message* m) //{{{
 					// wait for things to settle
 					timer_sleep_ms(10);
 
-					// start dma
-					dma_init(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
-					dma_start(); // start getting samples from the ADCs
+					// start getting samples from the ADCs
+					dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
 				}
 			break;
 			case CONTROL_TYPE_START_REC_CONTROL:
@@ -142,11 +141,17 @@ int8_t control_run_message(control_message* m) //{{{
 				dma_stop(); // will get samples from the file
 			break;
 			case CONTROL_TYPE_READ_READY:
-				// first frame, start getting samples from the ADCs
-				if (g_samples_uart_seqnum == 0)
-					dma_start(); 
+				/* 
+				 * First frame, start getting samples from the ADCs,
+				 * also check if first READ_READY message so it 
+				 * doesn't get stuck in a loop starting the dma.
+				 */
+				if (!dma_started)
+				{
+					dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
+					dma_started = 1;
+				}
 
-				g_control_read_ready = 1;
 				ret = -1; // don't send ack
 			break;
 			case CONTROL_TYPE_RESET:
@@ -171,6 +176,7 @@ int8_t control_run_message(control_message* m) //{{{
 			break;
 		}
 	}
+
 	return ret;
 } //}}}
 

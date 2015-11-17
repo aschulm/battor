@@ -11,9 +11,16 @@ static inline uint16_t byte_swap16(uint16_t b)
 	return ((b & 0xFF) << 8) | ((b & 0xFF00) >> 8);
 }
 
-void pot_config_spi()
+static void pot_config_spi()
 {
+	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
 	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
+}
+
+static void pot_unconfig_spi()
+{
+	PORTC.PIN6CTRL = 0; // pot required a pullup on the SDO (MISO) pin, disable it
+	SPIC.CTRL = 0; // disable the SPI peripheral
 }
 
 // the pots are not normal SPI devices, you have to put the output pin in high impedience mode when done
@@ -35,6 +42,8 @@ static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 	gpio_off(&PORTC, pot_cs_pin);
 	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
+
+	pot_unconfig_spi();
 }
 
 static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t data)
@@ -49,6 +58,9 @@ static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t d
 	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 	timer_sleep_ms(10);
+
+	pot_unconfig_spi();
+
 	return ((rx[0] & 0x3) << 8) | (rx[1] & 0xFF);
 }
 
@@ -69,7 +81,6 @@ void pot_wiperpos_set(uint8_t pot_cs_pin, uint16_t pos)
 
 void pot_init()
 {
-	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
 	gpio_on(&PORTC, POT_AMP_CS_PIN_gm);
 	gpio_on(&PORTC, POT_FIL_CS_PIN_gm);
 	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm | POT_AMP_CS_PIN_gm | POT_FIL_CS_PIN_gm; // put the SPI pins in output mode
@@ -87,4 +98,6 @@ void pot_init()
 	pot_send_command(POT_FIL_CS_PIN_gm, 0x4, 0);
 	pot_send_command(POT_FIL_CS_PIN_gm, 0x7, 0x2);
 	pot_high_impedience_sdo(POT_FIL_CS_PIN_gm);
+
+	pot_unconfig_spi();
 }

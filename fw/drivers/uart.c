@@ -22,7 +22,7 @@ ISR(USARTD0_RXC_vect) //{{{
 	// UART error, just skip it
 	if ((USARTD0.STATUS & USART_FERR_bm) > 0 || (USARTD0.STATUS & USART_BUFOVF_bm) > 0)
 	{
-		uint8_t tmp = USARTD0.DATA;
+		USARTD0.DATA;
 		USARTD0.STATUS = 0;
 	}
 	else
@@ -31,21 +31,30 @@ ISR(USARTD0_RXC_vect) //{{{
 		while ((USARTD0.STATUS & USART_RXCIF_bm) > 0)
 		{
 			uint8_t tmp = USARTD0.DATA;
-			// flow control XON
-			if (tmp == UART_XON)
-				uart_tx_fc_ready = 1;
-			// flow control XOFF
-			else if (tmp == UART_XOFF)
-				uart_tx_fc_ready = 0;
-			else
-			{
-				// store byte
-				uart_rx_buffer[uart_rx_buffer_write_idx++] = tmp;
-				if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
-					uart_rx_buffer_write_idx = 0;
-			}
+			// store byte
+			uart_rx_buffer[uart_rx_buffer_write_idx++] = tmp;
+			if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
+				uart_rx_buffer_write_idx = 0;
+
+			// only interrupt if a byte actually came in
+			interrupt_set(INTERRUPT_UART_RX);
 		}
-		interrupt_set(INTERRUPT_UART_RX);
+	}
+} //}}}
+
+ISR(PORTE_INT0_vect) //{{{
+{
+	if ((PORTE.IN & UART_RTS_bm) > 0)
+	{
+		// pause
+		dma_uart_tx_pause(1);
+		uart_tx_fc_ready = 0;
+	}
+	else
+	{
+		// unpause
+		dma_uart_tx_pause(0);
+		uart_tx_fc_ready = 1;
 	}
 } //}}}
 
@@ -56,6 +65,18 @@ ISR(USARTD0_RXC_vect) //{{{
 void uart_init() //{{{
 {
 	interrupt_disable();
+
+	// initalize hardware flow control gpios
+	PORTE.OUT &= ~UART_RTS_bm;
+	PORTE.DIR &= ~UART_RTS_bm;
+
+	// start with CTS inidcating ready for data
+	PORTE.OUT &= ~UART_CTS_bm;
+	PORTE.DIR |= UART_CTS_bm;
+
+	PORTE.INTCTRL = PORT_INT0LVL_HI_gc;
+	// default pin behavior is to trigger on both edges
+	PORTE.INT0MASK = UART_RTS_bm;
 
 	PORTD.OUT |= USARTD0_TXD_PIN; // set the TXD pin high
 	PORTD.DIR |= USARTD0_TXD_PIN; // set the TXD pin to output
@@ -120,18 +141,7 @@ void uart_tx_bytes(void* b, uint16_t len) //{{{
 		if (b_b[i] <= UART_ESC_DELIM)
 			uart_tx_byte(UART_ESC_DELIM);	
 
-		if (b_b[i] == UART_XON)
-		{
-			uart_tx_byte(UART_XONXOFF_DELIM);	
-			uart_tx_byte(UART_XON_REPL);	
-		}
-		else if (b_b[i] == UART_XOFF)
-		{
-			uart_tx_byte(UART_XONXOFF_DELIM);	
-			uart_tx_byte(UART_XOFF_REPL);
-		}
-		else
-			uart_tx_byte(b_b[i]);
+		uart_tx_byte(b_b[i]);
 	}
 } //}}}
 
@@ -148,18 +158,7 @@ void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len) //{{{
 		if (b_b[b_i] <= UART_ESC_DELIM)
 			uart_tx_buffer[tx_buffer_i++] = UART_ESC_DELIM;
 
-		if (b_b[b_i] == UART_XON)
-		{
-			uart_tx_buffer[tx_buffer_i++] = UART_XONXOFF_DELIM;
-			uart_tx_buffer[tx_buffer_i++] = UART_XON_REPL;
-		}
-		else if (b_b[b_i] == UART_XOFF)
-		{
-			uart_tx_buffer[tx_buffer_i++] = UART_XONXOFF_DELIM;
-			uart_tx_buffer[tx_buffer_i++] = UART_XOFF_REPL;
-		}
-		else
-			uart_tx_buffer[tx_buffer_i++] = b_b[b_i];
+		uart_tx_buffer[tx_buffer_i++] = b_b[b_i];
 	}
 	uart_tx_buffer[tx_buffer_i++] = UART_END_DELIM;
 
@@ -203,18 +202,6 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 				b[bytes_read++] = b_tmp;
 			}
 		}
-		else if (b_tmp == UART_XONXOFF_DELIM)
-		{
-			b_tmp = uart_rx_byte();
-
-			if (bytes_read < b_len)
-			{
-				if (b_tmp == UART_XON_REPL)
-					b[bytes_read++] = UART_XON;
-				if (b_tmp == UART_XOFF_REPL)
-					b[bytes_read++] = UART_XOFF;
-			}
-		}
 		else if (b_tmp == UART_START_DELIM)
 		{
 			start_found = 1;
@@ -239,6 +226,14 @@ void uart_rx_flush() //{{{
 {
 	uart_rx_buffer_read_idx = 0;
 	uart_rx_buffer_write_idx = 0;
+} //}}}
+
+uint8_t uart_tx_ready() //{{{
+{
+	// check if RTS is blocking a write
+	uart_tx_fc_ready = !((PORTE.IN & UART_RTS_bm) >> UART_RTS_bp);
+
+	return uart_tx_fc_ready && dma_uart_tx_ready();
 } //}}}
 
 // for c FILE* interface

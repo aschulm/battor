@@ -65,7 +65,6 @@ int16_t samples_read(sample* samples, samples_config* conf, uint32_t* seqnum) //
 	uint8_t type;
 	int ret = 0;
 
-	control(CONTROL_TYPE_READ_READY, 0, 0, 0);
 
 	if ((ret = uart_rx_bytes(&type, frame, sizeof(frame))) < 0 || type != UART_TYPE_SAMPLES)
 		return 0;
@@ -109,6 +108,9 @@ void samples_print_loop(samples_config* conf) //{{{
 	// will block and unblock SIGINT
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGINT);
+
+	// tell the BattOr that the PC is ready to read samples
+	control(CONTROL_TYPE_READ_READY, 0, 0, 0);
 
 	// read calibration and compute it
 	while (samples_len == 0 || seqnum != 1)

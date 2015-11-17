@@ -29,7 +29,6 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	//char tty[] = "/dev/cu.usbserial-0001";
 	char tty[] = "/dev/ttyUSB0";
 	char usb = 0, format = 0, down = 0, reset = 0, test = 0, cal = 0;
 

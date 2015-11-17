@@ -15,6 +15,8 @@ void drivers_init() //{{{
 	printf("drivers_init: timer_set()\n");
 	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 499);
 
+	printf("drivers_init: dma_init()\n");
+	dma_init();
 
 	printf("drivers_init: mux_init()\n");
 	mux_init();

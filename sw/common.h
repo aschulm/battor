@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 #include "params.h"
 #include "samples.h"

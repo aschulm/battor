@@ -3,15 +3,13 @@
 
 #include <stdio.h>
 
+#define UART_RTS_bm (1<<0)
+#define UART_RTS_bp 0
+#define UART_CTS_bm (1<<1)
+
 #define UART_START_DELIM 0x00
 #define UART_END_DELIM 0x01
-#define UART_XONXOFF_DELIM 0x02
-#define UART_ESC_DELIM 0x03
-
-#define UART_XON_REPL 0x00
-#define UART_XOFF_REPL 0x01
-#define UART_XON 0x11
-#define UART_XOFF 0x13
+#define UART_ESC_DELIM 0x02
 
 typedef enum UART_TYPE_enum
 {
@@ -21,7 +19,7 @@ typedef enum UART_TYPE_enum
 	UART_TYPE_PRINT,
 } UART_TYPE_t;
 
-#define UART_BUFFER_LEN 800
+#define UART_BUFFER_LEN 1000
 
 #define USARTD0_TXD_PIN (1<<3)
 #define USARTD0_RXD_PIN (1<<2)
@@ -54,5 +52,6 @@ void uart_rx_flush();
 void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len);
 int uart_putchar(char c, FILE* stream);
 int uart_getchar(FILE* stream);
+uint8_t uart_tx_ready();
 
 #endif

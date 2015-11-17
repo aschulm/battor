@@ -1,7 +1,7 @@
 #ifndef SAMPLES_H
 #define SAMPLES_H
 
-#define SAMPLES_LEN 20
+#define SAMPLES_LEN 50 
 
 typedef struct sample_
 {
@@ -15,7 +15,7 @@ extern sample g_adcb0[], g_adcb1[];
 void samples_init();
 void samples_ringbuf_write(sample* s, uint16_t len);
 void samples_uart_write();
-void samples_store_write(sample* s);
+void samples_store_write();
 uint16_t samples_store_read_next(sample* s);
 
 #endif

@@ -31,7 +31,7 @@ typedef struct control_message_
 
 typedef enum CONTROL_MODE_enum
 {
-	CONTROL_MODE_IDLE = 1,
+	CONTROL_MODE_IDLE = 0,
 	CONTROL_MODE_STREAM,
 	CONTROL_MODE_STORE,
 	CONTROL_MODE_REC_CONTROL,
@@ -40,7 +40,6 @@ typedef enum CONTROL_MODE_enum
 
 extern uint8_t g_control_mode;
 extern uint8_t g_control_calibrated;
-extern uint8_t g_control_read_ready;
 
 void control_got_uart_bytes();
 int8_t control_run_message(control_message* m);

@@ -5,7 +5,6 @@
 
 void spi_txrx(SPI_t* spi, const void* txd, void* rxd, uint16_t len)
 {
-	uint8_t rx_null = 0;
 	uint8_t* txd_b = (uint8_t*)txd;
 	uint8_t* rxd_b = (uint8_t*)rxd;
 	// write and read
@@ -24,6 +23,6 @@ void spi_txrx(SPI_t* spi, const void* txd, void* rxd, uint16_t len)
 		if (rxd_b != NULL)
 			rxd_b[i] = spi->DATA;
 		else
-			rx_null = spi->DATA; // don't care about the RX
+			spi->DATA; // don't care about the RX
 	}
 }

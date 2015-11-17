@@ -4,42 +4,62 @@
 
 #include "spi.h"
 #include "gpio.h"
+#include "dma.h"
 
 #include "sram.h"
 
-void sram_init()
+void sram_config_spi()
 {
 	PORTC.OUT |= USARTC1_TXD_PIN; // set the TXD pin high
+	PORTC.OUT &= ~USARTC1_XCK_PIN; // set the XCK pin low
 	PORTC.DIR |= USARTC1_TXD_PIN; // set the TXD pin to output
+	PORTC.DIR |= USARTC1_XCK_PIN; // set the XCK pin to output
 	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
 
-	// set baud rate with BSEL and BSCALE values
-	USARTC1.BAUDCTRLB = USART_BSCALE_2000000BPS << USART_BSCALE_gp;
-	USARTC1.BAUDCTRLA = USART_BSEL_2000000BPS & USART_BSEL_gm;
+	// set to the highest baud rate	
+	USARTC1.BAUDCTRLA = 0;
+	USARTC1.BAUDCTRLB = 0;
 
-	PORTC.PIN5CTRL |= PORT_INVEN_gc; // invert the SCK pin for SPI mode 3
+	PORTC.PIN5CTRL |= PORT_INVEN_bm; // invert the SCK pin for SPI mode 3
 
 	// set transfer parameters
 	USARTC1.CTRLC =
-		USART_CMODE_MSPI_gc |
-		USART_PMODE_DISABLED_gc |
-		USART_CHSIZE_8BIT_gc |
-		USART_UCPHA_gc; 
+		USART_CMODE_MSPI_gc | 
+		USART_UCPHA_bm; 
 
-	USARTC1.CTRLA = USART_RXCINTLVL_HI_gc; // interrupt for receive 
+	USARTC1.CTRLA = 0; 
 	USARTC1.CTRLB |= USART_RXEN_bm; // enable receiver
 	USARTC1.CTRLB |= USART_TXEN_bm; // enable transmitter
+}
 
+
+void sram_unconfig_spi()
+{
+	PORTC.DIR &= ~USARTC1_TXD_PIN; // set the TXD pin to input
+	PORTC.DIR &= ~USARTC1_XCK_PIN; // set the XCK pin to input
+	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
+
+	PORTC.PIN5CTRL &= ~PORT_INVEN_bm; // uninvert the SCK pin for SPI
+
+	USARTC1.CTRLB &= ~USART_RXEN_bm; // disable receiver
+	USARTC1.CTRLB &= ~USART_TXEN_bm; // disable transmitter
+}
+
+void sram_init()
+{
 	PORTE.PIN3CTRL |= PORT_OPC_PULLUP_gc; // pull up on CS Hold Pin
 	PORTE.DIR |= SRAM_CS_PIN_gm;
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
 }
 
-void usart-spi_txrx(const void* txd, void* rxd, uint16_t len)
+void usart_spi_txrx(const void* txd, void* rxd, uint16_t len)
 {
-	uint8_t rx_null = 0;
 	uint8_t* txd_b = (uint8_t*)txd;
 	uint8_t* rxd_b = (uint8_t*)rxd;
+
+ // clear out all rx data
+ while ((USARTC1.STATUS & USART_RXCIF_bm) > 0)
+		USARTC1.DATA;
 
 	int i;
 	for (i = 0; i < len; i++)
@@ -56,7 +76,7 @@ void usart-spi_txrx(const void* txd, void* rxd, uint16_t len)
 		if (rxd_b != NULL)
 			rxd_b[i] = USARTC1.DATA;
 		else
-			rx_null = USARTC1.DATA;
+			USARTC1.DATA;
 	}
 }
 
@@ -69,16 +89,21 @@ void* sram_write(void* addr, const void* src, size_t len)
 		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
 	};
 
-	//sram_config_spi();
+	sram_config_spi();
+
 	// begin transaction by setting CS and sendng write header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
-	usart-spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
+	dma_sram_txrx(hdr, NULL, sizeof(hdr));
+	//usart_spi_txrx(&hdr, NULL, sizeof(hdr));
 
 	// send bytes
-	usart-spi_txrx(&SPIC, src, NULL, len);
+	dma_sram_txrx(src, NULL, len);
+	//usart_spi_txrx(src, NULL, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
+
+	sram_unconfig_spi();
 
 	return addr;
 }
@@ -92,17 +117,19 @@ void* sram_read(void* dst, const void* addr, size_t len)
 		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
 	};
 
-	//sram_config_spi();
+	sram_config_spi();
 
 	// begin transaction by setting CS and sendng read header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
- 	usart-spi_txrx(&SPIC, &hdr, NULL, sizeof(hdr));
+	dma_sram_txrx(hdr, NULL, sizeof(hdr));
 
 	// recv bytes
- 	usart-spi_txrx(&SPIC, NULL, dst, len);
+	dma_sram_txrx(NULL, dst, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
+
+	sram_unconfig_spi();
 
 	return dst;
 }
@@ -119,7 +146,9 @@ int sram_self_test() {
 		sram_read(buf, 0x0000, 1);
 		if (memcmp(test_src + 1, buf, 1) != 0)
 		{
-			printf("FAILED (memcmp)\n");
+			printf("FAILED (memcmp) wrote[0x%X] read[0x%X]\n",
+				test_src[1],
+				buf[0]);
 			return 1;
 		}
 		printf("PASSED\n");

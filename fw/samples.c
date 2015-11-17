@@ -8,7 +8,8 @@
 uint32_t g_samples_uart_seqnum;
 sample g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
 static ringbuf rb;
-static uint8_t samples_tmp[400];
+static uint8_t samples_tmp[sizeof(uint32_t) + sizeof(uint16_t) +
+	(SAMPLES_LEN * sizeof(sample))];
 
 void samples_init()
 {
@@ -43,8 +44,12 @@ void samples_ringbuf_write(sample* s, uint16_t len) //{{{
 void samples_uart_write() // {{{
 {
 	uint16_t len = 0;
-	uint16_t samples_len = 20 * sizeof(sample);
-	
+	uint16_t samples_len = (SAMPLES_LEN * sizeof(sample));
+
+	// abort if UART TX is not ready
+	if (!uart_tx_ready())
+		return;
+
 	// sequence number
 	memcpy(samples_tmp + len,
 		&g_samples_uart_seqnum,
@@ -62,21 +67,28 @@ void samples_uart_write() // {{{
 		return; // no samples ready yet
 	len += samples_len;
 
-	printf("ringbuf remaining %d\n", rb.len);
+	printf("ringbuf remaining %u\n", rb.len);
 
 	uart_tx_bytes_dma(UART_TYPE_SAMPLES, samples_tmp, len);	
 
 	// completed tx, advance to next seqnum
 	g_samples_uart_seqnum++;
-}
+} //}}}
 
-void samples_store_write(sample* s) //{{{
+void samples_store_write() //{{{
 {
-	uint16_t len = SAMPLES_LEN * sizeof(sample);
+	uint16_t samples_len = (SAMPLES_LEN * sizeof(sample));
 
 	printf("samples: store_write_bytes\n");
+
+	// samples
+	if (ringbuf_read(&rb, samples_tmp, samples_len) < 0)
+		return; // no samples ready yet
+
+	printf("ringbuf remaining %u\n", rb.len);
+
 	// write samples
-	store_write_bytes((uint8_t*)s, len);
+	store_write_bytes(samples_tmp, samples_len);
 } //}}}
 
 uint16_t samples_store_read_next(sample* s) //{{{
