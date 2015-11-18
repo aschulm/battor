@@ -157,7 +157,7 @@ int sd_init(sd_info* info) //{{{
 	return 0;
 } //}}}
 
-char sd_read_block(void* block, uint32_t block_num) //{{{
+int sd_read_block(void* block, uint32_t block_num) //{{{
 {
 	// TODO bounds checking
 	uint8_t rx = 0xFF;
@@ -185,7 +185,7 @@ char sd_read_block(void* block, uint32_t block_num) //{{{
 	return 1;
 } //}}}
 
-char sd_write_block(void* block, uint32_t block_num) //{{{
+int sd_write_block_start(void* block, uint32_t block_num) //{{{
 {
 	// TODO bounds checking
 	uint8_t rx = 0xFF;
@@ -195,16 +195,13 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
 	if (sd_command(24, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1) < 0) // CMD24
 	{
-		//led_on(LED_GREEN_bm);
-		//while(1);
 		halt(ERROR_SD_CMD24_FAILED);
 	}
 
-	// Could be an issue here where the last 8 of SD command contains the token, but I doubt this happens
+	// Could be an issue here where the last 8 of SD command
+	// contains the token, but I doubt this happens
 	if (rx != 0x00)
 	{
-		//led_on(LED_YELLOW_bm);
-		//while(1);
 		halt(ERROR_SD_CMD24_ACK_FAILED);
 	}
 
@@ -224,18 +221,44 @@ char sd_write_block(void* block, uint32_t block_num) //{{{
 	// check if the data is accepted
 	if (!((rx & 0xE) >> 1 == 0x2))
 	{
-		//led_on(LED_RED_bm);
-		//while(1);
 		halt(ERROR_SD_CMD24_DATA_REJECTED);
 	}
 
-	// wait for the card to release the busy flag
-	rx = 0;
-	while (rx == 0)
-		spi_txrx(&SPIE, NULL, &rx, 1);
+	/*
+	 * NOTE: This function must follow with calls to
+	 * sd_write_block_update() until the write completes.
+	 */
 
-	spi_txrx(&SPIE, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
-
-	gpio_on(&PORTE, SPI_SS_PIN_bm);
 	return 0;
+} //}}}
+
+int sd_write_block_update() //{{{
+{
+	int i;
+	uint8_t rx[20];
+
+	printf("sd_write_block_update()\n");
+
+	memset(rx, 0, sizeof(rx));
+
+	// cycle the clock several times to advance write and get response for each
+	spi_txrx(&SPIE, NULL, &rx, sizeof(rx));
+
+	for (i = 0; i < sizeof(rx); i++)
+	{
+		// is transfer complete?
+		if (rx[i] != 0)
+		{
+			/*
+			 * Transfer is complete.
+			 * give the SD card 8 clock cycles to prepare the card for the next command.
+			 */
+			spi_txrx(&SPIE, NULL, NULL, 1);
+			gpio_on(&PORTE, SPI_SS_PIN_bm);
+			return 0;
+		}
+	}
+
+	// transfer is still in progress...
+	return -1;
 } //}}}

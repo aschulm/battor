@@ -4,7 +4,6 @@
 #include "control.h"
 #include "blink.h"
 #include "samples.h"
-#include "store.h"
 #include "drivers.h"
 #include "ringbuf.h"
 
@@ -47,7 +46,6 @@ int8_t control_run_message(control_message* m) //{{{
 	int8_t ret = 0;
 
 	printf("control: type %d\n", m->type);
-	int8_t filenum;
 	uint16_t pos;
 	uint8_t buf[100];
 	switch (m->type)
@@ -58,7 +56,6 @@ int8_t control_run_message(control_message* m) //{{{
 				reset();
 
 			g_control_mode = CONTROL_MODE_IDLE;
-			dma_started = 0;
 
 			ret = g_error_last;
 			// an error may not have been set yet, always return something
@@ -68,7 +65,12 @@ int8_t control_run_message(control_message* m) //{{{
 			// clear out last error
 			g_error_last = 0;
 
-			dma_stop(); // stop getting samples from the ADCs
+			// stop getting samples from the ADCs
+			dma_stop(); 
+			dma_started = 0;
+
+			// reset the sampling
+			samples_init();
 		break;
 		case CONTROL_TYPE_AMPPOT_SET:
 			pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
@@ -100,39 +102,27 @@ int8_t control_run_message(control_message* m) //{{{
 			timer_sleep_ms(10);
 		break;
 		case CONTROL_TYPE_START_SAMPLING_SD:
-			filenum = store_write_open();
+			g_control_mode = CONTROL_MODE_STORE;
+			blink_set_led(LED_RED_bm);
 
-			// max files reached, return to idle
-			if (filenum < 0)
-			{
-				g_control_mode = CONTROL_MODE_IDLE;
-				ret = -1;
-			}
-			else
-			{
-				g_control_mode = CONTROL_MODE_STORE;
-				blink_set_led(LED_RED_bm);
-				blink_set_strobe_count(filenum);
+			// setup calibration
+			g_control_calibrated = 0;
+			// current measurement input to gnd
+			mux_select(MUX_GND);
+			// voltage measurement input to gnd
+			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+			// wait for things to settle
+			timer_sleep_ms(10);
 
-				// setup calibration
-				g_control_calibrated = 0;
-				// current measurement input to gnd
-				mux_select(MUX_GND);
-				// voltage measurement input to gnd
-				ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
-				// wait for things to settle
-				timer_sleep_ms(10);
-
-				// start getting samples from the ADCs
-				dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
-			}
+			// start getting samples from the ADCs
+			dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
 		break;
-		case CONTROL_TYPE_READ_FILE:
-			g_control_mode = CONTROL_MODE_READ_FILE;
-			g_samples_uart_seqnum = 0;
-			store_read_open(m->value1);
-			dma_stop(); // will get samples from the file
-		break;
+		//case CONTROL_TYPE_READ_FILE:
+		//	g_control_mode = CONTROL_MODE_READ_FILE;
+		//	g_samples_uart_seqnum = 0;
+		//	store_read_open(m->value1);
+		//	dma_stop(); // will get samples from the file
+		//break;
 		case CONTROL_TYPE_READ_READY:
 			/* 
 			 * First frame, start getting samples from the ADCs,

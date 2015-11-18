@@ -1,6 +1,5 @@
 #include "common.h"
 
-#include "store.h"
 #include "samples.h"
 #include "ringbuf.h"
 #include "error.h"
@@ -11,21 +10,31 @@ static ringbuf rb;
 static uint8_t samples_tmp[sizeof(uint32_t) + sizeof(uint16_t) +
 	(SAMPLES_LEN * sizeof(sample))];
 
-void samples_init()
+static uint8_t sd_block_tmp[SD_BLOCK_LEN];
+static uint32_t sd_block_idx;
+static uint8_t sd_write_in_progress;
+
+void samples_init() //{{{
 {
 	ringbuf_init(&rb, 0x0000, SRAM_SIZE_BYTES,
 		sram_write, sram_read);
-}
+	g_samples_uart_seqnum = 0;
+
+	sd_block_idx = 0;
+	sd_write_in_progress = 0;
+} //}}}
 
 void samples_ringbuf_write(sample* s, uint16_t len) //{{{
 {
 	int ret;
 	uint16_t len_b = len * sizeof(sample);
 
+	printf("samples_ringbuf_write() len_b:%d\n", len_b); 
+
 #ifdef SAMPLE_ZERO
 	memset(s, 0, len_b);
 #endif
-	
+
 #ifdef SAMPLE_INC
 	int i;
 	for (i = 0; i < len; i++)
@@ -67,8 +76,6 @@ void samples_uart_write() // {{{
 		return; // no samples ready yet
 	len += samples_len;
 
-	printf("ringbuf remaining %u\n", rb.len);
-
 	uart_tx_bytes_dma(UART_TYPE_SAMPLES, samples_tmp, len);	
 
 	// completed tx, advance to next seqnum
@@ -77,26 +84,34 @@ void samples_uart_write() // {{{
 
 void samples_store_write() //{{{
 {
-	uint16_t samples_len = (SAMPLES_LEN * sizeof(sample));
+	/*
+	 * Write one SD card block worth of samples
+	 */
 
-	printf("samples: store_write_bytes\n");
+	// if there is a write in progress, continue it
+	if (sd_write_in_progress)
+	{
+		sd_write_in_progress = (sd_write_block_update() < 0);
+	}
 
-	// samples
-	if (ringbuf_read(&rb, samples_tmp, samples_len) < 0)
-		return; // no samples ready yet
+	// no write in progress, try to read a SD block of samples and write it
+	else
+	{
+		if (ringbuf_read(&rb, sd_block_tmp, SD_BLOCK_LEN) < 0)
+			return; // no samples ready yet
 
-	printf("ringbuf remaining %u\n", rb.len);
-
-	// write samples
-	store_write_bytes(samples_tmp, samples_len);
+		// start SD samples write
+		sd_write_block_start(sd_block_tmp, sd_block_idx++);
+		sd_write_in_progress = 1;
+	}
 } //}}}
 
-uint16_t samples_store_read_next(sample* s) //{{{
-{
-	uint16_t len = SAMPLES_LEN * sizeof(sample);
-	int ret = 0;
-
-	// read samples
-	ret = store_read_bytes((uint8_t*)s, len);
-	return (ret >= 0) ? len : 0;
-} //}}}
+//uint16_t samples_store_read_next(sample* s) //{{{
+//{
+//	uint16_t len = SAMPLES_LEN * sizeof(sample);
+//	int ret = 0;
+//
+//	// read samples
+//	ret = store_read_bytes((uint8_t*)s, len);
+//	return (ret >= 0) ? len : 0;
+//} //}}}

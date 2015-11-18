@@ -17,6 +17,8 @@ int ringbuf_init(ringbuf* rb, void* base, uint16_t base_len, //{{{
 
 int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 {
+	printf("ringbuf_write() len:%u ringbuf.len:%u\n", len, rb->len);
+
 	// check write too long
 	if ((rb->len + len) > rb->base_len)
 		return -1;
@@ -44,6 +46,8 @@ int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 
 int ringbuf_read(ringbuf* rb, void* dst, uint16_t len) //{{{
 {
+	printf("ringbuf_read() len:%u ringbuf.len:%u\n", len, rb->len);
+
 	// check read longer than written
 	if (len > rb->len)
 		return -1;
@@ -74,7 +78,7 @@ int ringbuf_self_test() //{{{
 	uint8_t ring[100];
 
 	uint8_t test_src[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
-	uint8_t buf[100];
+	uint8_t buf[600];
 
 	printf("ringbuf self test\n");
 
@@ -232,6 +236,30 @@ int ringbuf_self_test() //{{{
 	if (memcmp(buf, test_big_src, 24) != 0)
 	{
 		printf("FAILED (memcmp)\n");
+		return 1;
+	}
+
+	printf("ringbuf SRAM write 600 read 512 read 88...");
+	memset(buf, 0, sizeof(buf));
+	ringbuf_init(&rb, (void*)0x0000, 600, &sram_write, &sram_read);
+	if (ringbuf_write(&rb, buf, 600) < 0)
+	{
+		printf("FAILED (ringbuf_write #1)\n");
+		return 1;
+	}
+	if (ringbuf_read(&rb, buf, 512) < 0)
+	{
+		printf("FAILED (ringbuf_read #1)\n");
+		return 1;
+	}
+if (ringbuf_read(&rb, buf, 88) < 0)
+	{
+		printf("FAILED (ringbuf_read #2)\n");
+		return 1;
+	}
+	if (rb.len != 0)
+	{
+		printf("FAILED (ringbuf.len expected 0 found %u)\n", rb.len);
 		return 1;
 	}
 	printf("PASSED\n");

@@ -3,28 +3,29 @@
 #include "error.h"
 #include "blink.h"
 #include "control.h"
-#include "store.h"
 #include "interrupt.h"
 #include "samples.h"
 #include "drivers.h"
 
 int main() //{{{
 {
+	sd_info sd;
+	int8_t ret = 0;
+
 	printf("main: clock_set_crystal()\n");
 	clock_set_crystal();
 	printf("main: interrupt_init()\n");
 	interrupt_init();
 	printf("main: drivers_init()\n");
 	drivers_init();
-	printf("main: samples_init()\n");
-	samples_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
 	blink_init(1000, LED_YELLOW_bm); 
 
 	// try to initalize storage
 	g_control_mode = 0;
-	store_init();
+	ret = sd_init(&sd);
+	printf("main: sd_init() : %d\n", ret);
 
 	// main loop for interrupt bottom halves 
 	while (1) 
