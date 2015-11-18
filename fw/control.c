@@ -44,7 +44,7 @@ void control_got_uart_bytes() //{{{
 
 int8_t control_run_message(control_message* m) //{{{
 {
-	uint8_t ret = 0;
+	int8_t ret = 0;
 
 	printf("control: type %d\n", m->type);
 	// record the message if we are in record mode, else run it
@@ -62,11 +62,21 @@ int8_t control_run_message(control_message* m) //{{{
 		switch (m->type)
 		{
 			case CONTROL_TYPE_INIT:
+				// reset if currently sampling
+				if (g_control_mode != CONTROL_MODE_IDLE)
+					reset();
+
 				g_control_mode = CONTROL_MODE_IDLE;
 				dma_started = 0;
 
 				ret = g_error_last;
+				// an error may not have been set yet, always return something
+				if (ret < 0)
+					ret = 0;
+
+				// clear out last error
 				g_error_last = 0;
+
 				dma_stop(); // stop getting samples from the ADCs
 			break;
 			case CONTROL_TYPE_AMPPOT_SET:
