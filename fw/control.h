@@ -13,13 +13,11 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_SAMPLE_TIMER_SET,    // set the sample timer (clock div and overflow) 
 	CONTROL_TYPE_START_SAMPLING_UART, // start taking samples and sending them over the uart
 	CONTROL_TYPE_START_SAMPLING_SD,   // start taking samples and storing them on the SD card
-	CONTROL_TYPE_START_REC_CONTROL,   // init recording the control messages to the SD card
-	CONTROL_TYPE_END_REC_CONTROL,     // write the control messages to the SD card
 	CONTROL_TYPE_READ_FILE,           // read a file from the SD card
 	CONTROL_TYPE_READ_READY,          // ready to start receiving next round of samples
-	CONTROL_TYPE_RESET,               // reset the MCU
 	CONTROL_TYPE_READ_EEPROM,         // read the EEPROM
-    CONTROL_TYPE_SELF_TEST,           // run a self test
+	CONTROL_TYPE_RESET,               // reset the MCU
+	CONTROL_TYPE_SELF_TEST,           // run a self test
 } CONTROL_TYPE_t;
 
 typedef struct control_message_ 
@@ -34,7 +32,6 @@ typedef enum CONTROL_MODE_enum
 	CONTROL_MODE_IDLE = 0,
 	CONTROL_MODE_STREAM,
 	CONTROL_MODE_STORE,
-	CONTROL_MODE_REC_CONTROL,
 	CONTROL_MODE_READ_FILE
 } CONTROL_MODE_t;
 

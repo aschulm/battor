@@ -41,33 +41,13 @@ int8_t store_init() //{{{
 	return 0;
 } //}}}
 
-void store_run_commands() //{{{
+void store_write_open() //{{{
 {
-	uint16_t i;
-
-	printf("store: run_commands %d\n", sb.control_len);
-
-	// run stored control messages
-	for (i = 0; i < sb.control_len; i++)
-	{
-		// run commands, if error then stop running commands
-		if (control_run_message(sb.control + i) < 0)
-			return;
-	}
-} //}}}
-
-int8_t store_write_open() //{{{
-{
-	if (sb.written >= STORE_MAX_FILES)
-		return -1;
-
-	// new file, increment the written counter and store it
-	sb.written += 1;
-	sd_write_block(&sb, STORE_STARTBLOCK_IDX);
-
+	uint32_t rand = 0;
+	// get random int for start block number
+	
 	// set the current block index to the current file
-	write_block_idx = sb.written * STORE_FILE_BLOCKS;
-	return sb.written;
+	write_block_idx = rand * STORE_FILE_BLOCKS;
 } //}}}
 
 void store_write_bytes(uint8_t* buf, uint16_t len) //{{{
@@ -113,20 +93,4 @@ int store_read_bytes(uint8_t* buf, uint16_t len) //{{{
 		return -1;
 
 	return 0;
-} //}}}
-
-void store_start_rec_control(uint16_t rand) //{{{
-{
-	startblock_init(rand);
-} //}}}
-
-void store_end_rec_control() //{{{
-{
-	sd_write_block(&sb, STORE_STARTBLOCK_IDX);
-} //}}}
-
-void store_rec_control(control_message* m) //{{{
-{
-	memcpy(sb.control + sb.control_len, m, sizeof(control_message));
-	sb.control_len++;
 } //}}}

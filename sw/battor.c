@@ -9,8 +9,7 @@ void usage(char* name) //{{{
 	fprintf(stderr, "\
 BattOr's PC companion     \n\n\
 usage: %s <tty> -s <options>    *stream* power measurements over USB              \n\
-   or: %s <tty> -d              *download* power measurement from SD card         \n\
-   or: %s <tty> -f <options>    *format* the SD card and upload the configuration \n\
+   or: %s <tty> -b <options>    *buffer* on the SD card and download on CTRL+C    \n\
    or: %s <tty> -k              *restart* the MCU                                 \n\
                                                                             \n\
 Options:                                                                    \n\
@@ -21,7 +20,7 @@ Options:                                                                    \n\
 Output:                                                                     \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
-", name, name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT);
+", name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -30,7 +29,7 @@ int main(int argc, char** argv)
 	FILE* file;
 	char opt;
 	char tty[] = "/dev/ttyUSB0";
-	char usb = 0, format = 0, down = 0, reset = 0, test = 0, cal = 0;
+	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -51,7 +50,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sfd:b:r:g:o:vhu:ktc")) != -1)
+	while ((opt = getopt(argc, argv, "sbr:g:o:vhu:ktc")) != -1)
 	{
 		switch(opt)
 		{
@@ -70,13 +69,6 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 				}
 			break;
-			case 'f':
-				format = 1;				
-			break;
-			case 'd':
-				down = 1;
-				down_file = atoi(optarg);
-			break;
 			case 'g':
 				gain_c = optarg[0]; 
 
@@ -87,12 +79,7 @@ int main(int argc, char** argv)
 				}
 			break;
 			case 'b':
-				ovs_bits = atoi(optarg);
-				if (ovs_bits > OVERSAMPLE_BITS_MAX)
-				{
-					usage(argv[0]);
-					return EXIT_FAILURE;
-				}
+				buffer = 1;
 			break;
 			case 'k':
 				reset = 1;
@@ -171,38 +158,20 @@ int main(int argc, char** argv)
 	printf("# sample_rate=%dHz, gain=%fx\n", sconf.sample_rate, sconf.gain);
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 	
-
-	// download file
-	if (down)
-	{
-		// read configuration
-		control(CONTROL_TYPE_READ_FILE, down_file, 0, 1);
-		samples_print_loop(&sconf);
-	}
-
-	// start configuration recording if enabled
-	if (format)
-	{
-		srand(time(NULL));
-		control(CONTROL_TYPE_START_REC_CONTROL, rand() & 0xFFFF, 0, 1);
-	}
-
 	// configuration
 	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0, 1);
 	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0, 1);
 	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
 
-	// end configuration recording if enabled
-	if (format)
-	{
-		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
-		control(CONTROL_TYPE_END_REC_CONTROL, 0, 0, 1);
-	}
-
-
 	if (usb)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
+		samples_print_loop(&sconf);
+	}
+
+	if (buffer)
+	{
+		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 		samples_print_loop(&sconf);
 	}
 	

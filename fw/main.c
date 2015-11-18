@@ -24,11 +24,7 @@ int main() //{{{
 
 	// try to initalize storage
 	g_control_mode = 0;
-	if (store_init() >= 0)
-	{
-		printf("main: store init successful\n");
-		store_run_commands();
-	}
+	store_init();
 
 	// main loop for interrupt bottom halves 
 	while (1) 
