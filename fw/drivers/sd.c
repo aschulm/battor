@@ -235,7 +235,7 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 int sd_write_block_update() //{{{
 {
 	int i;
-	uint8_t rx[20];
+	uint8_t rx[32];
 
 	printf("sd_write_block_update()\n");
 
