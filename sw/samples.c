@@ -109,9 +109,6 @@ void samples_print_loop(samples_config* conf) //{{{
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGINT);
 
-	// tell the BattOr that the PC is ready to read samples
-	control(CONTROL_TYPE_READ_READY, 0, 0, 0);
-
 	// read calibration and compute it
 	while (samples_len == 0 || seqnum != 1)
 	{
