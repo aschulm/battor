@@ -18,6 +18,8 @@ int main() //{{{
 	interrupt_init();
 	printf("main: drivers_init()\n");
 	drivers_init();
+	printf("main: samples_init()\n");
+	samples_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
 	blink_init(1000, LED_YELLOW_bm); 

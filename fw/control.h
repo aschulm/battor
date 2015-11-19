@@ -3,7 +3,6 @@
 
 #define CONTROL_DELIM0 0xBA
 #define CONTROL_DELIM1 0x77
-#define CONTROL_ACK 0x01
 
 typedef enum CONTROL_TYPE_enum
 {
@@ -29,7 +28,7 @@ typedef struct control_message_
 
 typedef enum CONTROL_MODE_enum
 {
-	CONTROL_MODE_IDLE = 0,
+	CONTROL_MODE_IDLE = 1,
 	CONTROL_MODE_STREAM,
 	CONTROL_MODE_STORE,
 	CONTROL_MODE_READ_FILE

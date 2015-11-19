@@ -51,8 +51,8 @@ int8_t control_run_message(control_message* m) //{{{
 	switch (m->type)
 	{
 		case CONTROL_TYPE_INIT:
-			// reset if currently sampling
-			if (g_control_mode != CONTROL_MODE_IDLE)
+			// reset if already run
+			if (g_control_mode != 0)
 				reset();
 
 			g_control_mode = CONTROL_MODE_IDLE;
@@ -64,13 +64,6 @@ int8_t control_run_message(control_message* m) //{{{
 
 			// clear out last error
 			g_error_last = 0;
-
-			// stop getting samples from the ADCs
-			dma_stop(); 
-			dma_started = 0;
-
-			// reset the sampling
-			samples_init();
 		break;
 		case CONTROL_TYPE_AMPPOT_SET:
 			pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
