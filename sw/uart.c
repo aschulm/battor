@@ -58,6 +58,8 @@ int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len) //{{{
 
 	uint8_t start_found = 0;
 	uint8_t end_found = 0;
+	uint8_t esc_last = 0;
+	uint8_t start_last = 0;
 	uint16_t bytes_read = 0;
 
 uart_rx_bytes_start:
@@ -74,32 +76,37 @@ uart_rx_bytes_start:
 			vverb_printf("uart_rx_bytes: failed to get byte\n%s", "");
 			return -1;
 		}
-
-		if (b_tmp == UART_ESC_DELIM)
+		
+		if (esc_last)
 		{
-			vverb_printf("uart_rx_bytes: got escape\n%s", "");
-			if (uart_rx_byte(&b_tmp) <= 0)
-			{
-				vverb_printf("uart_rx_bytes: got escape -- failed to get next byte\n%s", "");
-				return -1;
-			}
-
 			if (bytes_read < b_b_len)
 			{
-				vverb_printf("uart_rx_byte: got escape --- stored escaped byte 0x%X\n", b_tmp);
+				vverb_printf("uart_rx_bytes: got escape --- stored escaped byte 0x%X\n", b_tmp);
 				b_b[bytes_read++] = b_tmp;
 			}
+
+			esc_last = 0;
+		}
+		else if (b_tmp == UART_ESC_DELIM)
+		{
+			vverb_printf("uart_rx_bytes: got escape\n%s", "");
+			esc_last = 1;
 		}
 		else if (b_tmp == UART_START_DELIM)
 		{
 			start_found = 1;
+			start_last = 1;
 			bytes_read = 0;
-
-			if (uart_rx_byte(type) <= 0)
-			{
-				vverb_printf("uart_rx_byte: got START -- failed to get next byte\n%s", "");
-				return -1;
-			}
+		}
+		else if (b_tmp == UART_END_DELIM)
+		{
+			vverb_printf("uart_rx_byte: got END\n%s", "");
+			end_found = 1;
+		}
+		else if (start_last)
+		{
+			*type = b_tmp;
+			vverb_printf("uart_rx_bytes: got START type 0x%X\n", *type);
 
 			// frame is a print type, so swap in print buffer
 			if (*type == UART_TYPE_PRINT) 
@@ -108,12 +115,7 @@ uart_rx_bytes_start:
 				b_b_len = sizeof(b_print);
 			}
 				
-			vverb_printf("uart_rx_byte: got START type 0x%X\n", *type);
-		}
-		else if (b_tmp == UART_END_DELIM)
-		{
-			vverb_printf("uart_rx_byte: got END\n%s", "");
-			end_found = 1;
+			start_last = 0;
 		}
 		else if (bytes_read < b_b_len)
 		{
