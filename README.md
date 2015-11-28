@@ -12,11 +12,6 @@
 
 The software can stream at max 10 ksps over USB and store at 1 ksps to the board's SD card.
 
-#### Dependencies
-* libboost-all-dev >= 1.54 (for libftdi)
-* libusb-1.0.0-dev >= 1.0 (for libftdi)
-* libftdi >= 1.0 (must build [from source](http://www.intra2net.com/en/developer/libftdi/download.php) for Ubuntu 14.04)
-
 #### Build
 The software should build and run on Linux and OSX. However, if you are
 using OSX 10.9 (Maverics) you will need to disable the OSX FTDI USB-to-serial
@@ -28,12 +23,9 @@ driver.
     $ sudo make install
 
 #### User permission
-To run BattOr without root on Linux you will need to add the BattOr to your udev rules.
+To run BattOr without root on Linux you will need to add your user to the "dialout" group. You need to logout and login for these settings to take effect.
 
-    $ sudo su
-    $ echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", GROUP="plugdev", MODE="0660"' > /etc/udev/rules.d/99-libftdi.rules
-    $ udevadm control --reload-rules
-    $ udevadm trigger
+    $ sudo usermod -a -G dialout <userName>
     
 ### Systrace
 
