@@ -11,8 +11,9 @@
 void adc_init(ADC_t* adc)
 {
 	adc->CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc; // 12bit, signed (sadly, have to do signed and lose a bit since differential has much less noise and it's only available in signed)
-	adc->REFCTRL = ADC_REFSEL_AREFA_gc; // external reference (2.048 V) on PORTA
-	adc->PRESCALER = ADC_PRESCALER_DIV16_gc; // set ADC clock to 2MHz for some reason it works best here
+	adc->CTRLB |= ADC_IMPMODE_bm; // use low impedience mode because input sources are not high impedance and do not need charge to remain in a capacitor
+	adc->REFCTRL = ADC_REFSEL_AREFA_gc; // external reference (1.200 V) on PORTA
+	adc->PRESCALER = ADC_PRESCALER_DIV64_gc; // set ADC clock to less than 2 MHz
 
 	// get the factory written ADC calibration value
 	uint16_t adc_cal = 0;
@@ -28,10 +29,12 @@ void adc_init(ADC_t* adc)
 	}
 	adc->CAL = adc_cal; // load the calibration value into the ADC adc_cal
 
-	// setup channels
-	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // no gain needed due to low impedience
-	adc->CH1.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // no gain needed due to low impedience
-	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+	// setup voltage measurement channel 
+	adc->CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc; // 1x gain needed due to high impedience
+	adc->CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
+
+	// setup current measurement channel
+	adc->CH1.CTRL = ADC_CH_INPUTMODE_DIFF_gc; // gain needed to use GND 
 	adc->CH1.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 
 	// setup interrupts

@@ -88,7 +88,7 @@ int8_t control_run_message(control_message* m) //{{{
 			// current measurement input to gnd
 			mux_select(MUX_GND);
 			// voltage measurement input to gnd
-			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
 			// wait for things to settle
 			timer_sleep_ms(10);
 
@@ -103,7 +103,7 @@ int8_t control_run_message(control_message* m) //{{{
 			// current measurement input to gnd
 			mux_select(MUX_GND);
 			// voltage measurement input to gnd
-			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
 			// wait for things to settle
 			timer_sleep_ms(10);
 
