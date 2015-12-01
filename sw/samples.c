@@ -153,7 +153,7 @@ void samples_print_loop(samples_config* conf) //{{{
 			double mv = sample_v(samples + i, conf, v_cal);
 			double mi = sample_i(samples + i, conf, i_cal);
 
-			printf("%0.1f %0.1f %0.1f", msec, mi, mv);
+			printf("%0.2f %0.1f %0.1f", msec, mi, mv);
 
 			// check for test value on STDIN and print
 			if (conf->cal)
