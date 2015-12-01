@@ -6,6 +6,7 @@
 #include "interrupt.h"
 #include "samples.h"
 #include "drivers.h"
+#include "params.h"
 
 int main() //{{{
 {
@@ -20,6 +21,8 @@ int main() //{{{
 	drivers_init();
 	printf("main: samples_init()\n");
 	samples_init();
+	printf("main: params_init()\n");
+	params_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
 	blink_init(1000, LED_YELLOW_bm); 

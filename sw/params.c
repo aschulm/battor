@@ -43,24 +43,6 @@ uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, u
 	return actual_sample_rate_hz;
 } //}}}
 
-double param_gain(uint32_t desired_gain, uint16_t* amppot_pos) //{{{
-{
-	if (desired_gain <= 1)
-	{
-		fprintf(stderr, "error: gain out of range\n");
-		exit(EXIT_FAILURE);
-	}
-
-	*amppot_pos = (uint16_t)(((100000.0/(desired_gain - 1.0)) / AMPPOT_OHM) * 1024.0);
-
-	if (*amppot_pos == 0 || *amppot_pos > 1023)
-	{
-		fprintf(stderr, "error: gain out of range\n");
-		exit(EXIT_FAILURE);
-	}
-	return (100000.0 / ((((double)*amppot_pos)/1024.0) * AMPPOT_OHM)) + 1.0;
-} //}}}
-
 // read parameters from the battor's eeprom
 int param_read_eeprom(eeprom_params* params)
 {

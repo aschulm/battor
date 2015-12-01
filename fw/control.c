@@ -6,6 +6,7 @@
 #include "samples.h"
 #include "drivers.h"
 #include "ringbuf.h"
+#include "params.h"
 
 static control_message message;
 uint8_t g_control_mode = 0;
@@ -63,11 +64,8 @@ int8_t control_run_message(control_message* m) //{{{
 			// clear out last error
 			g_error_last = 0;
 		break;
-		case CONTROL_TYPE_AMPPOT_SET:
-			pot_wiperpos_set(POT_AMP_CS_PIN_gm, m->value1);
-			pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
-			if (m->value1 != pos)
-				halt(ERROR_AMPPOT_SET_FAILED);
+		case CONTROL_TYPE_GAIN_SET:
+			ret = (params_set_gain(m->value1) >= 0) ? 1 : 0;
 		break;
 		case CONTROL_TYPE_FILPOT_SET:
 			pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);

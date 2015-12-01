@@ -35,7 +35,8 @@ int main(int argc, char** argv)
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	char gain_c = GAIN_DEFAULT;
+	char gain_c;
+	uint16_t gain = GAIN_DEFAULT;
 	samples_config sconf;
 	eeprom_params* eeparams = &sconf.eeparams;
 
@@ -72,7 +73,11 @@ int main(int argc, char** argv)
 			case 'g':
 				gain_c = optarg[0]; 
 
-				if(gain_c != 'L' && gain_c != 'H')
+				if(gain_c != 'L')
+					gain = PARAM_GAIN_LOW;
+				else if (gain_c == 'H')
+					gain = PARAM_GAIN_HIGH;
+				else
 				{
 					usage(argv[0]);
 					return EXIT_FAILURE;
@@ -133,17 +138,11 @@ int main(int argc, char** argv)
 	// get actual sample rate
 	sconf.sample_rate = param_sample_rate(sconf.sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
 
-	// set gain based on values in EEPROM, and set actual gain
+	// set gain based on values in EEPROM
 	if (gain_c == 'L')
-	{
-		eeparams->gainL = param_gain((uint32_t)eeparams->gainL, &amppot_pos);
 		sconf.gain = eeparams->gainL;
-	}
 	if (gain_c == 'H')
-	{
-		eeparams->gainH = param_gain((uint32_t)eeparams->gainH, &amppot_pos);
 		sconf.gain = eeparams->gainH;
-	}
 
 	// print settings
 	sample min_s;
@@ -159,8 +158,8 @@ int main(int argc, char** argv)
 	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 	
 	// configuration
+	control(CONTROL_TYPE_GAIN_SET, gain, 0, 1);
 	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0, 1);
-	control(CONTROL_TYPE_AMPPOT_SET, amppot_pos, 0, 1);
 	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
 
 	if (usb)
