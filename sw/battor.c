@@ -15,6 +15,7 @@ usage: %s <tty> -s <options>    *stream* power measurements over USB            
 Options:                                                                    \n\
   -r <rate> : sample rate (default %d Hz)                                   \n\
   -g <[L]ow or [H]igh> : current gain (default %c)                          \n\
+  -c calibration mode                                                       \n\
   -v(v) : verbose printing for debugging                                    \n\
                                                                             \n\
 Output:                                                                     \n\
