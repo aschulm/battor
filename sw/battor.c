@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 			case 'g':
 				gain_c = optarg[0]; 
 
-				if(gain_c != 'L')
+				if (gain_c == 'L')
 					gain = PARAM_GAIN_LOW;
 				else if (gain_c == 'H')
 					gain = PARAM_GAIN_HIGH;
@@ -138,10 +138,11 @@ int main(int argc, char** argv)
 	// get actual sample rate
 	sconf.sample_rate = param_sample_rate(sconf.sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
 
-	// set gain based on values in EEPROM
-	if (gain_c == 'L')
+
+	// get gain setting from EEPROM
+	if (gain == PARAM_GAIN_LOW)
 		sconf.gain = eeparams->gainL;
-	if (gain_c == 'H')
+	if (gain == PARAM_GAIN_HIGH)
 		sconf.gain = eeparams->gainH;
 
 	// print settings
