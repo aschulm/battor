@@ -69,9 +69,11 @@ int param_read_eeprom(eeprom_params* params)
 	verb_printf("\tgainL: %f\n", params->gainL);
 	verb_printf("\tgainL_R1corr: %f\n", params->gainL_R1corr);
 	verb_printf("\tgainL_U1off: %f\n", params->gainL_U1off);
+	verb_printf("\tgainL_amppot: %d\n", params->gainL_amppot);
 	verb_printf("\tgainH: %f\n", params->gainH);
 	verb_printf("\tgainH_R1corr: %f\n", params->gainH_R1corr);
 	verb_printf("\tgainH_U1off: %f\n", params->gainH_U1off);
+	verb_printf("\tgainH_amppot: %d\n", params->gainH_amppot);
 
 	// TODO check the EEPROM CRC
 	return 0;
