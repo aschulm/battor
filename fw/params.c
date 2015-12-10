@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "control.h"
 #include "error.h"
 #include "params.h"
 
@@ -30,4 +31,34 @@ int params_set_gain(uint8_t gain)
 		halt(ERROR_AMPPOT_SET_FAILED);
 	
 	return 0;
+}
+
+void params_set_samplerate()
+{
+	uint16_t tovf = 0, tdiv = 0;
+	uint16_t filpot_set = 0, filpot_get = 0;
+
+	if (g_control_mode == CONTROL_MODE_STREAM)
+	{
+		tovf = eeprom.uart_tovf;
+		tdiv = eeprom.uart_tdiv;
+		filpot_set = eeprom.uart_filpot;
+	}
+	else if (g_control_mode == CONTROL_MODE_STORE)
+	{
+		tovf = eeprom.sd_tovf;
+		tdiv = eeprom.sd_tdiv;
+		filpot_set = eeprom.sd_filpot;
+	}
+	else
+		halt(ERROR_SAMPLERATE_SET_WRONG_MODE);
+
+	// set timer prescaler and period
+	timer_set(&TCD0, tdiv, tovf);
+
+	// set filter potentiomter
+	pot_wiperpos_set(POT_FIL_CS_PIN_gm, filpot_set);
+	filpot_get = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
+	if (filpot_get != filpot_set)
+		halt(ERROR_FILPOT_SET_FAILED);
 }

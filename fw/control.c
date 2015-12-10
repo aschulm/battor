@@ -45,7 +45,6 @@ int8_t control_run_message(control_message* m) //{{{
 	int8_t ret = 0;
 
 	printf("control: type %d\n", m->type);
-	uint16_t pos;
 	uint8_t buf[100];
 	switch (m->type)
 	{
@@ -67,20 +66,14 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_GAIN_SET:
 			ret = (params_set_gain(m->value1) >= 0) ? 1 : 0;
 		break;
-		case CONTROL_TYPE_FILPOT_SET:
-			pot_wiperpos_set(POT_FIL_CS_PIN_gm, m->value1);
-			pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
-			if (m->value1 != pos)
-				halt(ERROR_FILPOT_SET_FAILED);
-		break;
-		case CONTROL_TYPE_SAMPLE_TIMER_SET:
-			timer_set(&TCD0, m->value1, m->value2);	 // prescaler, period
-		break;
 		case CONTROL_TYPE_START_SAMPLING_UART:
 			g_control_mode = CONTROL_MODE_STREAM;
 			g_samples_uart_seqnum = 0;
 			blink_set_led(LED_GREEN_bm);
 
+			// set sample rate
+			params_set_samplerate();
+		
 			// setup calibration mode
 			g_control_calibrated = 0;
 			// current measurement input to gnd
@@ -95,6 +88,9 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_START_SAMPLING_SD:
 			g_control_mode = CONTROL_MODE_STORE;
 			blink_set_led(LED_RED_bm);
+
+			// set sample rate
+			params_set_samplerate();
 
 			// setup calibration
 			g_control_calibrated = 0;

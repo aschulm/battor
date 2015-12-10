@@ -10,7 +10,7 @@ void samples_init(samples_config* conf) //{{{
 	// fill conf with default parameters
 	conf->cal = 0;
 	conf->gain = 0.0;
-	conf->sample_rate = SAMPLE_RATE_HZ_DEFAULT;
+	conf->sample_rate = 0;
 	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
 

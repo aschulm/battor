@@ -13,7 +13,6 @@ usage: %s <tty> -s <options>    *stream* power measurements over USB            
    or: %s <tty> -k              *restart* the MCU                                 \n\
                                                                             \n\
 Options:                                                                    \n\
-  -r <rate> : sample rate (default %d Hz)                                   \n\
   -g <[L]ow or [H]igh> : current gain (default %c)                          \n\
   -c calibration mode                                                       \n\
   -v(v) : verbose printing for debugging                                    \n\
@@ -21,7 +20,7 @@ Options:                                                                    \n\
 Output:                                                                     \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
-", name, name, name, SAMPLE_RATE_HZ_DEFAULT, GAIN_DEFAULT);
+", name, name, name, GAIN_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -52,7 +51,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sbr:g:o:vhu:ktc")) != -1)
+	while ((opt = getopt(argc, argv, "sb:g:o:vhu:ktc")) != -1)
 	{
 		switch(opt)
 		{
@@ -61,15 +60,6 @@ int main(int argc, char** argv)
 			break;
 			case 's':
 				usb = 1;
-			break;
-			case 'r':
-				if (atoi(optarg) != 0)
-					sconf.sample_rate = atoi(optarg);
-				else
-				{
-					usage(argv[0]);
-					return EXIT_FAILURE;
-				}
 			break;
 			case 'g':
 				gain_c = optarg[0]; 
@@ -136,10 +126,6 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	// get actual sample rate
-	sconf.sample_rate = param_sample_rate(sconf.sample_rate, ovs_bits, &timer_ovf, &timer_div, &filpot_pos);
-
-
 	// get gain setting from EEPROM
 	if (gain == PARAM_GAIN_LOW)
 		sconf.gain = eeparams->gainL;
@@ -156,22 +142,20 @@ int main(int argc, char** argv)
 	printf("# BattOr\n");
 	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &sconf, 0.0), sample_v(&max_s, &sconf, 0.0));
 	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &sconf, 0.0), sample_i(&max_s, &sconf, 0.0));
-	printf("# sample_rate=%dHz, gain=%fx\n", sconf.sample_rate, sconf.gain);
-	printf("# filpot_pos=%d, amppot_pos=%d, timer_ovf=%d, timer_div=%d ovs_bits=%d\n", filpot_pos, amppot_pos, timer_ovf, timer_div, ovs_bits);
 	
 	// configuration
 	control(CONTROL_TYPE_GAIN_SET, gain, 0, 1);
-	control(CONTROL_TYPE_FILPOT_SET, filpot_pos, 0, 1);
-	control(CONTROL_TYPE_SAMPLE_TIMER_SET, timer_div, timer_ovf, 1);
 
 	if (usb)
 	{
+		sconf.sample_rate = eeparams->uart_sr;
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
 		samples_print_loop(&sconf);
 	}
 
 	if (buffer)
 	{
+		sconf.sample_rate = eeparams->sd_sr;
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 		samples_print_loop(&sconf);
 	}

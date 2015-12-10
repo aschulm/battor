@@ -8,7 +8,6 @@
 // sample rate
 #define CLOCK_HZ 32000000
 #define TIMER_OVF_DEFAULT 250
-#define SAMPLE_RATE_HZ_DEFAULT 1000  // paired with timer settings above
 
 // gain
 typedef enum PARAM_GAIN_enum
@@ -58,6 +57,14 @@ struct eeprom_params_
 	float gainH_R1corr;     // High gain R1 correction
 	float gainH_U1off;      // High gain U1 offset correction
 	uint16_t gainH_amppot;  // High gain amplifier potentiomter position
+	uint32_t sd_sr;         // SD sample rate
+	uint16_t sd_tdiv;       // SD timer divider
+	uint16_t sd_tovf;       // SD timer overflow
+	uint16_t sd_filpot;     // SD filter potentiometer position
+	uint32_t uart_sr;       // UART sample rate
+	uint16_t uart_tdiv;     // UART timer divider
+	uint16_t uart_tovf;     // UART timer overflow
+	uint16_t uart_filpot;   // UART filter potentiometer position
 	uint32_t crc32;         // CRC32 [zip algorithm]
 } __attribute__((packed));
 typedef struct eeprom_params_ eeprom_params;
