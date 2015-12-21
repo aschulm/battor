@@ -42,9 +42,9 @@ ISR(USARTD0_RXC_vect) //{{{
 	}
 } //}}}
 
-ISR(PORTE_INT0_vect) //{{{
+ISR(PORTD_INT0_vect) //{{{
 {
-	if ((PORTE.IN & UART_RTS_bm) > 0)
+	if ((PORTD.IN & UART_RTS_bm) > 0)
 	{
 		// pause
 		dma_uart_tx_pause(1);
@@ -67,16 +67,16 @@ void uart_init() //{{{
 	interrupt_disable();
 
 	// initalize hardware flow control gpios
-	PORTE.OUT &= ~UART_RTS_bm;
-	PORTE.DIR &= ~UART_RTS_bm;
+	PORTD.OUT &= ~UART_RTS_bm;
+	PORTD.DIR &= ~UART_RTS_bm;
 
 	// start with CTS inidcating ready for data
-	PORTE.OUT &= ~UART_CTS_bm;
-	PORTE.DIR |= UART_CTS_bm;
+	PORTD.OUT &= ~UART_CTS_bm;
+	PORTD.DIR |= UART_CTS_bm;
 
-	PORTE.INTCTRL = PORT_INT0LVL_HI_gc;
+	PORTD.INTCTRL = PORT_INT0LVL_HI_gc;
 	// default pin behavior is to trigger on both edges
-	PORTE.INT0MASK = UART_RTS_bm;
+	PORTD.INT0MASK = UART_RTS_bm;
 
 	PORTD.OUT |= USARTD0_TXD_PIN; // set the TXD pin high
 	PORTD.DIR |= USARTD0_TXD_PIN; // set the TXD pin to output
@@ -231,7 +231,7 @@ void uart_rx_flush() //{{{
 uint8_t uart_tx_ready() //{{{
 {
 	// check if RTS is blocking a write
-	uart_tx_fc_ready = !((PORTE.IN & UART_RTS_bm) >> UART_RTS_bp);
+	uart_tx_fc_ready = !((PORTD.IN & UART_RTS_bm) >> UART_RTS_bp);
 
 	return uart_tx_fc_ready && dma_uart_tx_ready();
 } //}}}

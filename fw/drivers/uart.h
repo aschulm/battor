@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 
-#define UART_RTS_bm (1<<0)
-#define UART_RTS_bp 0
-#define UART_CTS_bm (1<<1)
+#define UART_RTS_bm (1<<5)
+#define UART_RTS_bp 5
+#define UART_CTS_bm (1<<4)
 
 #define UART_START_DELIM 0x00
 #define UART_END_DELIM 0x01
