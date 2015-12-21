@@ -45,6 +45,7 @@ struct eeprom_params_
 {
 	uint8_t magic[4];       // Magic (0x31103110)
 	uint16_t version;       // Version (0)
+	char serialno[20];      // Serial number
 	uint32_t timestamp;     // Calibration timestamp (epoch time in secs)
 	float R1;               // R1 [current sense] value
 	float R2;               // R2 [V divider numerator] value

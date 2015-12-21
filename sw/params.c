@@ -19,6 +19,7 @@ int param_read_eeprom(eeprom_params* params)
 		params->magic[2],
 		params->magic[3]);
 	verb_printf("\tversion: %d\n", params->version);
+	verb_printf("\tserialno: %s\n", params->serialno);
 	verb_printf("\ttimestamp: %d\n", params->timestamp);
 	verb_printf("\tR1: %f\n", params->R1);
 	verb_printf("\tR2: %f\n", params->R2);
