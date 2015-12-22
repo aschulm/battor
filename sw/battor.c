@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sb:g:o:vhu:ktc")) != -1)
+	while ((opt = getopt(argc, argv, "sbg:o:vhu:ktc")) != -1)
 	{
 		switch(opt)
 		{
