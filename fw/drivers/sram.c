@@ -35,6 +35,7 @@ void sram_config_spi()
 
 void sram_unconfig_spi()
 {
+	PORTC.OUT &= ~USARTC1_TXD_PIN; // set the TXD pin low 
 	PORTC.DIR &= ~USARTC1_TXD_PIN; // set the TXD pin to input
 	PORTC.DIR &= ~USARTC1_XCK_PIN; // set the XCK pin to input
 	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
