@@ -101,3 +101,33 @@ void pot_init()
 
 	pot_unconfig_spi();
 }
+
+int pot_self_test()
+{
+	uint16_t pos = 0;
+	printf("potentiometer self test\n");
+
+	printf("amppot set and get...");
+	pot_wiperpos_set(POT_AMP_CS_PIN_gm, 15);
+	pos = pot_wiperpos_get(POT_AMP_CS_PIN_gm);
+	if (pos != 15)
+	{
+		printf("FAILED wrote[15] read[%d]\n",
+			pos);
+		return 1;
+	}
+	printf("PASSED\n");
+
+	printf("filpot set and get...");
+	pot_wiperpos_set(POT_FIL_CS_PIN_gm, 1000);
+	pos = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
+	if (pos != 1000)
+	{
+		printf("FAILED wrote[20] read[%d]\n",
+			pos);
+		return 1;
+	}
+	printf("PASSED\n");
+
+	return 0;
+}

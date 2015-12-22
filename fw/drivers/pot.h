@@ -9,5 +9,6 @@
 void pot_init();
 uint16_t pot_wiperpos_get(uint8_t pot_cs_pin);
 void pot_wiperpos_set(uint8_t pot_cs_pin, uint16_t pos);
+int pot_self_test();
 
 #endif

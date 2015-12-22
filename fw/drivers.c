@@ -48,5 +48,9 @@ void drivers_init() //{{{
 
 int drivers_self_test()
 {
-    return sram_self_test();
+	if (pot_self_test())
+		return 1;
+	if (sram_self_test())
+		return 2;
+	return 0;
 }
