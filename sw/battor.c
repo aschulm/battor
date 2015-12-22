@@ -157,7 +157,6 @@ int main(int argc, char** argv)
 	{
 		sconf.sample_rate = eeparams->sd_sr;
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
-		samples_print_loop(&sconf);
 	}
 	
 	return EXIT_SUCCESS;
