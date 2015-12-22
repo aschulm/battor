@@ -87,6 +87,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 int sd_init(sd_info* info) //{{{
 {
 	// init SPI
+	PORTE.REMAP |= PORT_SPI_bm; // swap SCK and MOSI for USART peripheral compatibility
 	PORTE.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm; // put the SPI pins in output mode
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
 	SPIE.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESCALER_DIV128_gc; 
