@@ -13,12 +13,16 @@ static inline uint16_t byte_swap16(uint16_t b)
 
 static void pot_config_spi()
 {
+	// swap SCK and MOSI for USART peripheral compatibility
+	PORTC.REMAP |= PORT_SPI_bm; 
 	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
 	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
 }
 
 static void pot_unconfig_spi()
 {
+	// swap SCK and MOSI for USART peripheral compatibility
+	PORTC.REMAP &= ~PORT_SPI_bm; 
 	PORTC.PIN6CTRL = 0; // pot required a pullup on the SDO (MISO) pin, disable it
 	SPIC.CTRL = 0; // disable the SPI peripheral
 }
