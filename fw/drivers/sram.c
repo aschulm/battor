@@ -86,7 +86,10 @@ void* sram_write(void* addr, const void* src, size_t len)
 	uint8_t hdr[] =
 	{
 		SRAM_CMD_WRITE,
-		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
+#ifdef SRAM_24BIT_ADDR
+		0,
+#endif
+		(addr_int >> 8) & 0xFF, addr_int & 0xFF, // sram expects big-endian
 	};
 
 	sram_config_spi();
@@ -114,7 +117,10 @@ void* sram_read(void* dst, const void* addr, size_t len)
 	uint8_t hdr[] =
 	{
 		SRAM_CMD_READ,
-		(addr_int >> 8) & 0xFF, addr_int & 0xFF // sram expects big-endian
+#ifdef SRAM_24BIT_ADDR
+		0,
+#endif
+		(addr_int >> 8) & 0xFF, addr_int & 0xFF, // sram expects big-endian
 	};
 
 	sram_config_spi();

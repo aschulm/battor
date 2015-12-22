@@ -15,16 +15,21 @@ static void pot_config_spi()
 {
 	// swap SCK and MOSI for USART peripheral compatibility
 	PORTC.REMAP |= PORT_SPI_bm; 
+
 	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
 	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
+	PORTC.OUT &= ~(SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm); // output pins should be low
+	PORTC.DIR |= SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm; // enable output pins
 }
 
 static void pot_unconfig_spi()
 {
 	// swap SCK and MOSI for USART peripheral compatibility
 	PORTC.REMAP &= ~PORT_SPI_bm; 
+
 	PORTC.PIN6CTRL = 0; // pot required a pullup on the SDO (MISO) pin, disable it
 	SPIC.CTRL = 0; // disable the SPI peripheral
+	PORTC.DIR &= ~(SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm); // unconfigure output pins
 }
 
 // the pots are not normal SPI devices, you have to put the output pin in high impedience mode when done
@@ -87,7 +92,7 @@ void pot_init()
 {
 	gpio_on(&PORTC, POT_AMP_CS_PIN_gm);
 	gpio_on(&PORTC, POT_FIL_CS_PIN_gm);
-	PORTC.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm | POT_AMP_CS_PIN_gm | POT_FIL_CS_PIN_gm; // put the SPI pins in output mode
+	PORTC.DIR |= POT_AMP_CS_PIN_gm | POT_FIL_CS_PIN_gm; // chip select pins in output mode
 
 	pot_config_spi();
 
