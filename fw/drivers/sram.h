@@ -7,7 +7,7 @@
 #define USART_BSEL_2000000BPS 0
 
 #define SRAM_24BIT_ADDR
-#define SRAM_SIZE_BYTES 65535
+#define SRAM_SIZE_BYTES 65000
 
 #define SRAM_CS_PIN_gm (1<<2)
 
