@@ -21,8 +21,10 @@ int params_set_gain(uint8_t gain)
 		amppot_set = eeprom.gainL_amppot;
 	else if (gain == PARAM_GAIN_HIGH)
 		amppot_set = eeprom.gainH_amppot;
+	else if (gain == PARAM_GAIN_CAL)
+		amppot_set = POT_WIPERPOS_MAX;
 	else
-		return -1;
+		halt(ERROR_AMPPOT_SET_FAILED);
 
 	// Set the potentiometer setting
 	pot_wiperpos_set(POT_AMP_CS_PIN_gm, amppot_set);

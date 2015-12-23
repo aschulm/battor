@@ -66,7 +66,7 @@ static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t d
 	gpio_off(&PORTC, pot_cs_pin);
 	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
-	timer_sleep_ms(10);
+	timer_sleep_ms(1);
 
 	pot_unconfig_spi();
 

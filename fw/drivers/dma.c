@@ -94,6 +94,20 @@ void dma_start(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
 	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 }
 
+void inline dma_pause(uint8_t on_off)
+{
+	if (on_off)
+	{
+		DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+		DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+	}
+	else
+	{
+		DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
+		DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
+	}
+}
+
 void dma_stop()
 {
 	DMA.CH2.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB

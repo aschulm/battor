@@ -39,7 +39,8 @@ typedef struct eeprom_params_ eeprom_params;
 typedef enum PARAM_GAIN_enum
 {
 	PARAM_GAIN_LOW = 0,
-	PARAM_GAIN_HIGH
+	PARAM_GAIN_HIGH,
+	PARAM_GAIN_CAL = 255,
 } PARAM_GAIN_t;
 
 void params_init();

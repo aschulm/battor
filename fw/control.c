@@ -11,6 +11,7 @@
 static control_message message;
 uint8_t g_control_mode = 0;
 uint8_t g_control_calibrated = 0;
+uint8_t g_control_gain = 0;
 
 void control_got_uart_bytes() //{{{
 {
@@ -64,7 +65,7 @@ int8_t control_run_message(control_message* m) //{{{
 			g_error_last = 0;
 		break;
 		case CONTROL_TYPE_GAIN_SET:
-			ret = (params_set_gain(m->value1) >= 0) ? 1 : 0;
+			g_control_gain = m->value1;
 		break;
 		case CONTROL_TYPE_START_SAMPLING_UART:
 			g_control_mode = CONTROL_MODE_STREAM;
@@ -76,6 +77,8 @@ int8_t control_run_message(control_message* m) //{{{
 		
 			// setup calibration mode
 			g_control_calibrated = 0;
+			// current amp to minimum gain
+			params_set_gain(PARAM_GAIN_CAL);	
 			// current measurement input to gnd
 			mux_select(MUX_GND);
 			// voltage measurement input to gnd
@@ -94,6 +97,8 @@ int8_t control_run_message(control_message* m) //{{{
 
 			// setup calibration
 			g_control_calibrated = 0;
+			// current amp to minimum gain
+			params_set_gain(PARAM_GAIN_CAL);
 			// current measurement input to gnd
 			mux_select(MUX_GND);
 			// voltage measurement input to gnd
