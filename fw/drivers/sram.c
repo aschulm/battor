@@ -97,11 +97,11 @@ void* sram_write(void* addr, const void* src, size_t len)
 
 	// begin transaction by setting CS and sendng write header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
-	dma_sram_txrx(hdr, NULL, sizeof(hdr));
+	dma_spi_txrx(&USARTC1, hdr, NULL, sizeof(hdr));
 	//usart_spi_txrx(&hdr, NULL, sizeof(hdr));
 
 	// send bytes
-	dma_sram_txrx(src, NULL, len);
+	dma_spi_txrx(&USARTC1, src, NULL, len);
 	//usart_spi_txrx(src, NULL, len);
 
 	// unset CS to end transaction
@@ -128,10 +128,10 @@ void* sram_read(void* dst, const void* addr, size_t len)
 
 	// begin transaction by setting CS and sendng read header
 	gpio_off(&PORTE, SRAM_CS_PIN_gm);
-	dma_sram_txrx(hdr, NULL, sizeof(hdr));
+	dma_spi_txrx(&USARTC1, hdr, NULL, sizeof(hdr));
 
 	// recv bytes
-	dma_sram_txrx(NULL, dst, len);
+	dma_spi_txrx(&USARTC1, NULL, dst, len);
 
 	// unset CS to end transaction
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);

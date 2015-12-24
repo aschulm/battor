@@ -142,13 +142,13 @@ uint8_t inline dma_uart_tx_ready()
 	return (DMA.CH0.CTRLA & DMA_CH_ENABLE_bm) == 0;
 }
 
-void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
+void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 {
 	if (rxd != NULL)
 	{
 		// clear out all rx data
-		while ((USARTC1.STATUS & USART_RXCIF_bm) > 0)
-			USARTC1.DATA;
+		while ((usart->STATUS & USART_RXCIF_bm) > 0)
+			usart->DATA;
 
 		// setup receive DMA
 		DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
@@ -156,9 +156,12 @@ void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
 			DMA_CH_SRCDIR_FIXED_gc |
 			DMA_CH_DESTRELOAD_NONE_gc |
 			DMA_CH_DESTDIR_INC_gc;
-		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
+		if (usart == &USARTC1)
+			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
+		if (usart == &USARTE1)
+			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_RXC_gc;
 		DMA.CH0.TRFCNT = len;
-		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(USARTC1.DATA));
+		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(usart->DATA));
 		set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)(rxd));
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	}
@@ -166,7 +169,7 @@ void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
 	uint8_t ff = 0xFF;
 
 	// clear transfer complete flag, needed to wait for last byte
-	USARTC1.STATUS = USART_TXCIF_bm;
+	usart->STATUS = USART_TXCIF_bm;
 
 	// setup transmit DMA
 	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
@@ -188,9 +191,12 @@ void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
 		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
 	}
 
-	DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_DRE_gc;
+	if (usart == &USARTC1)
+		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_DRE_gc;
+	if (usart == &USARTE1)
+		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_DRE_gc;
 	DMA.CH1.TRFCNT = len;
-	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(USARTC1.DATA));
+	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(usart->DATA));
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
 
 	// wait for transfer to complete
@@ -198,6 +204,6 @@ void dma_sram_txrx(const void* txd, void* rxd, uint16_t len)
 	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 
 	// wait for last byte
-	loop_until_bit_is_set(USARTC1.STATUS, USART_TXCIF_bp);
-	USARTC1.STATUS = USART_TXCIF_bm;
+	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp);
+	usart->STATUS = USART_TXCIF_bm;
 }
