@@ -56,5 +56,6 @@ int sd_read_block(void* block, uint32_t block_num);
 int sd_write_block_start(void* block, uint32_t block_num);
 int sd_write_block_update();
 void sd_erase_blocks(uint32_t start_block_num, uint32_t end_block_num);
+int sd_self_test();
 
 #endif

@@ -263,3 +263,30 @@ int sd_write_block_update() //{{{
 	// transfer is still in progress...
 	return -1;
 } //}}}
+
+int sd_self_test() //{{{
+{
+	int i = 0;
+	uint8_t block[SD_BLOCK_LEN];
+
+	printf("sd self test\n");
+
+	printf("one block write and read...");
+	memset(block, 16, sizeof(block));
+	sd_write_block_start(block, 10);
+	while(sd_write_block_update() < 0);
+	memset(block, 0, sizeof(block));
+	sd_read_block(block, 10);
+	for (i = 0; i < SD_BLOCK_LEN; i++)
+	{
+		if (block[i] != 16)
+		{
+			printf("FAILED wrote[16] read[%d]\n",
+					block[i]);
+			return -1;
+		}
+	}
+	printf("PASSED\n");
+
+	return 0;
+} //}}}

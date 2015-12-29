@@ -52,5 +52,7 @@ int drivers_self_test()
 		return 1;
 	if (sram_self_test())
 		return 2;
+	if (sd_self_test())
+		return 3;
 	return 0;
 }
