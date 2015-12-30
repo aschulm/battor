@@ -7,13 +7,13 @@
 typedef enum CONTROL_TYPE_enum
 {
 	CONTROL_TYPE_INIT = 0,
+	CONTROL_TYPE_RESET,               // reset the MCU
+	CONTROL_TYPE_SELF_TEST,           // run a self test
+	CONTROL_TYPE_READ_EEPROM,         // read the EEPROM
 	CONTROL_TYPE_GAIN_SET,            // set the current measurement gain
 	CONTROL_TYPE_START_SAMPLING_UART, // start taking samples and sending them over the uart
 	CONTROL_TYPE_START_SAMPLING_SD,   // start taking samples and storing them on the SD card
 	CONTROL_TYPE_READ_SD_UART,        // read a file from the SD card over the UART
-	CONTROL_TYPE_READ_EEPROM,         // read the EEPROM
-	CONTROL_TYPE_RESET,               // reset the MCU
-	CONTROL_TYPE_SELF_TEST,           // run a self test
 } CONTROL_TYPE_t;
 
 typedef struct control_message_ 
@@ -28,7 +28,6 @@ typedef enum CONTROL_MODE_enum
 	CONTROL_MODE_IDLE = 1,
 	CONTROL_MODE_STREAM,
 	CONTROL_MODE_STORE,
-	CONTROL_MODE_READ_FILE
 } CONTROL_MODE_t;
 
 extern uint8_t g_control_mode;
