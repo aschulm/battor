@@ -7,6 +7,7 @@
 #include "spi.h"
 #include "gpio.h"
 #include "led.h"
+#include "dma.h"
 #include "usart.h"
 
 #include "sd.h"
@@ -230,7 +231,7 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 
 	// write data
 	memset(tx, 0, sizeof(tx));
-	usart_spi_txrx(&USARTE1, block, NULL, SD_BLOCK_LEN); // write the block
+	dma_spi_txrx(&USARTE1, block, NULL, SD_BLOCK_LEN); // write the block
 	usart_spi_txrx(&USARTE1, tx, NULL, 2); // write a blank CRC
 	usart_spi_txrx(&USARTE1, NULL, &rx, 1); // get the response
 
@@ -258,7 +259,7 @@ int sd_write_block_update() //{{{
 	memset(rx, 0, sizeof(rx));
 
 	// cycle the clock several times to advance write and get response for each
-	usart_spi_txrx(&USARTE1, NULL, &rx, sizeof(rx));
+	dma_spi_txrx(&USARTE1, NULL, &rx, sizeof(rx));
 
 	for (i = 0; i < sizeof(rx); i++)
 	{
