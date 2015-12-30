@@ -66,7 +66,6 @@ static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t d
 	gpio_off(&PORTC, pot_cs_pin);
 	spi_txrx(&SPIC, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
-	timer_sleep_ms(1);
 
 	pot_unconfig_spi();
 
@@ -102,9 +101,11 @@ void pot_init()
 
 	// software reset and unprotect the RDAC register
 	pot_send_command(POT_AMP_CS_PIN_gm, 0x4, 0);
+	timer_sleep_ms(5); // need to wait at least 0.6ms for reset
 	pot_send_command(POT_AMP_CS_PIN_gm, 0x7, 0x2); 
 	pot_high_impedience_sdo(POT_AMP_CS_PIN_gm);
 	pot_send_command(POT_FIL_CS_PIN_gm, 0x4, 0);
+	timer_sleep_ms(5); // need to wait at least 0.6ms for reset
 	pot_send_command(POT_FIL_CS_PIN_gm, 0x7, 0x2);
 	pot_high_impedience_sdo(POT_FIL_CS_PIN_gm);
 
