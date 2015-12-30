@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 
-#include "uart.h"
 #include "dma.h"
+#include "usart.h"
 #include "led.h"
 #include "../interrupt.h"
 #include "../error.h"
+
+#include "uart.h"
 
 // receive byte interrupt, do as little as possible in here because we are operating close to the CPU clock rate
 static volatile uint8_t uart_rx_buffer[UART_BUFFER_LEN];
@@ -78,9 +80,9 @@ void uart_init() //{{{
 	// default pin behavior is to trigger on both edges
 	PORTD.INT0MASK = UART_RTS_bm;
 
-	PORTD.OUT |= USARTD0_TXD_PIN; // set the TXD pin high
-	PORTD.DIR |= USARTD0_TXD_PIN; // set the TXD pin to output
-	PORTD.DIR &= ~USARTD0_RXD_PIN; // set the RX pin to input
+	PORTD.OUT |= USART0_TXD_PIN; // set the TXD pin high
+	PORTD.DIR |= USART0_TXD_PIN; // set the TXD pin to output
+	PORTD.DIR &= ~USART0_RXD_PIN; // set the RX pin to input
 
 	// set baud rate with BSEL and BSCALE values
 	USARTD0.BAUDCTRLB = USART_BSCALE_2000000BPS << USART_BSCALE_gp;

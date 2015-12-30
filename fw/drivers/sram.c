@@ -5,16 +5,17 @@
 #include "spi.h"
 #include "gpio.h"
 #include "dma.h"
+#include "usart.h"
 
 #include "sram.h"
 
 void sram_config_spi()
 {
-	PORTC.OUT |= USARTC1_TXD_PIN; // set the TXD pin high
-	PORTC.OUT &= ~USARTC1_XCK_PIN; // set the XCK pin low
-	PORTC.DIR |= USARTC1_TXD_PIN; // set the TXD pin to output
-	PORTC.DIR |= USARTC1_XCK_PIN; // set the XCK pin to output
-	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
+	PORTC.OUT |= USART1_TXD_PIN; // set the TXD pin high
+	PORTC.OUT &= ~USART1_XCK_PIN; // set the XCK pin low
+	PORTC.DIR |= USART1_TXD_PIN; // set the TXD pin to output
+	PORTC.DIR |= USART1_XCK_PIN; // set the XCK pin to output
+	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
 
 	// set to the highest baud rate	
 	USARTC1.BAUDCTRLA = 0;
@@ -35,10 +36,10 @@ void sram_config_spi()
 
 void sram_unconfig_spi()
 {
-	PORTC.OUT &= ~USARTC1_TXD_PIN; // set the TXD pin low 
-	PORTC.DIR &= ~USARTC1_TXD_PIN; // set the TXD pin to input
-	PORTC.DIR &= ~USARTC1_XCK_PIN; // set the XCK pin to input
-	PORTC.DIR &= ~USARTC1_RXD_PIN; // set the RX pin to input
+	PORTC.OUT &= ~USART1_TXD_PIN; // set the TXD pin low 
+	PORTC.DIR &= ~USART1_TXD_PIN; // set the TXD pin to input
+	PORTC.DIR &= ~USART1_XCK_PIN; // set the XCK pin to input
+	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
 
 	PORTC.PIN5CTRL &= ~PORT_INVEN_bm; // uninvert the SCK pin for SPI
 
@@ -51,34 +52,6 @@ void sram_init()
 	PORTE.PIN3CTRL |= PORT_OPC_PULLUP_gc; // pull up on CS Hold Pin
 	PORTE.DIR |= SRAM_CS_PIN_gm;
 	gpio_on(&PORTE, SRAM_CS_PIN_gm);
-}
-
-void usart_spi_txrx(const void* txd, void* rxd, uint16_t len)
-{
-	uint8_t* txd_b = (uint8_t*)txd;
-	uint8_t* rxd_b = (uint8_t*)rxd;
-
- // clear out all rx data
- while ((USARTC1.STATUS & USART_RXCIF_bm) > 0)
-		USARTC1.DATA;
-
-	int i;
-	for (i = 0; i < len; i++)
-	{
-		// transmit on the wire
-		loop_until_bit_is_set(USARTC1.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
-		if (txd_b != NULL)
-			USARTC1.DATA = txd_b[i];
-		else
-			USARTC1.DATA = 0xFF;
-
-		// read from the wire
-		loop_until_bit_is_set(USARTC1.STATUS, USART_RXCIF_bp); // wait for rx byte to be ready
-		if (rxd_b != NULL)
-			rxd_b[i] = USARTC1.DATA;
-		else
-			USARTC1.DATA;
-	}
 }
 
 void* sram_write(void* addr, const void* src, size_t len)

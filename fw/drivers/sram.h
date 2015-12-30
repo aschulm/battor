@@ -1,11 +1,6 @@
 #ifndef SRAM_H
 #define SRAM_H
 
-#define USART_UCPHA_bm (1<<1)
-
-#define USART_BSCALE_2000000BPS 0b0001 // 2's 0 
-#define USART_BSEL_2000000BPS 0
-
 #define SRAM_24BIT_ADDR
 #define SRAM_SIZE_BYTES 65000
 
@@ -17,10 +12,6 @@
 
 #define SRAM_CMD_READ 0x03
 #define SRAM_CMD_WRITE 0x02
-
-#define USARTC1_XCK_PIN (1<<5)
-#define USARTC1_TXD_PIN (1<<7)
-#define USARTC1_RXD_PIN (1<<6)
 
 void sram_init();
 

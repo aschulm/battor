@@ -21,28 +21,6 @@ typedef enum UART_TYPE_enum
 
 #define UART_BUFFER_LEN 1000
 
-#define USARTD0_TXD_PIN (1<<3)
-#define USARTD0_RXD_PIN (1<<2)
-
-// computed with a graph based on the formulas in the datasheet and a 16MHz f_per 
-#define USART_BSCALE_115200BPS 0b1100 // 2's -4
-#define USART_BSEL_115200BPS 122 
-
-#define USART_BSCALE_921600BPS 0b1001 // 2's -7
-#define USART_BSEL_921600BPS 11
-
-#define USART_BSCALE_400000BPS 0b0000 // 2's 0
-#define USART_BSEL_400000BPS 4
-
-#define USART_BSCALE_800000BPS 0b1111 // 2's -1
-#define USART_BSEL_800000BPS 3
-
-#define USART_BSCALE_1000000BPS 0b0000 // 2's 0 
-#define USART_BSEL_1000000BPS 1
-
-#define USART_BSCALE_2000000BPS 0b0001 // 2's 0 
-#define USART_BSEL_2000000BPS 0
-
 void uart_init();
 void uart_tx_start(uint8_t type);
 void uart_tx_end();
