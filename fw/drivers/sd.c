@@ -5,10 +5,11 @@
 #include "../error.h"
 #include "timer.h"
 #include "spi.h"
-#include "sd.h"
 #include "gpio.h"
 #include "led.h"
+#include "usart.h"
 
+#include "sd.h"
 
 // Does not support MMC cards, only SD V1 and V2
 
@@ -44,14 +45,14 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	command[5] = crc; // CRC
 
 	// transmit command
-	spi_txrx(&SPIE, command, NULL, 6);
+	usart_spi_txrx(&USARTE1, command, NULL, 6);
 
 	// read until start bit
 	tries = 0;
 	response[0] = 0xFF;
 	while ((response[0] & 0b10000000) != 0 && tries < SD_MAX_RESP_TRIES)
 	{
-		spi_txrx(&SPIE, NULL, response, 1);
+		usart_spi_txrx(&USARTE1, NULL, response, 1);
 		tries++;
 	}
 
@@ -63,7 +64,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	}
 
 	if (response_len > 1)
-		spi_txrx(&SPIE, NULL, (response+1), response_len-1);
+		usart_spi_txrx(&USARTE1, NULL, (response+1), response_len-1);
 
 	/* read until the busy flag is cleared, 
 	 * this also gives the SD card at least 8 clock pulses to give 
@@ -72,7 +73,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	tries = 0;
 	while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
 	{
-		spi_txrx(&SPIE, NULL, &rx, 1);
+		usart_spi_txrx(&USARTE1, NULL, &rx, 1);
 		tries++;
 	}
 
@@ -87,14 +88,29 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 int sd_init(sd_info* info) //{{{
 {
 	// init SPI
-	PORTE.REMAP |= PORT_SPI_bm; // swap SCK and MOSI for USART peripheral compatibility
-	PORTE.DIR |= SPI_SS_PIN_bm | SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm; // put the SPI pins in output mode
+	PORTE.OUT |= USART1_TXD_PIN; // set the TXD pin high
+	PORTE.OUT &= ~USART1_XCK_PIN; // set the XCK pin low
+	PORTE.DIR |= USART1_TXD_PIN; // set the TXD pin to output
+	PORTE.DIR |= USART1_XCK_PIN; // set the XCK pin to output
+	PORTE.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
+
+	PORTE.DIR |= SPI_SS_PIN_bm;
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
-	SPIE.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESCALER_DIV128_gc; 
+
+	// set to a low baud rate for initial SD CARD 
+	USARTE1.BAUDCTRLB = USART_BSCALE_100000BPS << USART_BSCALE_gp;
+	USARTE1.BAUDCTRLA = USART_BSEL_100000BPS & USART_BSEL_gm;
+
+	// set transfer parameters
+	USARTE1.CTRLC = USART_CMODE_MSPI_gc;
+
+	USARTE1.CTRLA = 0; 
+	USARTE1.CTRLB |= USART_RXEN_bm; // enable receiver
+	USARTE1.CTRLB |= USART_TXEN_bm; // enable transmitter
 
 	unsigned char resp[20];
 
-	spi_txrx(&SPIE, NULL, NULL, 10); // send at least 74 clock pulses so the card enters native mode
+	usart_spi_txrx(&USARTE1, NULL, NULL, 10); // send at least 74 clock pulses so the card enters native mode
 
 	// keep trying to reset
 	uint16_t tries = 0;
@@ -137,9 +153,8 @@ int sd_init(sd_info* info) //{{{
 	}
 
 	// set the SPI clock to a much higher rate
-	SPIE.CTRL &= ~SPI_PRESCALER_gm;
-	SPIE.CTRL |= SPI_PRESCALER_DIV4_gc; 
-	SPIE.CTRL |= SPI_CLK2X_bm;
+	USARTE1.BAUDCTRLA = 0;
+	USARTE1.BAUDCTRLB = 0;
 
 	// get the CSR register 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
@@ -175,11 +190,11 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 	// read until the data token is received
 	rx = 0xFF;
 	while (rx != 0b11111110)
-		spi_txrx(&SPIE, NULL, &rx, 1);
+		usart_spi_txrx(&USARTE1, NULL, &rx, 1);
 
-	spi_txrx(&SPIE, NULL, block, SD_BLOCK_LEN); // read the block
-	spi_txrx(&SPIE, NULL, NULL, 2); // throw away the CRC
-	spi_txrx(&SPIE, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
+	usart_spi_txrx(&USARTE1, NULL, block, SD_BLOCK_LEN); // read the block
+	usart_spi_txrx(&USARTE1, NULL, NULL, 2); // throw away the CRC
+	usart_spi_txrx(&USARTE1, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
 
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
 
@@ -207,17 +222,17 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 	}
 
 	// tick clock 8 times to start write operation 
-	spi_txrx(&SPIE, NULL, NULL, 1);
+	usart_spi_txrx(&USARTE1, NULL, NULL, 1);
 
 	// write data token
 	tx[0] = 0xFE;
-	spi_txrx(&SPIE, tx, NULL, 1);
+	usart_spi_txrx(&USARTE1, tx, NULL, 1);
 
 	// write data
 	memset(tx, 0, sizeof(tx));
-	spi_txrx(&SPIE, block, NULL, SD_BLOCK_LEN); // write the block
-	spi_txrx(&SPIE, tx, NULL, 2); // write a blank CRC
-	spi_txrx(&SPIE, NULL, &rx, 1); // get the response
+	usart_spi_txrx(&USARTE1, block, NULL, SD_BLOCK_LEN); // write the block
+	usart_spi_txrx(&USARTE1, tx, NULL, 2); // write a blank CRC
+	usart_spi_txrx(&USARTE1, NULL, &rx, 1); // get the response
 
 	// check if the data is accepted
 	if (!((rx & 0xE) >> 1 == 0x2))
@@ -243,7 +258,7 @@ int sd_write_block_update() //{{{
 	memset(rx, 0, sizeof(rx));
 
 	// cycle the clock several times to advance write and get response for each
-	spi_txrx(&SPIE, NULL, &rx, sizeof(rx));
+	usart_spi_txrx(&USARTE1, NULL, &rx, sizeof(rx));
 
 	for (i = 0; i < sizeof(rx); i++)
 	{
@@ -254,7 +269,7 @@ int sd_write_block_update() //{{{
 			 * Transfer is complete.
 			 * give the SD card 8 clock cycles to prepare the card for the next command.
 			 */
-			spi_txrx(&SPIE, NULL, NULL, 1);
+			usart_spi_txrx(&USARTE1, NULL, NULL, 1);
 			gpio_on(&PORTE, SPI_SS_PIN_bm);
 			return 0;
 		}
