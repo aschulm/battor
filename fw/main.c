@@ -71,18 +71,8 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
 			// calibration finished, setup normal measurement operation
-			if (!g_control_calibrated)
-			{
-				dma_pause(1);		
-				// voltage measurment
-				ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE4_gc; 
-				// current measurement
-				params_set_gain(g_control_gain);
-				mux_select(MUX_R);
-
-				g_control_calibrated = 1;
-				dma_pause(0);		
-			}
+			if (!g_samples_calibrated)
+				samples_end_calibration();
 
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb1, SAMPLES_LEN);

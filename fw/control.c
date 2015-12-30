@@ -10,7 +10,6 @@
 
 static control_message message;
 uint8_t g_control_mode = 0;
-uint8_t g_control_calibrated = 0;
 uint8_t g_control_gain = 0;
 
 void control_got_uart_bytes() //{{{
@@ -69,45 +68,14 @@ int8_t control_run_message(control_message* m) //{{{
 		break;
 		case CONTROL_TYPE_START_SAMPLING_UART:
 			g_control_mode = CONTROL_MODE_STREAM;
-			g_samples_uart_seqnum = 0;
 			blink_set_led(LED_GREEN_bm);
-
-			// set sample rate
-			params_set_samplerate();
-		
-			// setup calibration mode
-			g_control_calibrated = 0;
-			// current amp to minimum gain
-			params_set_gain(PARAM_GAIN_CAL);	
-			// current measurement input to gnd
-			mux_select(MUX_GND);
-			// voltage measurement input to gnd
-			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
-			// wait for things to settle
-			timer_sleep_ms(10);
-
-			dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
+			samples_start();
 		break;
 		case CONTROL_TYPE_START_SAMPLING_SD:
 			g_control_mode = CONTROL_MODE_STORE;
 			blink_set_led(LED_RED_bm);
+			samples_start();
 
-			// set sample rate
-			params_set_samplerate();
-
-			// setup calibration
-			g_control_calibrated = 0;
-			// current amp to minimum gain
-			params_set_gain(PARAM_GAIN_CAL);
-			// current measurement input to gnd
-			mux_select(MUX_GND);
-			// voltage measurement input to gnd
-			ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
-			// wait for things to settle
-			timer_sleep_ms(10);
-
-			// start getting samples from the ADCs
-			dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
 		break;
 		//case CONTROL_TYPE_READ_FILE:
 		//	g_control_mode = CONTROL_MODE_READ_FILE;
