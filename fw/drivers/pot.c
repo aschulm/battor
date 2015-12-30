@@ -3,8 +3,10 @@
 
 #include "gpio.h"
 #include "spi.h"
-#include "pot.h"
 #include "timer.h"
+#include "usart.h"
+
+#include "pot.h"
 
 static inline uint16_t byte_swap16(uint16_t b)
 {
@@ -13,22 +15,39 @@ static inline uint16_t byte_swap16(uint16_t b)
 
 static void pot_config_spi()
 {
-	// swap SCK and MOSI for USART peripheral compatibility
-	PORTC.REMAP |= PORT_SPI_bm; 
+	PORTC.OUT |= USART1_TXD_PIN; // set the TXD pin high
+	PORTC.OUT &= ~USART1_XCK_PIN; // set the XCK pin low
+	PORTC.DIR |= USART1_TXD_PIN; // set the TXD pin to output
+	PORTC.DIR |= USART1_XCK_PIN; // set the XCK pin to output
+	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
+
+	// set to a low baud rate that works with the pull-up on MISO
+	USARTC1.BAUDCTRLB = USART_BSCALE_50000BPS << USART_BSCALE_gp;
+	USARTC1.BAUDCTRLA = USART_BSEL_50000BPS & USART_BSEL_gm;
+
+	// set transfer parameters
+	USARTC1.CTRLC =
+		USART_CMODE_MSPI_gc | 
+		USART_UCPHA_bm; 
+
+	USARTC1.CTRLA = 0; 
+	USARTC1.CTRLB |= USART_RXEN_bm; // enable receiver
+	USARTC1.CTRLB |= USART_TXEN_bm; // enable transmitter
 
 	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
-	SPIC.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_1_gc | SPI_PRESCALER_DIV128_gc; 
-	PORTC.OUT &= ~(SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm); // output pins should be low
-	PORTC.DIR |= SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm; // enable output pins
 }
 
 static void pot_unconfig_spi()
 {
-	// swap SCK and MOSI for USART peripheral compatibility
-	PORTC.REMAP &= ~PORT_SPI_bm; 
+	PORTC.OUT &= ~USART1_TXD_PIN; // set the TXD pin low 
+	PORTC.DIR &= ~USART1_TXD_PIN; // set the TXD pin to input
+	PORTC.DIR &= ~USART1_XCK_PIN; // set the XCK pin to input
+	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
 
 	PORTC.PIN6CTRL = 0; // pot required a pullup on the SDO (MISO) pin, disable it
-	SPIC.CTRL = 0; // disable the SPI peripheral
+	USARTC1.CTRLB &= ~USART_RXEN_bm; // disable receiver
+	USARTC1.CTRLB &= ~USART_TXEN_bm; // disable transmitter
+
 	PORTC.DIR &= ~(SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm); // unconfigure output pins
 }
 
@@ -43,13 +62,13 @@ static void pot_high_impedience_sdo(uint8_t pot_cs_pin)
 	tx[0]=0x80;
 	tx[1]=0x01;
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, tx, rx, 2);
+	usart_spi_txrx(&USARTC1, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 
 	tx[0] = 0x00;
 	tx[1] = 0x00;
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, tx, rx, 2);
+	usart_spi_txrx(&USARTC1, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 
 	pot_unconfig_spi();
@@ -64,7 +83,7 @@ static uint16_t pot_send_command(uint8_t pot_cs_pin, uint8_t command, uint16_t d
 	tx[0] = (command << 2) | ((data & 0x300) >> 8);
 	tx[1] = (data & 0xFF);
 	gpio_off(&PORTC, pot_cs_pin);
-	spi_txrx(&SPIC, tx, rx, 2);
+	usart_spi_txrx(&USARTC1, tx, rx, 2);
 	gpio_on(&PORTC, pot_cs_pin);
 
 	pot_unconfig_spi();
