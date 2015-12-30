@@ -9,7 +9,8 @@ void usage(char* name) //{{{
 	fprintf(stderr, "\
 BattOr's PC companion     \n\n\
 usage: %s <tty> -s <options>    *stream* power measurements over USB              \n\
-   or: %s <tty> -b <options>    *buffer* on the SD card and download on CTRL+C    \n\
+   or: %s <tty> -b <options>    *buffer* on the SD card                           \n\
+   or: %s <tty> -d              *download* from the SD card                       \n\
    or: %s <tty> -k              *restart* the MCU                                 \n\
                                                                             \n\
 Options:                                                                    \n\
@@ -20,7 +21,7 @@ Options:                                                                    \n\
 Output:                                                                     \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
-", name, name, name, GAIN_DEFAULT);
+", name, name, name, name, GAIN_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -29,7 +30,7 @@ int main(int argc, char** argv)
 	FILE* file;
 	char opt;
 	char tty[] = "/dev/ttyUSB0";
-	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0;
+	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -51,10 +52,13 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sbg:o:vhu:ktc")) != -1)
+	while ((opt = getopt(argc, argv, "sbg:o:vhu:ktcd")) != -1)
 	{
 		switch(opt)
 		{
+			case 'd':
+				down = 1;
+			break;
 			case 'c':
 				sconf.cal = 1;
 			break;
@@ -116,15 +120,24 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 
-	// init the battor 
-	control(CONTROL_TYPE_INIT, 0, 0, 1);
-
 	// read the BattOr's calibration params from its EEPROM
 	if (param_read_eeprom(eeparams) < 0)
 	{
 		fprintf(stderr, "Error: EEPROM read failure or BattOr not calibrated\n");
 		return EXIT_FAILURE;
 	}
+
+	if (down)
+	{
+		sconf.sample_rate = eeparams->sd_sr;
+		// TODO set proper gain!
+		sconf.gain = eeparams->gainL;
+		control(CONTROL_TYPE_READ_SD_UART, 0, 0, 0);
+		samples_print_loop(&sconf);
+	}
+
+	// init the battor 
+	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
 	// get gain setting from EEPROM
 	if (gain == PARAM_GAIN_LOW)
