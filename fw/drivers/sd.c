@@ -254,8 +254,6 @@ int sd_write_block_update() //{{{
 	int i;
 	uint8_t rx[32];
 
-	printf("sd_write_block_update()\n");
-
 	memset(rx, 0, sizeof(rx));
 
 	// cycle the clock several times to advance write and get response for each
