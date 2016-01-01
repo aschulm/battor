@@ -246,7 +246,7 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 	 * sd_write_block_update() until the write completes.
 	 */
 
-	return 0;
+	return 1;
 } //}}}
 
 int sd_write_block_update() //{{{
