@@ -14,6 +14,7 @@ extern uint8_t g_samples_calibrated;
 
 void samples_init();
 void samples_start();
+void samples_stop();
 void samples_end_calibration();
 void samples_ringbuf_write(sample* s, uint16_t len);
 void samples_uart_write();

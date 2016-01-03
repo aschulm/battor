@@ -6,6 +6,7 @@
 #include "samples.h"
 #include "drivers.h"
 #include "ringbuf.h"
+#include "fs.h"
 #include "params.h"
 
 static control_message message;
@@ -75,7 +76,6 @@ int8_t control_run_message(control_message* m) //{{{
 			g_control_mode = CONTROL_MODE_STORE;
 			blink_set_led(LED_RED_bm);
 			samples_start();
-
 		break;
 		//case CONTROL_TYPE_READ_FILE:
 		//	g_control_mode = CONTROL_MODE_READ_FILE;

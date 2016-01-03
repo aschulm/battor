@@ -4,6 +4,7 @@
 #include "control.h"
 #include "ringbuf.h"
 #include "error.h"
+#include "fs.h"
 
 #include "samples.h"
 
@@ -15,9 +16,6 @@ static uint8_t samples_tmp[sizeof(uint32_t) + sizeof(uint16_t) +
 	(SAMPLES_LEN * sizeof(sample))];
 
 static uint32_t uart_seqnum;
-static uint8_t sd_block_tmp[SD_BLOCK_LEN];
-static uint32_t sd_block_idx;
-static uint8_t sd_write_in_progress;
 
 void samples_init() //{{{
 {
@@ -25,13 +23,14 @@ void samples_init() //{{{
 		sram_write, sram_read);
 	uart_seqnum = 0;
 	g_samples_calibrated = 0;
-
-	sd_block_idx = 0;
-	sd_write_in_progress = 0;
 } //}}}
 
 void samples_start() //{{{
 {
+		// open file if in storage mode
+		if (g_control_mode == CONTROL_MODE_STORE)
+			fs_open(1);
+
 		// set state to just started run
 		g_samples_calibrated = 0;
 		uart_seqnum = 0;
@@ -50,6 +49,15 @@ void samples_start() //{{{
 
 		// start getting samples from the ADCs
 		dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
+} //}}}
+
+void samples_stop() //{{{
+{
+	dma_stop();
+
+	// close file if in storage mode
+	if (g_control_mode == CONTROL_MODE_STORE)
+		fs_close();
 } //}}}
 
 void samples_end_calibration() //{{{
@@ -125,28 +133,21 @@ void samples_uart_write() // {{{
 
 void samples_store_write() //{{{
 {
-	/*
-	 * Write one SD card block worth of samples
-	 */
+	uint16_t samples_len = (SAMPLES_LEN * sizeof(sample));
 
-	// if there is a write in progress, continue it
-	if (sd_write_in_progress)
-	{
-		sd_write_in_progress = (sd_write_block_update() < 0);
-	}
-
-	// no write in progress, try to read a SD block of samples and write it
+	// a write is in progress, continue it
+	if (fs_busy())
+		fs_update();
+	// no write in progress, try to write samples to the filesystem
 	else
 	{
-		if (ringbuf_read(&rb, sd_block_tmp, SD_BLOCK_LEN) < 0)
+		if (ringbuf_read(&rb, samples_tmp, samples_len) < 0)
 			return; // no samples ready yet
 
-		// start SD samples write
-		sd_write_block_start(sd_block_tmp, sd_block_idx++);
-		sd_write_in_progress = 1;
+		if (fs_write(samples_tmp, samples_len) < 0)
+			halt(ERROR_FS_WRITE_FAIL);
 	}
 } //}}}
-
 //uint16_t samples_store_read_next(sample* s) //{{{
 //{
 //	uint16_t len = SAMPLES_LEN * sizeof(sample);
