@@ -102,6 +102,10 @@ int8_t control_run_message(control_message* m) //{{{
 			// step 2. test the ringbuf
 			if ((ret = ringbuf_self_test()) > 0)
 				break;
+
+			// step 3. test the filesystem 
+			if ((ret = fs_self_test()) > 0)
+				break;
 		break;
 	}
 
