@@ -13,15 +13,10 @@ int main() //{{{
 	sd_info sd;
 	int8_t ret = 0;
 
-	printf("main: clock_set_crystal()\n");
 	clock_set_crystal();
-	printf("main: interrupt_init()\n");
 	interrupt_init();
-	printf("main: drivers_init()\n");
 	drivers_init();
-	printf("main: samples_init()\n");
 	samples_init();
-	printf("main: params_init()\n");
 	params_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
@@ -30,7 +25,6 @@ int main() //{{{
 	// try to initalize storage
 	g_control_mode = 0;
 	ret = sd_init(&sd);
-	printf("main: sd_init() : %d\n", ret);
 
 	// main loop for interrupt bottom halves 
 	while (1) 
