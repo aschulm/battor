@@ -139,7 +139,7 @@ void samples_print_loop(samples_config* conf) //{{{
 		while ((samples_len = samples_read(samples, conf, &seqnum)) == 0);
 
 		// end of file, quit read loop
-		if (samples_len < 0)
+		if (samples_len <= 0)
 			return;
 
 		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print

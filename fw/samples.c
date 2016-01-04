@@ -17,7 +17,7 @@ static uint8_t samples_tmp[sizeof(uint32_t) + sizeof(uint16_t) +
 
 static uint32_t uart_seqnum;
 
-void samples_init() //{{{
+static void samples_init() //{{{
 {
 	ringbuf_init(&rb, 0x0000, SRAM_SIZE_BYTES,
 		sram_write, sram_read);
@@ -27,6 +27,9 @@ void samples_init() //{{{
 
 void samples_start() //{{{
 {
+		// init sampling state
+		samples_init();
+
 		// open file if in storage mode
 		if (g_control_mode == CONTROL_MODE_STORE)
 			fs_open(1);
@@ -99,14 +102,14 @@ void samples_ringbuf_write(sample* s, uint16_t len) //{{{
 		halt(ERROR_RINGBUF_WRITE_FAIL);
 } //}}}
 
-void samples_uart_write() // {{{
+int samples_uart_write() // {{{
 {
 	uint16_t len = 0;
 	uint16_t samples_len = (SAMPLES_LEN * sizeof(sample));
 
 	// abort if UART TX is not ready
 	if (!uart_tx_ready())
-		return;
+		return -1;
 
 	// sequence number
 	memcpy(samples_tmp + len,
@@ -122,13 +125,15 @@ void samples_uart_write() // {{{
 
 	// samples
 	if (ringbuf_read(&rb, samples_tmp + len, samples_len) < 0)
-		return; // no samples ready yet
+		return -2; // no samples ready yet
 	len += samples_len;
 
 	uart_tx_bytes_dma(UART_TYPE_SAMPLES, samples_tmp, len);	
 
 	// completed tx, advance to next seqnum
 	uart_seqnum++;
+
+	return 0;
 } //}}}
 
 void samples_store_write() //{{{
@@ -148,12 +153,52 @@ void samples_store_write() //{{{
 			halt(ERROR_FS_WRITE_FAIL);
 	}
 } //}}}
-//uint16_t samples_store_read_next(sample* s) //{{{
-//{
-//	uint16_t len = SAMPLES_LEN * sizeof(sample);
-//	int ret = 0;
-//
-//	// read samples
-//	ret = store_read_bytes((uint8_t*)s, len);
-//	return (ret >= 0) ? len : 0;
-//} //}}}
+
+static void uart_write_end() //{{{
+{
+	uint16_t len = 0;
+	uint16_t samples_len = 0;
+
+	// wait for any existing UART TX to complete
+	while (!uart_tx_ready());
+
+	// sequence number
+	memcpy(samples_tmp + len,
+		&uart_seqnum,
+		sizeof(uint32_t));
+	len += sizeof(uint32_t);
+
+	// length (bytes)
+	memcpy(samples_tmp + len,
+		&samples_len,
+		sizeof(uint16_t));
+	len += sizeof(uint16_t);
+
+	uart_tx_bytes_dma(UART_TYPE_SAMPLES, samples_tmp, len);	
+
+	// wait for final UART TX to complete
+	while (!uart_tx_ready());
+} //}}}
+
+void samples_store_read_uart_write() //{{{
+{
+	sample sd_samples[SAMPLES_LEN];
+
+	// init sampling state
+	samples_init();
+
+	// open last file
+	if (fs_open(0) < 0)
+		halt(ERROR_FS_OPEN_FAIL);
+
+	// TODO for some reason the last samples read here have a sequence number problem
+
+	while(fs_read(sd_samples, sizeof(sd_samples)) >= 0)
+	{
+		samples_ringbuf_write(sd_samples, SAMPLES_LEN);
+		// TODO if killed within write, this will loop forever
+		while (samples_uart_write() < 0);
+	}
+
+	uart_write_end();
+} //}}}

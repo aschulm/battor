@@ -12,13 +12,12 @@ typedef struct sample_
 extern sample g_adcb0[], g_adcb1[];
 extern uint8_t g_samples_calibrated;
 
-void samples_init();
 void samples_start();
 void samples_stop();
 void samples_end_calibration();
 void samples_ringbuf_write(sample* s, uint16_t len);
-void samples_uart_write();
+int samples_uart_write();
 void samples_store_write();
-uint16_t samples_store_read_next(sample* s);
+void samples_store_read_uart_write();
 
 #endif

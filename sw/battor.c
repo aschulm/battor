@@ -122,11 +122,18 @@ int main(int argc, char** argv)
 
 	if (down)
 	{
-		sconf.sample_rate = eeparams->sd_sr;
+		// read the BattOr's calibration params from its EEPROM
+		if (param_read_eeprom(eeparams) < 0)
+		{
+			fprintf(stderr, "Error: EEPROM read failure or BattOr not calibrated\n");
+			return EXIT_FAILURE;
+		}
+		sconf.sample_rate = (uint32_t)eeparams->sd_sr;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
 		control(CONTROL_TYPE_READ_SD_UART, 0, 0, 0);
 		samples_print_loop(&sconf);
+		return EXIT_SUCCESS;
 	}
 
 	// init the battor 
@@ -168,7 +175,6 @@ int main(int argc, char** argv)
 
 	if (buffer)
 	{
-		sconf.sample_rate = eeparams->sd_sr;
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 	}
 	

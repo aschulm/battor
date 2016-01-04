@@ -13,7 +13,6 @@ int main() //{{{
 	clock_set_crystal();
 	interrupt_init();
 	drivers_init();
-	samples_init();
 	params_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 

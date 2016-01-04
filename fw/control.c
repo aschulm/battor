@@ -77,6 +77,14 @@ int8_t control_run_message(control_message* m) //{{{
 			blink_set_led(LED_RED_bm);
 			samples_start();
 		break;
+		case CONTROL_TYPE_READ_SD_UART:
+			led_on(LED_RED_bm);
+			samples_stop();
+			samples_store_read_uart_write();
+			led_off(LED_RED_bm);
+			g_control_mode = CONTROL_MODE_IDLE;
+			blink_set_led(LED_YELLOW_bm);
+		break;
 		//case CONTROL_TYPE_READ_FILE:
 		//	g_control_mode = CONTROL_MODE_READ_FILE;
 		//	g_samples_uart_seqnum = 0;
