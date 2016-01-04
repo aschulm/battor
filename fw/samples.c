@@ -32,7 +32,10 @@ void samples_start() //{{{
 
 		// open file if in storage mode
 		if (g_control_mode == CONTROL_MODE_STORE)
-			fs_open(1);
+		{
+			if (fs_open(1) < 0)
+				halt(ERROR_FS_OPEN_FAIL);
+		}
 
 		// set state to just started run
 		g_samples_calibrated = 0;
@@ -60,7 +63,10 @@ void samples_stop() //{{{
 
 	// close file if in storage mode
 	if (g_control_mode == CONTROL_MODE_STORE)
-		fs_close();
+	{
+		if (fs_close() < 0)
+			halt(ERROR_FS_CLOSE_FAIL);
+	}
 } //}}}
 
 void samples_end_calibration() //{{{
