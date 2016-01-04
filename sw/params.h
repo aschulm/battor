@@ -34,7 +34,7 @@ typedef enum PARAM_GAIN_enum
 #define OVERSAMPLE_BITS_MAX 1
 
 // control
-#define CONTROL_SLEEP_US 50000
+#define CONTROL_SLEEP_US 100000
 
 // uart
 // needs at least the latency of the FTDI, so 20ms is plenty
