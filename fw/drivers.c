@@ -36,7 +36,7 @@ void drivers_init() //{{{
 #endif
 } //}}}
 
-int drivers_self_test()
+int drivers_self_test() //{{{
 {
 	if (pot_self_test())
 		return 1;
@@ -45,4 +45,4 @@ int drivers_self_test()
 	if (sd_self_test())
 		return 3;
 	return 0;
-}
+} //}}}
