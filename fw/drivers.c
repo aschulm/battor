@@ -16,6 +16,7 @@ void drivers_init() //{{{
 	pot_init();
 	sram_init();
 	adc_init(&ADCB);
+	sd_init();
 
 	// sample timer
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);

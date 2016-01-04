@@ -10,9 +10,6 @@
 
 int main() //{{{
 {
-	sd_info sd;
-	int8_t ret = 0;
-
 	clock_set_crystal();
 	interrupt_init();
 	drivers_init();
@@ -22,9 +19,7 @@ int main() //{{{
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
 	blink_init(1000, LED_YELLOW_bm); 
 
-	// try to initalize storage
 	g_control_mode = 0;
-	ret = sd_init(&sd);
 
 	// main loop for interrupt bottom halves 
 	while (1) 

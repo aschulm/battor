@@ -12,7 +12,9 @@
 
 #include "sd.h"
 
-// Does not support MMC cards, only SD V1 and V2
+// Note: This driver does not support MMC cards, only SDHC cards.
+
+static sd_csd csd; 
 
 static void swap_bytes(uint8_t* d, uint16_t len) //{{{
 {
@@ -86,7 +88,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	return 0;
 } //}}}
 
-int sd_init(sd_info* info) //{{{
+int sd_init() //{{{
 {
 	// init SPI
 	PORTE.OUT |= USART1_TXD_PIN; // set the TXD pin high
@@ -157,12 +159,12 @@ int sd_init(sd_info* info) //{{{
 	USARTE1.BAUDCTRLA = 0;
 	USARTE1.BAUDCTRLB = 0;
 
-	// get the CSR register 
+	// get the CSD register 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(9, 0x00, 0x00, 0x00, 0x00, 0x00, resp, 2+sizeof(info->csd)); // CMD9, R1 + DATA BYTE (0b11111110)
+	sd_command(9, 0x00, 0x00, 0x00, 0x00, 0x00, resp, 2+sizeof(csd)); // CMD9, R1 + DATA BYTE (0b11111110)
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
-	swap_bytes(resp+2, sizeof(info->csd));
-	memcpy(&(info->csd), resp+2, sizeof(info->csd));
+	swap_bytes(resp+2, sizeof(csd));
+	memcpy(&csd, resp+2, sizeof(csd));
 
 	// check the OCR register to see if it's a high capacity card (V2)
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
@@ -172,6 +174,11 @@ int sd_init(sd_info* info) //{{{
 		return -4;
 
 	return 0;
+} //}}}
+
+uint32_t sd_capacity() //{{{
+{
+	return (csd.c_size+1) << 10;
 } //}}}
 
 int sd_read_block(void* block, uint32_t block_num) //{{{
