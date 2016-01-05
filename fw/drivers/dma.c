@@ -10,6 +10,8 @@
 #include "dma.h"
 #include "gpio.h"
 
+static uint8_t uart_in_progress;
+
 ISR(DMA_CH2_vect)
 {
 #ifdef GPIO_DMA_INT
@@ -48,6 +50,9 @@ void dma_init()
 	loop_until_bit_is_clear(DMA.CTRL, DMA_RESET_bp);
 	
 	DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 2,3 (ADCB)
+
+	// reset UART transaction status
+	uart_in_progress = 0;
 }
 
 void dma_start(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
@@ -120,6 +125,10 @@ void dma_stop()
 
 void dma_uart_tx(const void* data, uint16_t len)
 {
+	// clear transfer complete flag, needed to wait for last byte
+	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm;
+	USARTD0.STATUS = USART_TXCIF_bm;
+
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BURST_gc | DMA_CH_DESTDIR_FIXED_gc;
 	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
@@ -127,9 +136,10 @@ void dma_uart_tx(const void* data, uint16_t len)
 	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)(data));
 	set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA));
 	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
+	uart_in_progress = 1;
 }
 
-void inline dma_uart_tx_pause(uint8_t on_off)
+void dma_uart_tx_pause(uint8_t on_off)
 {
 	if (on_off)
 		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
@@ -137,9 +147,21 @@ void inline dma_uart_tx_pause(uint8_t on_off)
 		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
 }
 
-uint8_t inline dma_uart_tx_ready()
+uint8_t dma_uart_tx_ready()
 {
-	return (DMA.CH0.CTRLA & DMA_CH_ENABLE_bm) == 0;
+	// no DMA transaction started so it is ready
+	if (!uart_in_progress)
+		return 1;
+
+	if ((DMA.CH0.CTRLB & DMA_CH_TRNIF_bm) > 0 &&
+		(USARTD0.STATUS & USART_TXCIF_bm) > 0)
+	{
+		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+		uart_in_progress = 0;
+		return 1;
+	}
+
+	return 0;
 }
 
 void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
