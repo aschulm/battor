@@ -151,6 +151,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			usart->DATA;
 
 		// setup receive DMA
+		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 		DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 		DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc |
 			DMA_CH_SRCDIR_FIXED_gc |
@@ -168,10 +169,11 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 
 	uint8_t ff = 0xFF;
 
-	// clear transfer complete flag, needed to wait for last byte
+	// clear flag, needed to wait for last byte
 	usart->STATUS = USART_TXCIF_bm;
 
 	// setup transmit DMA
+	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 
 	DMA.CH1.ADDRCTRL = DMA_CH_DESTRELOAD_BURST_gc |
@@ -201,7 +203,8 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 
 	// wait for transfer to complete
 	loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
-	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+	if (rxd != NULL)
+		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
 
 	// wait for last byte
 	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp);
