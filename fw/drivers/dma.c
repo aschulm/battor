@@ -125,16 +125,18 @@ void dma_stop()
 
 void dma_uart_tx(const void* data, uint16_t len)
 {
-	// clear transfer complete flag, needed to wait for last byte
-	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm;
-	USARTD0.STATUS = USART_TXCIF_bm;
-
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTRELOAD_BURST_gc | DMA_CH_DESTDIR_FIXED_gc;
-	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
-	DMA.CH0.TRFCNT = len;
+	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+	DMA.CH0.ADDRCTRL = 
+		DMA_CH_SRCRELOAD_NONE_gc |
+		DMA_CH_SRCDIR_INC_gc |
+		DMA_CH_DESTRELOAD_BURST_gc |
+		DMA_CH_DESTDIR_FIXED_gc;
 	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)(data));
 	set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA));
+	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+	DMA.CH0.TRFCNT = len;
+
 	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	uart_in_progress = 1;
 }
@@ -153,10 +155,8 @@ uint8_t dma_uart_tx_ready()
 	if (!uart_in_progress)
 		return 1;
 
-	if ((DMA.CH0.CTRLB & DMA_CH_TRNIF_bm) > 0 &&
-		(USARTD0.STATUS & USART_TXCIF_bm) > 0)
+	if ((DMA.CH0.CTRLB & DMA_CH_TRNIF_bm) > 0)
 	{
-		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 		uart_in_progress = 0;
 		return 1;
 	}
