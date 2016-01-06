@@ -169,66 +169,91 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	if (rxd != NULL)
 	{
 		// clear out all rx data
-		while ((usart->STATUS & USART_RXCIF_bm) > 0)
+		while ((usart->STATUS		& USART_RXCIF_bm) > 0)
 			usart->DATA;
 
 		// setup receive DMA
-		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 		DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-		DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_BURST_gc |
+		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+		DMA.CH0.ADDRCTRL =
+			DMA_CH_SRCRELOAD_BURST_gc |
 			DMA_CH_SRCDIR_FIXED_gc |
 			DMA_CH_DESTRELOAD_NONE_gc |
 			DMA_CH_DESTDIR_INC_gc;
+		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(usart->DATA));
+		set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)(rxd));
+		DMA.CH0.TRFCNT = len;
 		if (usart == &USARTC1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
 		if (usart == &USARTE1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_RXC_gc;
-		DMA.CH0.TRFCNT = len;
-		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(usart->DATA));
-		set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)(rxd));
+
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	}
 
+	/*
+	 * Send all bytes but one with DMA
+	 * 
+	 * This may seem a bit odd, but the reason for this is
+	 * the USART peripheral does not have a way to determine
+	 * if a DMA transfer is complete. However, a manual transfer
+	 * can be determined to be complete.
+	 */
 	uint8_t ff = 0xFF;
-
-	// clear flag, needed to wait for last byte
-	usart->STATUS = USART_TXCIF_bm;
+	uint8_t last_byte = 0;
 
 	// setup transmit DMA
-	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-
-	DMA.CH1.ADDRCTRL = DMA_CH_DESTRELOAD_BURST_gc |
-		DMA_CH_DESTDIR_FIXED_gc;
-
-	// either write bytes or just 0xFF
-	if (txd != NULL)
-	{
-		DMA.CH1.ADDRCTRL |= DMA_CH_SRCRELOAD_NONE_gc |
-			DMA_CH_SRCDIR_INC_gc;
-		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(txd));
-	}
-	else
-	{
-		DMA.CH1.ADDRCTRL |= DMA_CH_SRCRELOAD_BURST_gc |
-			DMA_CH_SRCDIR_FIXED_gc;
-		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
-	}
-
+	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
+	DMA.CH1.TRFCNT = len - 1;
+	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(usart->DATA));
 	if (usart == &USARTC1)
 		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_DRE_gc;
 	if (usart == &USARTE1)
 		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_DRE_gc;
-	DMA.CH1.TRFCNT = len;
-	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(usart->DATA));
+
+	// setup transmit DMA address control
+	DMA.CH1.ADDRCTRL =
+		DMA_CH_DESTRELOAD_BURST_gc |
+		DMA_CH_DESTDIR_FIXED_gc;
+
+	// if tx mode then transmit data 
+	if (txd != NULL)
+	{
+		uint8_t* txd_b = (uint8_t*)txd;
+		DMA.CH1.ADDRCTRL |=
+			DMA_CH_SRCRELOAD_NONE_gc |
+			DMA_CH_SRCDIR_INC_gc;
+		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(txd));
+		last_byte = txd_b[len-1];
+	}
+	// if not tx mode just transmit 0xFF
+	else
+	{
+		DMA.CH1.ADDRCTRL |=
+			DMA_CH_SRCRELOAD_BURST_gc |
+			DMA_CH_SRCDIR_FIXED_gc;
+		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
+		last_byte = ff;
+	}
+
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
 
-	// wait for transfer to complete
+	// wait for tx to complete
 	loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
+
+	/*
+	 * Send last byte manually
+	 */
+
+	// wait for tx buffer to empty
+	loop_until_bit_is_set(usart->STATUS, USART_DREIF_bp);
+	usart->STATUS = USART_TXCIF_bm; // clear flag
+	usart->DATA = last_byte;
+	// wait for tx to complete
+	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp); 
+
+	// wait for rx to complete
 	if (rxd != NULL)
 		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
-
-	// wait for last byte
-	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp);
-	usart->STATUS = USART_TXCIF_bm;
 }
