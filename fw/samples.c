@@ -197,13 +197,13 @@ void samples_store_read_uart_write() //{{{
 	if (fs_open(0) < 0)
 		halt(ERROR_FS_OPEN_FAIL);
 
-	// TODO for some reason the last samples read here have a sequence number problem
-
 	while(fs_read(sd_samples, sizeof(sd_samples)) >= 0)
 	{
 		samples_ringbuf_write(sd_samples, SAMPLES_LEN);
 		// TODO if killed within write, this will loop forever
-		while (samples_uart_write() < 0);
+		samples_uart_write();
+		// must wait for UART tx, SD read shares DMA channel
+		while (!uart_tx_ready());
 	}
 
 	uart_write_end();
