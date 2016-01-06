@@ -289,21 +289,26 @@ int sd_self_test() //{{{
 {
 	int i = 0;
 	uint8_t block[SD_BLOCK_LEN];
+	uint32_t* block_int = (uint32_t*)block;
 
 	printf("sd self test\n");
 
 	printf("one block write and read...");
-	memset(block, 16, sizeof(block));
+	for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
+	{
+		block_int[i] = i;
+	}
 	sd_write_block_start(block, 10);
 	while(sd_write_block_update() < 0);
 	memset(block, 0, sizeof(block));
 	sd_read_block(block, 10);
-	for (i = 0; i < SD_BLOCK_LEN; i++)
+	for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
 	{
-		if (block[i] != 16)
+		if (block_int[i] != i)
 		{
-			printf("FAILED wrote[16] read[%d]\n",
-					block[i]);
+			printf("FAILED wrote[%d] read[%lu]\n",
+					i,
+					block_int[i]);
 			return -1;
 		}
 	}
