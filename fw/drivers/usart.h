@@ -33,7 +33,7 @@
 #define USART_BSCALE_1000000BPS 0b0000 // 2's 0 
 #define USART_BSEL_1000000BPS 1
 
-#define USART_BSCALE_2000000BPS 0b0001 // 2's 0 
+#define USART_BSCALE_2000000BPS 0b0000 // 2's 0 
 #define USART_BSEL_2000000BPS 0
 
 void usart_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len);
