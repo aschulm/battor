@@ -485,5 +485,43 @@ int fs_self_test() //{{{
 	}
 	printf("PASSED\n");
 
+	printf("fs_open a new file, big write, big read...");
+	if ((ret = fs_open(1)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	// init write/read buffer
+	for (i = 0; i < 200; i++)
+		buf[i] = i;
+	// write many times
+	for (i = 0; i < 10; i++)
+	{
+		fs_write(buf, 200);
+		while (fs_busy())
+			fs_update();
+	}
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	if ((ret = fs_open(0)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	// read many times
+	for (i = 0; i < 10; i++)
+	{
+		fs_read(buf2, 200);
+		if (memcmp(buf, buf2, 200) != 0)
+		{
+			printf("FAILED file data is incorrect in iteration %d\n", i);
+			return 1;
+		}
+	}
+	printf("PASSED\n");
+
 	return 0;
 } //}}}
