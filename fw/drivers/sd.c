@@ -185,6 +185,7 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 {
 	// TODO bounds checking
 	uint8_t rx = 0xFF;
+	int16_t idx, token_idx = -1;
 
 	// send the single block command
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
@@ -196,13 +197,39 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 		return 0;
 
 	// read until the data token is received
-	rx = 0xFF;
-	while (rx != 0b11111110)
-		usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+	while (token_idx < 0)
+	{
+		uint8_t* block_b = (uint8_t*)block;
 
-	usart_spi_txrx(&USARTE1, NULL, block, SD_BLOCK_LEN); // read the block
-	usart_spi_txrx(&USARTE1, NULL, NULL, 2); // throw away the CRC
-	usart_spi_txrx(&USARTE1, NULL, NULL, 1); // 8 cycles to prepare the card for the next command
+		// read a potential block
+		dma_spi_txrx(&USARTE1, NULL, block, SD_BLOCK_LEN); 
+	
+		// check for token
+		for (idx = 0; idx < SD_BLOCK_LEN; idx++)
+		{
+			// found token
+			if (block_b[idx] == 0b11111110)
+			{
+				token_idx = idx;
+				break;
+			}
+		}
+	}
+
+	// shift over data to start of block
+	uint16_t read_len = (SD_BLOCK_LEN - token_idx) - 1;
+	memcpy(block, block + token_idx+1, read_len);
+
+	// read the remainder of the block
+	dma_spi_txrx(&USARTE1, 
+		NULL,
+		block + read_len,
+		SD_BLOCK_LEN - read_len); 
+
+	// throw away the CRC
+	usart_spi_txrx(&USARTE1, NULL, NULL, 2);
+	// 8 cycles to prepare the card for the next command
+	usart_spi_txrx(&USARTE1, NULL, NULL, 1); 
 
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
 
