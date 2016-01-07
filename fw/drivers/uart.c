@@ -133,6 +133,26 @@ void uart_tx_end() //{{{
 	uart_tx_byte(UART_END_DELIM);
 } //}}}
 
+uint16_t uart_tx_bytes_prepare(uint8_t type, void* src, void* dst, uint16_t len) ///{{{
+{
+	uint16_t src_i = 0, dst_i = 0;
+	uint8_t* src_b = (uint8_t*)src;
+	uint8_t* dst_b = (uint8_t*)dst;
+
+	dst_b[dst_i++] = UART_START_DELIM;
+	dst_b[dst_i++] = type;
+	for (src_i = 0; src_i < len; src_i++)
+	{
+		if (src_b[src_i] <= UART_ESC_DELIM)
+			dst_b[dst_i++] = UART_ESC_DELIM;
+
+		dst_b[dst_i++] = src_b[src_i];
+	}
+	dst_b[dst_i++] = UART_END_DELIM;
+
+	return dst_i;
+} //}}}
+
 void uart_tx_bytes(void* b, uint16_t len) //{{{
 {
 	uint16_t i;
@@ -149,23 +169,9 @@ void uart_tx_bytes(void* b, uint16_t len) //{{{
 
 void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len) //{{{
 {
-	uint16_t b_i = 0, tx_buffer_i = 0;
-	uint8_t* b_b = (uint8_t*)b;
-
-	// prepare frame
-	uart_tx_buffer[tx_buffer_i++] = UART_START_DELIM;
-	uart_tx_buffer[tx_buffer_i++] = type;
-	for (b_i = 0; b_i < len; b_i++)
-	{
-		if (b_b[b_i] <= UART_ESC_DELIM)
-			uart_tx_buffer[tx_buffer_i++] = UART_ESC_DELIM;
-
-		uart_tx_buffer[tx_buffer_i++] = b_b[b_i];
-	}
-	uart_tx_buffer[tx_buffer_i++] = UART_END_DELIM;
-
-	// transmit with DMA
-	dma_uart_tx(uart_tx_buffer, tx_buffer_i);
+	uint16_t tx_buffer_len =
+		uart_tx_bytes_prepare(type, b, uart_tx_buffer, len);
+	dma_uart_tx(uart_tx_buffer, tx_buffer_len);
 } //}}}
 
 inline uint8_t uart_rx_byte() //{{{

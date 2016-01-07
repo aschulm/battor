@@ -27,6 +27,7 @@ void uart_tx_end();
 void uart_tx_bytes(void* b, uint16_t len);
 uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len);
 void uart_rx_flush();
+uint16_t uart_tx_bytes_prepare(uint8_t type, void* src, void* dst, uint16_t len);
 void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len);
 int uart_putchar(char c, FILE* stream);
 int uart_getchar(FILE* stream);
