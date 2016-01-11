@@ -27,34 +27,34 @@ static void samples_init() //{{{
 
 void samples_start() //{{{
 {
-		// init sampling state
-		samples_init();
+	// init sampling state
+	samples_init();
 
-		// open file if in storage mode
-		if (g_control_mode == CONTROL_MODE_STORE)
-		{
-			if (fs_open(1) < 0)
-				halt(ERROR_FS_OPEN_FAIL);
-		}
+	// open file if in storage mode
+	if (g_control_mode == CONTROL_MODE_STORE)
+	{
+		if (fs_open(1) < 0)
+			halt(ERROR_FS_OPEN_FAIL);
+	}
 
-		// set state to just started run
-		g_samples_calibrated = 0;
-		uart_seqnum = 0;
+	// set state to just started run
+	g_samples_calibrated = 0;
+	uart_seqnum = 0;
 
-		// set sample rate
-		params_set_samplerate();
+	// set sample rate
+	params_set_samplerate();
 
-		// current amp to minimum gain
-		params_set_gain(PARAM_GAIN_CAL);
-		// current measurement input to gnd
-		mux_select(MUX_GND);
-		// voltage measurement input to gnd
-		ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
-		// wait for things to settle
-		timer_sleep_ms(10);
+	// current amp to minimum gain
+	params_set_gain(PARAM_GAIN_CAL);
+	// current measurement input to gnd
+	mux_select(MUX_GND);
+	// voltage measurement input to gnd
+	ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
+	// wait for things to settle
+	timer_sleep_ms(10);
 
-		// start getting samples from the ADCs
-		dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
+	// start getting samples from the ADCs
+	dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
 } //}}}
 
 void samples_stop() //{{{
@@ -71,15 +71,15 @@ void samples_stop() //{{{
 
 void samples_end_calibration() //{{{
 {
-		dma_pause(1);		
-		// voltage measurment
-		ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE4_gc; 
-		// current measurement
-		params_set_gain(g_control_gain);
-		mux_select(MUX_R);
+	dma_pause(1);		
+	// voltage measurment
+	ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE4_gc; 
+	// current measurement
+	params_set_gain(g_control_gain);
+	mux_select(MUX_R);
 
-		g_samples_calibrated = 1;
-		dma_pause(0);		
+	g_samples_calibrated = 1;
+	dma_pause(0);		
 } //}}}
 
 void samples_ringbuf_write(sample* s, uint16_t len) //{{{
