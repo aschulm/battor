@@ -131,7 +131,7 @@ void samples_print_loop(samples_config* conf) //{{{
 	}
 	v_cal = v_cal / samples_len;
 	i_cal = i_cal / samples_len;
-	verb_printf("adc_v_cal_avg %f, adc_i_cal_avg %f\n", v_cal, i_cal);	
+	verb_printf("adc_v_cal_avg %f adc_i_cal_avg %f\n", v_cal, i_cal);
 
 	// main sample read loop
 	while(1)
