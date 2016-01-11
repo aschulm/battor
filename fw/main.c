@@ -80,15 +80,6 @@ int main() //{{{
 		{
 			samples_store_write();
 		}
-
-		//if (g_control_mode == CONTROL_MODE_READ_FILE && g_control_read_ready)
-		//{
-		//	if (samples_store_read_next(g_adcb0) > 0)
-		//		samples_uart_write(g_adcb0, SAMPLES_LEN);
-		//	else
-		//		samples_uart_write(NULL, 0);
-		//	g_control_read_ready = 0;
-		//}
 	}
 
 	return 0;
