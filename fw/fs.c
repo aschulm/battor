@@ -206,7 +206,7 @@ int fs_write(void* buf, uint16_t len) //{{{
 	if (file_startblock_idx < 0)
 		return FS_ERROR_FILE_NOT_OPEN;
 
-	if (write_in_progress)
+	if (fs_busy())
 		return FS_ERROR_WRITE_IN_PROGRESS;
 
 	// note: write_buf must exist until fs_busy() returns 0
@@ -261,26 +261,28 @@ void fs_update() //{{{
 	// update the sd write if it is in progress
 	if (sd_write_in_progress)
 		sd_write_in_progress = (sd_write_block_update() < 0);
-
-	uint16_t block_byte_idx = BYTES_IN_LAST_BLOCK(file_byte_idx);
-	uint16_t block_remaining = SD_BLOCK_LEN - block_byte_idx;
-	uint16_t to_write = min(write_len, block_remaining);
-
-	memcpy(block + block_byte_idx, write_buf, to_write);
-	write_buf += to_write;
-	write_len -= to_write;
-	file_byte_idx += to_write;
-
-	// completed block --- write it to SD
-	if (block_byte_idx + to_write == SD_BLOCK_LEN)
+	else
 	{
-		sd_write_block_start(block, file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx));
-		sd_write_in_progress = 1;
-	}
+		uint16_t block_byte_idx = BYTES_IN_LAST_BLOCK(file_byte_idx);
+		uint16_t block_remaining = SD_BLOCK_LEN - block_byte_idx;
+		uint16_t to_write = min(write_len, block_remaining);
 
-	// there is no more data left to write --- write is done
-	if (write_len == 0)
-		write_in_progress = 0;
+		memcpy(block + block_byte_idx, write_buf, to_write);
+		write_buf += to_write;
+		write_len -= to_write;
+		file_byte_idx += to_write;
+
+		// completed block --- write it to SD
+		if (block_byte_idx + to_write == SD_BLOCK_LEN)
+		{
+			sd_write_block_start(block, file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx));
+			sd_write_in_progress = 1;
+		}
+
+		// there is no more data left to write --- write is done
+		if (write_len == 0)
+			write_in_progress = 0;
+	}
 } //}}}
 
 int fs_busy() //{{{
