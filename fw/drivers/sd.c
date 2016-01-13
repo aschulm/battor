@@ -14,7 +14,8 @@
 
 // Note: This driver does not support MMC cards, only SDHC cards.
 
-static sd_csd csd; 
+static sd_csd csd;
+static uint8_t write_in_progress;
 
 static void swap_bytes(uint8_t* d, uint16_t len) //{{{
 {
@@ -90,6 +91,8 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 
 int sd_init() //{{{
 {
+	write_in_progress = 0;
+
 	// init SPI
 	PORTE.OUT |= USART1_TXD_PIN; // set the TXD pin high
 	PORTE.OUT &= ~USART1_XCK_PIN; // set the XCK pin low
@@ -238,6 +241,9 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 
 int sd_write_block_start(void* block, uint32_t block_num) //{{{
 {
+	if (write_in_progress)
+		halt(ERROR_SD_WRITE_IN_PROGRESS);
+
 	// TODO bounds checking
 	uint8_t rx = 0xFF;
 	uint8_t tx[2];
@@ -279,6 +285,7 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 	 * NOTE: This function must follow with calls to
 	 * sd_write_block_update() until the write completes.
 	 */
+	write_in_progress = 1;
 
 	return 1;
 } //}}}
@@ -300,8 +307,10 @@ int sd_write_block_update() //{{{
 		{
 			/*
 			 * Transfer is complete.
-			 * give the SD card 8 clock cycles to prepare the card for the next command.
 			 */
+			write_in_progress = 0;
+
+			 //give the SD card 8 clock cycles to prepare for command
 			usart_spi_txrx(&USARTE1, NULL, NULL, 1);
 			gpio_on(&PORTE, SPI_SS_PIN_bm);
 			return 0;
