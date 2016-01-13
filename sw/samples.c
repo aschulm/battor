@@ -3,7 +3,14 @@
 #include "params.h"
 #include "samples.h"
 
-static double s_adc_top;
+static double s_adc_top_pos;
+static double s_adc_top_neg;
+
+static inline double adc_to_v(int16_t s) //{{{
+{
+	double frac = (s > 0) ? (s / s_adc_top_pos) : (s / s_adc_top_neg);
+	return frac * VREF;
+} //}}}
 
 void samples_init(samples_config* conf) //{{{
 {
@@ -15,32 +22,34 @@ void samples_init(samples_config* conf) //{{{
 	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
 
 	// determine ADC_TOP with ovsersampling
-	s_adc_top = pow(2, (ADC_BITS + conf->ovs_bits));
-	verb_printf("adc_top %f\n", s_adc_top);
+	s_adc_top_pos = pow(2, (ADC_BITS + conf->ovs_bits))-1;
+	s_adc_top_neg = pow(2, (ADC_BITS + conf->ovs_bits));
 } //}}}
 
-inline double sample_v(sample* s, samples_config* conf, double cal) //{{{
+inline double sample_v(sample* s, samples_config* conf, double cal_v) //{{{
 {
+	double v_v = adc_to_v(s->v) - cal_v;
+
 	// warnings for minimum and maximum voltage
-	if (s->v == s_adc_top)
+	if (v_v >= VREF)
 		verb_printf("%s\n", "[Mv]");
-	if (s->v <= cal)
+	if (v_v < cal_v)
 		verb_printf("%s\n", "[mv]");
 
-	double v_adcv = (((double)s->v - cal) / s_adc_top) * VREF;
-	return (v_adcv / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
+	return (v_v / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-inline double sample_i(sample* s, samples_config* conf, double cal) //{{{
+inline double sample_i(sample* s, samples_config* conf, double cal_v) //{{{
 {
-	// warnings for minimum and maximum current
-	if (s->i == s_adc_top)
-		verb_printf("%s\n", "[MI]");
-	if (s->i <= cal)
-		verb_printf("%s\n", "[mI]");
+	double i_v = adc_to_v(s->i) - cal_v;
 
-	double i_adcv = (((double)s->i - cal) / s_adc_top) * VREF;
-	double i_adcv_unamp = i_adcv / conf->gain; // undo the current gain
+	// warnings for minimum and maximum current
+	if (i_v >= VREF)
+		verb_printf("%s\n", "[Mi]");
+	if (i_v < cal_v)
+		verb_printf("%s\n", "[mi]");
+
+	double i_adcv_unamp = i_v / conf->gain; // undo the current gain
 	double i_samp = ((i_adcv_unamp / conf->eeparams.R1) * 1000.0);
 
 	// the ordering of these is important
@@ -110,7 +119,7 @@ void samples_print_loop(samples_config* conf) //{{{
 	sigaddset(&sigs, SIGINT);
 
 	// read calibration and compute it
-	while (samples_len == 0 || seqnum != 1)
+	while (samples_len == 0 || seqnum != 0)
 	{
 		samples_len = samples_read(samples, conf, &seqnum);
 	}
@@ -126,12 +135,12 @@ void samples_print_loop(samples_config* conf) //{{{
 		verb_printf("adc_v_cal %d\n", samples[i].v);
 		verb_printf("adc_i_cal %d\n", samples[i].i);
 
-		v_cal += samples[i].v;
-		i_cal += samples[i].i;
+		v_cal += adc_to_v(samples[i].v);
+		i_cal += adc_to_v(samples[i].i);
 	}
 	v_cal = v_cal / samples_len;
 	i_cal = i_cal / samples_len;
-	verb_printf("adc_v_cal_avg %f adc_i_cal_avg %f\n", v_cal, i_cal);
+	verb_printf("adc_v_cal_avg_v %f adc_i_cal_avg_v %f\n", v_cal, i_cal);
 
 	// main sample read loop
 	while(1)
