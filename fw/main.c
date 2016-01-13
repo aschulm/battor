@@ -58,10 +58,6 @@ int main() //{{{
 		// other ADCB DMA (channel 3, double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
-			// calibration finished, setup normal measurement operation
-			if (!g_samples_calibrated)
-				samples_end_calibration();
-
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH3);
@@ -69,7 +65,7 @@ int main() //{{{
 
 		if (g_control_mode == CONTROL_MODE_STREAM)
 		{
-			samples_uart_write();
+			samples_uart_write(0);
 
 #ifdef GPIO_SAMPLE_WRITE_DONE
 			gpio_toggle(&PORTE, (1<<GPIO_SAMPLE_WRITE_DONE));

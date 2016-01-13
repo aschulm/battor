@@ -28,10 +28,11 @@ void control_got_uart_bytes() //{{{
 		if (ret >= 0)
 		{
 			// send ack
-			uart_tx_start(UART_TYPE_CONTROL_ACK);
-			uart_tx_bytes(&message.type, sizeof(message.type)); 
-			uart_tx_bytes(&ret, 1);
-			uart_tx_end();
+			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
+			uart_tx_bytes_prepare(&message.type, sizeof(message.type)); 
+			uart_tx_bytes_prepare(&ret, 1);
+			uart_tx_end_prepare();
+			uart_tx();
 
 			// flush rx buffer to avoid running control messages
 			// that came in during the execution of the last one
@@ -90,9 +91,10 @@ int8_t control_run_message(control_message* m) //{{{
 		break;
 		case CONTROL_TYPE_READ_EEPROM:
 			EEPROM_read_block(0x0000, buf, m->value1);	
-			uart_tx_start(UART_TYPE_CONTROL_ACK);
-			uart_tx_bytes(buf, m->value1);
-			uart_tx_end();
+			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
+			uart_tx_bytes_prepare(buf, m->value1);
+			uart_tx_end_prepare();
+			uart_tx_dma();
 			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:

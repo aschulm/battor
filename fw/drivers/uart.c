@@ -15,8 +15,9 @@
 static volatile uint8_t uart_rx_buffer[UART_BUFFER_LEN];
 static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
-static volatile uint8_t uart_tx_fc_ready = 0;
+static volatile uint8_t uart_tx_fc_ready;
 static uint8_t uart_tx_buffer[UART_BUFFER_LEN];
+static uint16_t uart_tx_buffer_len;
 static int uart_initialized = 0;
 
 ISR(USARTD0_RXC_vect) //{{{
@@ -101,6 +102,8 @@ void uart_init() //{{{
 
 	uart_tx_fc_ready = 1; // start with not waiting for flow control
 
+	uart_tx_buffer_len = 0; // start with a blank uart tx frame
+
 	// set stdout to uart so we can use printf for debugging
 #ifdef DEBUG
 	stdout = &g_uart_stream;
@@ -111,67 +114,72 @@ void uart_init() //{{{
 	uart_initialized = 1;
 } //}}}
 
-inline void uart_tx_byte(uint8_t b) //{{{
+void uart_tx_start_prepare(uint8_t type) //{{{
 {
-	// wait for flow control
-	while (!uart_tx_fc_ready);
-
-	interrupt_disable();
-	loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
-	USARTD0.DATA = b; // put the data in the tx buffer
-	interrupt_enable();
+	uart_tx_buffer[uart_tx_buffer_len++] = UART_START_DELIM;
+	uart_tx_buffer[uart_tx_buffer_len++] = type;
 } //}}}
 
-void uart_tx_start(uint8_t type) //{{{
+void uart_tx_bytes_prepare(void* b, uint16_t len) ///{{{
 {
-	uart_tx_byte(UART_START_DELIM);
-	uart_tx_byte(type);
-} //}}}
+	uint8_t* b_b = (uint8_t*)b;
+	uint8_t* b_b_end = (uint8_t*)b + len;
 
-void uart_tx_end() //{{{
-{
-	uart_tx_byte(UART_END_DELIM);
-} //}}}
+	/* 
+	 * This function has a loop with many compares so it 
+	 * is optimized to execute in the fewest cycles possible
+	 * by using pointer arithmatic rather than array indexing>
+	 */
 
-uint16_t uart_tx_bytes_prepare(uint8_t type, void* src, void* dst, uint16_t len) ///{{{
-{
-	uint16_t src_i = 0, dst_i = 0;
-	uint8_t* src_b = (uint8_t*)src;
-	uint8_t* dst_b = (uint8_t*)dst;
+	uint8_t* tx_buffer_b = uart_tx_buffer + uart_tx_buffer_len;
 
-	dst_b[dst_i++] = UART_START_DELIM;
-	dst_b[dst_i++] = type;
-	for (src_i = 0; src_i < len; src_i++)
+	while (b_b < b_b_end)
 	{
-		if (src_b[src_i] <= UART_ESC_DELIM)
-			dst_b[dst_i++] = UART_ESC_DELIM;
+			if (*b_b <= UART_ESC_DELIM)
+			*tx_buffer_b++ = UART_ESC_DELIM;
 
-		dst_b[dst_i++] = src_b[src_i];
+		*tx_buffer_b++ = *b_b++;
 	}
-	dst_b[dst_i++] = UART_END_DELIM;
 
-	return dst_i;
+	// update length of uart_tx_buffer based on pointers
+	uart_tx_buffer_len = tx_buffer_b - uart_tx_buffer;
 } //}}}
 
-void uart_tx_bytes(void* b, uint16_t len) //{{{
+void uart_tx_end_prepare() //{{{
+{
+	uart_tx_buffer[uart_tx_buffer_len++] = UART_END_DELIM;
+} //}}}
+
+void uart_tx() //{{{
 {
 	uint16_t i;
-	uint8_t* b_b = (uint8_t*)b;
 
-	for (i = 0; i < len; i++)
+	for (i = 0; i < uart_tx_buffer_len; i++)
 	{
-		if (b_b[i] <= UART_ESC_DELIM)
-			uart_tx_byte(UART_ESC_DELIM);	
+		// wait for flow control
+		while (!uart_tx_ready());
 
-		uart_tx_byte(b_b[i]);
+		loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
+		USARTD0.DATA = uart_tx_buffer[i]; // put the data in the tx buffer
 	}
+	uart_tx_buffer_len = 0;
 } //}}}
 
-void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len) //{{{
+void uart_tx_dma() //{{{
 {
-	uint16_t tx_buffer_len =
-		uart_tx_bytes_prepare(type, b, uart_tx_buffer, len);
-	dma_uart_tx(uart_tx_buffer, tx_buffer_len);
+	if (uart_tx_buffer_len > 0)
+		dma_uart_tx(uart_tx_buffer, uart_tx_buffer_len);
+	uart_tx_buffer_len = 0;
+} //}}}
+
+uint16_t uart_get_tx_buffer(uint8_t** tx_buffer) //{{{
+{
+	uint16_t tx_buffer_len = uart_tx_buffer_len;
+	uart_tx_buffer_len = 0;
+
+	*tx_buffer = uart_tx_buffer;
+
+	return tx_buffer_len;
 } //}}}
 
 inline uint8_t uart_rx_byte() //{{{
@@ -247,24 +255,26 @@ uint8_t uart_tx_ready() //{{{
 // for c FILE* interface
 int uart_putchar(char c, FILE* stream) //{{{
 {
-    static int in_message = 0;
+	static int in_message = 0;
 
-    if (!uart_initialized)
-        return 0;
+	if (!uart_initialized)
+		return 0;
 
-    if (!in_message) {
-        uart_tx_start(UART_TYPE_PRINT);
-        in_message = 1;
-    }
-	if (c == '\n' || c == '\0') {
-        in_message = 0;
-    }
+	if (!in_message)
+	{
+		uart_tx_start_prepare(UART_TYPE_PRINT);
+		in_message = 1;
+	}
+	if (c == '\n' || c == '\0')
+		in_message = 0;
 
-	uart_tx_byte(c);
+	uart_tx_bytes_prepare(&c, 1);
 
-    if (!in_message) {
-        uart_tx_end();
-    }
+	if (!in_message)
+	{
+		uart_tx_end_prepare();
+		uart_tx();
+	}
 
 	return 0;
 } //}}}

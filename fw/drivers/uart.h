@@ -19,16 +19,18 @@ typedef enum UART_TYPE_enum
 	UART_TYPE_PRINT,
 } UART_TYPE_t;
 
-#define UART_BUFFER_LEN 1000
+#define UART_BUFFER_LEN 2000
 
 void uart_init();
-void uart_tx_start(uint8_t type);
-void uart_tx_end();
+void uart_tx_start_prepare(uint8_t type);
+void uart_tx_bytes_prepare(void* b, uint16_t len);
+void uart_tx_end_prepare();
+void uart_tx();
+void uart_tx_dma();
 void uart_tx_bytes(void* b, uint16_t len);
+uint16_t uart_get_tx_buffer(uint8_t** tx_buffer);
 uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len);
 void uart_rx_flush();
-uint16_t uart_tx_bytes_prepare(uint8_t type, void* src, void* dst, uint16_t len);
-void uart_tx_bytes_dma(uint8_t type, void* b, uint16_t len);
 int uart_putchar(char c, FILE* stream);
 int uart_getchar(FILE* stream);
 uint8_t uart_tx_ready();
