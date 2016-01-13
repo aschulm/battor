@@ -34,11 +34,12 @@ typedef enum PARAM_GAIN_enum
 #define OVERSAMPLE_BITS_MAX 1
 
 // control
-#define CONTROL_SLEEP_US 100000
+#define CONTROL_EEPROM_ATTEMPTS 5
+#define CONTROL_SLEEP_US 500000
 
 // uart
 // needs at least the latency of the FTDI, so 20ms is plenty
-#define UART_RX_ATTEMPTS 20
+#define UART_RX_ATTEMPTS 100
 #define UART_READ_SLEEP_NS 1000000 
 
 struct eeprom_params_
