@@ -51,7 +51,7 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
 			// put samples on FIFO
-			samples_ringbuf_write(g_adcb0, SAMPLES_LEN);
+			samples_ringbuf_write(g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH2);
 		}
 
@@ -63,7 +63,7 @@ int main() //{{{
 				samples_end_calibration();
 
 			// put samples on FIFO
-			samples_ringbuf_write(g_adcb1, SAMPLES_LEN);
+			samples_ringbuf_write(g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH3);
 		}
 

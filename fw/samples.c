@@ -82,10 +82,10 @@ void samples_end_calibration() //{{{
 	dma_pause(0);		
 } //}}}
 
-void samples_ringbuf_write(sample* s, uint16_t len) //{{{
+void samples_ringbuf_write(sample* s) //{{{
 {
 	int ret;
-	uint16_t len_b = len * sizeof(sample);
+	uint16_t len_b = SAMPLES_LEN * sizeof(sample);
 
 	printf("samples_ringbuf_write() len_b:%d\n", len_b); 
 
