@@ -147,7 +147,7 @@ void samples_ringbuf_write(sample* s) //{{{
 
 #ifdef SAMPLE_INC
 	int i;
-	for (i = 0; i < len; i++)
+	for (i = 0; i < SAMPLES_LEN; i++)
 	{
 		s[i].v = i;
 		s[i].i = i;
