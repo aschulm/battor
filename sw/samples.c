@@ -107,7 +107,7 @@ void samples_print_loop(samples_config* conf) //{{{
 {
 	int i;
 	sample samples[2000];
-	uint32_t seqnum = 0;
+	uint32_t seqnum = 0xFFFFFFFF;
 	uint32_t sample_num = 0;
 	int16_t samples_len = 0;
 	double v_cal = 0, i_cal = 0;
