@@ -239,9 +239,11 @@ int samples_store_write() //{{{
 {
 	uint8_t* uart_tx_buffer;
 	int16_t reads_remaining_prev = -1;
+
 	// a write is in progress, continue it
 	if (fs_busy())
 		fs_update();
+
 	// no write in progress, try to write frame to the filesystem
 	else
 	{
@@ -281,6 +283,7 @@ void samples_store_read_uart_write() //{{{
 	uint16_t len;
 	sample sd_samples[SAMPLES_LEN];
 	uint8_t* uart_tx_buffer;
+	uint16_t tries;
 
 	// init sampling state
 	samples_init();
@@ -301,7 +304,18 @@ void samples_store_read_uart_write() //{{{
 
 		dma_uart_tx(uart_tx_buffer, len);
 
-		while(!uart_tx_ready());
+		// wait for uart transmission to complete
+		tries = 0;
+		while(!uart_tx_ready() &&
+			tries++ < SAMPLES_UART_TX_TIMEOUT_MS)
+			timer_sleep_ms(1);
+
+		// abort if one of the uart txs is taking too long
+		if (tries >= SAMPLES_UART_TX_TIMEOUT_MS)
+		{
+			dma_uart_tx_abort();
+			return;
+		}
 
 		// TODO if killed within write, this will loop forever
 		// must wait for UART tx, SD read shares DMA channel

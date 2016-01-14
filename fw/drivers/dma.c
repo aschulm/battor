@@ -149,6 +149,14 @@ void dma_uart_tx_pause(uint8_t on_off)
 		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
 }
 
+void dma_uart_tx_abort()
+{
+	// stop the DMA channel
+	DMA.CH0.CTRLA = 0;
+
+	uart_in_progress = 0;
+}
+
 uint8_t dma_uart_tx_ready()
 {
 	// no DMA transaction started so it is ready
