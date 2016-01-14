@@ -38,10 +38,9 @@ static void end_calibration() //{{{
 	calibrated = 1;
 } ////}}}
 
-static void end_store_write() //{{{
+static void end_uart_write() //{{{
 {
 	uint16_t len = 0;
-	uint8_t* uart_tx_buffer;
 
 	// zero sample length indicates end of download
 	uint16_t samples_len = 0;
@@ -60,14 +59,7 @@ static void end_store_write() //{{{
 	uart_tx_start_prepare(UART_TYPE_SAMPLES);
 	uart_tx_bytes_prepare(samples_tmp, len);
 	uart_tx_end_prepare();
-
-	len = uart_get_tx_buffer(&uart_tx_buffer);
-
-	if (len > 0)
-	{
-		if (fs_write(uart_tx_buffer, len) < 0)
-			halt(ERROR_FS_WRITE_FAIL);
-	}
+	uart_tx();
 } //}}}
 
 static void samples_init() //{{{
@@ -121,9 +113,6 @@ void samples_stop() //{{{
 		// read to the end of the ring buffer
 		while (samples_store_write());
 
-		// write the sample stream terminator
-		end_store_write();
-
 		if (fs_close() < 0)
 			halt(ERROR_FS_CLOSE_FAIL);
 	}
@@ -163,6 +152,7 @@ void samples_ringbuf_write(sample* s) //{{{
 int samples_uart_write(uint8_t just_prepare) // {{{
 {
 	uint16_t len = 0;
+	uint8_t uart_buf[20];
 
 	if (!just_prepare)
 	{
@@ -181,18 +171,18 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 			(SAMPLES_LEN * sizeof(sample)) * ringbuf_reads_remaining;
 
 		// sequence number
-		memcpy(samples_tmp + len, &seqnum,
+		memcpy(uart_buf + len, &seqnum,
 			sizeof(uint32_t));
 		len += sizeof(uint32_t);
 
 		// length (bytes)
-		memcpy(samples_tmp + len,
+		memcpy(uart_buf + len,
 			&samples_len,
 			sizeof(uint16_t));
 		len += sizeof(uint16_t);
 
 		uart_tx_start_prepare(UART_TYPE_SAMPLES);
-		uart_tx_bytes_prepare(samples_tmp, len);
+		uart_tx_bytes_prepare(uart_buf, len);
 		if (!just_prepare)
 			uart_tx();
 
@@ -247,25 +237,39 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 
 int samples_store_write() //{{{
 {
+	uint8_t* uart_tx_buffer;
+	int16_t reads_remaining_prev = -1;
 	// a write is in progress, continue it
 	if (fs_busy())
 		fs_update();
 	// no write in progress, try to write frame to the filesystem
 	else
 	{
-		uint16_t len;
-		uint8_t* uart_tx_buffer;
+		uint16_t len = SAMPLES_LEN * sizeof(sample);
 
-		if (samples_uart_write(1) < 0)
-			return 0;
+		/*
+		 * This is very odd. The goal here is to
+		 * put the CPU into the same mode that it is in the
+		 * UART streaming mode so they get the same measurements.
+		 */
 
-		len = uart_get_tx_buffer(&uart_tx_buffer);
-
-		if (len > 0)
+		// wait until a sample block is written to samples_tmp
+		reads_remaining_prev = ringbuf_reads_remaining;
+		while (samples_uart_write(1) >= 0 &&
+		 ringbuf_reads_remaining >=	reads_remaining_prev)
 		{
-			if (fs_write(uart_tx_buffer, len) < 0)
+			reads_remaining_prev = ringbuf_reads_remaining;
+			uart_get_tx_buffer(&uart_tx_buffer);
+		}
+
+		// if there was a sample block written, write it to sd
+		if (ringbuf_reads_remaining < reads_remaining_prev)
+		{
+			if (fs_write(samples_tmp, len) < 0)
 				halt(ERROR_FS_WRITE_FAIL);
 		}
+		else
+			return 0;
 	}
 
 	return 1;
@@ -274,6 +278,9 @@ int samples_store_write() //{{{
 void samples_store_read_uart_write() //{{{
 {
 	int ret;
+	uint16_t len;
+	sample sd_samples[SAMPLES_LEN];
+	uint8_t* uart_tx_buffer;
 
 	// init sampling state
 	samples_init();
@@ -285,11 +292,20 @@ void samples_store_read_uart_write() //{{{
 	// TODO to speed this up we need to get the UART TX on a different
 	// DMA channel and get it running simulataniously with reading new
 	// frames
-	while ((ret = fs_read(samples_tmp, 100)) != FS_ERROR_EOF)
+	while ((ret = fs_read(sd_samples, sizeof(sd_samples))) != FS_ERROR_EOF)
 	{
-		dma_uart_tx(samples_tmp, ret);
+		samples_ringbuf_write(sd_samples);
+		while (samples_uart_write(1) >= 0);
+
+		len = uart_get_tx_buffer(&uart_tx_buffer);
+
+		dma_uart_tx(uart_tx_buffer, len);
+
 		while(!uart_tx_ready());
+
 		// TODO if killed within write, this will loop forever
 		// must wait for UART tx, SD read shares DMA channel
 	}
+
+	end_uart_write();
 } //}}}
