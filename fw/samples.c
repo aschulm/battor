@@ -32,8 +32,7 @@ static void end_calibration() //{{{
 	// voltage measurment
 	ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc | ADC_CH_MUXNEG_GND_MODE4_gc; 
 	// current measurement
-	params_set_gain(g_control_gain);
-	mux_select(MUX_R);
+	ADCB.CH1.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
 
 	calibrated = 1;
 } ////}}}
@@ -90,12 +89,13 @@ void samples_start() //{{{
 	// set sample rate
 	params_set_samplerate();
 
-	// current amp to minimum gain
-	params_set_gain(PARAM_GAIN_CAL);
+	// current amp to control gain value
+	params_set_gain(g_control_gain);
 	// voltage measurement input to gnd
 	ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE4_gc;
 	// current measurement input to gnd
-	mux_select(MUX_GND);
+	ADCB.CH1.MUXCTRL = ADC_CH_MUXPOS_PIN7_gc | ADC_CH_MUXNEG_GND_MODE3_gc;
+	mux_select(MUX_R);
 	// wait for things to settle
 	timer_sleep_ms(10);
 
