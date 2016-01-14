@@ -94,7 +94,7 @@ int8_t control_run_message(control_message* m) //{{{
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
 			uart_tx_bytes_prepare(buf, m->value1);
 			uart_tx_end_prepare();
-			uart_tx_dma();
+			uart_tx();
 			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:
