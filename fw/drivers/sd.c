@@ -292,29 +292,25 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 
 int sd_write_block_update() //{{{
 {
-	int i;
-	uint8_t rx[32];
+	uint8_t rx[512];
 
-	memset(rx, 0, sizeof(rx));
+	rx[sizeof(rx) - 1] = 0;
 
-	// cycle the clock several times to advance write and get response for each
+	// cycle the clock several times to advance write progress
 	dma_spi_txrx(&USARTE1, NULL, &rx, sizeof(rx));
 
-	for (i = 0; i < sizeof(rx); i++)
+	// is transfer complete?
+	if (rx[sizeof(rx) - 1] != 0)
 	{
-		// is transfer complete?
-		if (rx[i] != 0)
-		{
-			/*
-			 * Transfer is complete.
-			 */
-			write_in_progress = 0;
+		/*
+		 * Transfer is complete.
+		 */
+		write_in_progress = 0;
 
-			 //give the SD card 8 clock cycles to prepare for command
-			usart_spi_txrx(&USARTE1, NULL, NULL, 1);
-			gpio_on(&PORTE, SPI_SS_PIN_bm);
-			return 0;
-		}
+		 //give the SD card 8 clock cycles to prepare for command
+		usart_spi_txrx(&USARTE1, NULL, NULL, 1);
+		gpio_on(&PORTE, SPI_SS_PIN_bm);
+		return 0;
 	}
 
 	// transfer is still in progress...
