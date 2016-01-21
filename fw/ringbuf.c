@@ -2,8 +2,13 @@
 
 #include "ringbuf.h"
 
-int ringbuf_init(ringbuf* rb, void* base, uint16_t base_len, //{{{
-	memcpy_ptr write, memcpy_ptr read)
+uint32_t memcpy32(uint32_t dst, const uint32_t src, uint32_t len)
+{
+	return (uint32_t)memcpy((void*)dst, (void*)src, len);
+}
+
+int ringbuf_init(ringbuf* rb, uint32_t base, uint32_t base_len, //{{{
+	memcpy32_ptr write, memcpy32_ptr read)
 {
 	memset(rb, 0, sizeof(ringbuf));
 
@@ -17,7 +22,7 @@ int ringbuf_init(ringbuf* rb, void* base, uint16_t base_len, //{{{
 
 int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 {
-	printf("ringbuf_write() len:%u ringbuf.len:%u\n", len, rb->len);
+	printf("ringbuf_write() len:%u ringbuf.len:%lu\n", len, rb->len);
 
 	// check write too long
 	if ((rb->len + len) > rb->base_len)
@@ -27,11 +32,13 @@ int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 
 	while (len_wrote < len)
 	{
-		uint16_t len_free = (rb->base_len - rb->write_idx);
+		uint32_t len_free = (rb->base_len - rb->write_idx);
 		uint16_t len_towrite = ((len - len_wrote) < len_free) 
 			? (len - len_wrote) : len_free;
 
-		rb->write(rb->base + rb->write_idx, src + len_wrote, len_towrite);
+		rb->write(rb->base + rb->write_idx,
+			(uint32_t)src + len_wrote,
+			len_towrite);
 		len_wrote += len_towrite;
 		rb->write_idx += len_towrite;
 		rb->len += len_towrite;
@@ -46,8 +53,6 @@ int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 
 int ringbuf_read(ringbuf* rb, void* dst, uint16_t len) //{{{
 {
-	printf("ringbuf_read() len:%u ringbuf.len:%u\n", len, rb->len);
-
 	// check read longer than written
 	if (len > rb->len)
 		return -1;
@@ -55,11 +60,11 @@ int ringbuf_read(ringbuf* rb, void* dst, uint16_t len) //{{{
 	uint16_t len_read = 0;
 	while (len_read < len)
 	{
-		uint16_t len_toend = (rb->base_len - rb->read_idx);
+		uint32_t len_toend = (rb->base_len - rb->read_idx);
 		uint16_t len_toread = ((len - len_read) < len_toend) 
 			? (len - len_read) : len_toend;
 
-		rb->read(dst + len_read, rb->base + rb->read_idx, len_toread);
+		rb->read((uint32_t)dst + len_read, rb->base + rb->read_idx, len_toread);
 		len_read += len_toread;
 		rb->read_idx += len_toread;
 		rb->len -= len_toread;
@@ -85,7 +90,7 @@ int ringbuf_self_test() //{{{
 	printf("ringbuf write/read 1...");
 	memset(ring, 0, sizeof(ring));
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, ring, 2, &memcpy, &memcpy);
+	ringbuf_init(&rb, (uint32_t)ring, 2, &memcpy32, &memcpy32);
 	if (ringbuf_write(&rb, test_src, 1) < 0)
 	{
 		printf("FAILED (ringbuf_write)\n");
@@ -105,7 +110,7 @@ int ringbuf_self_test() //{{{
 
 	printf("ringbuf write/read too long...");
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, ring, 2, &memcpy, &memcpy);
+	ringbuf_init(&rb, (uint32_t)ring, 2, &memcpy32, &memcpy32);
 	if (ringbuf_write(&rb, test_src, 3) >= 0)
 	{
 		printf("FAILED (ringbuf_write)\n");
@@ -121,7 +126,7 @@ int ringbuf_self_test() //{{{
 	printf("ringbuf write 2, read 2, wrap around, write 1, read 1...");
 	memset(ring, 0, sizeof(ring));
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, ring, 2, &memcpy, &memcpy);
+	ringbuf_init(&rb, (uint32_t)ring, 2, &memcpy32, &memcpy32);
 	if (ringbuf_write(&rb, test_src, 2) < 0)
 	{
 		printf("FAILED (ringbuf_write #1)\n");
@@ -157,7 +162,7 @@ int ringbuf_self_test() //{{{
 	printf("ringbuf read past write...");
 	memset(ring, 0, sizeof(ring));
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, ring, 2, &memcpy, &memcpy);
+	ringbuf_init(&rb, (uint32_t)ring, 2, &memcpy32, &memcpy32);
 	if (ringbuf_write(&rb, test_src, 1) < 0)
 	{
 		printf("FAILED (ringbuf_write)\n");
@@ -173,7 +178,7 @@ int ringbuf_self_test() //{{{
 	printf("ringbuf past end write...");
 	memset(ring, 0, sizeof(ring));
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, ring, 4, &memcpy, &memcpy);
+	ringbuf_init(&rb, (uint32_t)ring, 4, &memcpy32, &memcpy32);
 	if (ringbuf_write(&rb, test_src, 1) < 0)
 	{
 		printf("FAILED (ringbuf_write #1)\n");
@@ -212,7 +217,7 @@ int ringbuf_self_test() //{{{
 		0x50, 0x51, 0x52, 0x53
 	};
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, (void*)0x0000, 100, &sram_write, &sram_read);
+	ringbuf_init(&rb, 0x00000000, 100, &sram_write, &sram_read);
 	if (ringbuf_write(&rb, test_big_src, 4) < 0)
 	{
 		printf("FAILED (ringbuf_write #1)\n");
@@ -241,7 +246,7 @@ int ringbuf_self_test() //{{{
 
 	printf("ringbuf SRAM write 600 read 512 read 88...");
 	memset(buf, 0, sizeof(buf));
-	ringbuf_init(&rb, (void*)0x0000, 600, &sram_write, &sram_read);
+	ringbuf_init(&rb, 0x00000000, 600, &sram_write, &sram_read);
 	if (ringbuf_write(&rb, buf, 600) < 0)
 	{
 		printf("FAILED (ringbuf_write #1)\n");
@@ -259,7 +264,7 @@ if (ringbuf_read(&rb, buf, 88) < 0)
 	}
 	if (rb.len != 0)
 	{
-		printf("FAILED (ringbuf.len expected 0 found %u)\n", rb.len);
+		printf("FAILED (ringbuf.len expected 0 found %lu)\n", rb.len);
 		return 1;
 	}
 	printf("PASSED\n");

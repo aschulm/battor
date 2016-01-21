@@ -2,7 +2,7 @@
 #define SRAM_H
 
 #define SRAM_24BIT_ADDR
-#define SRAM_SIZE_BYTES 65000
+#define SRAM_SIZE_BYTES 125000
 
 #define SRAM_CS_PIN_gm (1<<2)
 
@@ -17,7 +17,7 @@ void sram_init();
 
 int sram_self_test();
 
-void* sram_write(void* addr, const void* src, size_t len);
-void* sram_read(void* dst, const void* addr, size_t len);
+uint32_t sram_write(uint32_t addr, const uint32_t src, uint32_t len);
+uint32_t sram_read(uint32_t dst, const uint32_t addr, uint32_t len);
 
 #endif

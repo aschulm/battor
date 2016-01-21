@@ -63,7 +63,7 @@ static void end_uart_write() //{{{
 
 static void samples_init() //{{{
 {
-	ringbuf_init(&rb, 0x0000, SRAM_SIZE_BYTES,
+	ringbuf_init(&rb, 0x00000000, SRAM_SIZE_BYTES,
 		sram_write, sram_read);
 
 	state = STATE_PRE_FRAME;
