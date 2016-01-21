@@ -33,18 +33,15 @@ int main() //{{{
 		sleep_cpu();
 		sleep_disable();
 
+		/*
+		 * The order of these lower half handlers reflects their priority
+		 */
+
 		// general ms timer
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
 		{
 			blink_ms_timer_update();
 			interrupt_clear(INTERRUPT_TIMER_MS);
-		}
-
-		// UART receive
-		if (interrupt_is_set(INTERRUPT_UART_RX))
-		{
-			control_got_uart_bytes();
-			interrupt_clear(INTERRUPT_UART_RX);
 		}
 
 		// ADCB DMA (channel 2)
@@ -75,6 +72,13 @@ int main() //{{{
 		if (g_control_mode == CONTROL_MODE_STORE)
 		{
 			samples_store_write();
+		}
+
+		// UART receive
+		if (interrupt_is_set(INTERRUPT_UART_RX))
+		{
+			control_got_uart_bytes();
+			interrupt_clear(INTERRUPT_UART_RX);
 		}
 	}
 

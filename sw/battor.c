@@ -12,6 +12,7 @@ usage: %s <tty> -s <options>    *stream* power measurements over USB            
    or: %s <tty> -b <options>    *buffer* on the SD card                           \n\
    or: %s <tty> -d              *download* from the SD card                       \n\
    or: %s <tty> -k              *restart* the MCU                                 \n\
+   or: %s <tty> -o              *count* reuurn the sample count                   \n\
                                                                             \n\
 Options:                                                                    \n\
   -g <[L]ow or [H]igh> : current gain (default %c)                          \n\
@@ -21,7 +22,7 @@ Options:                                                                    \n\
 Output:                                                                     \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
-", name, name, name, name, GAIN_DEFAULT);
+", name, name, name, name, name, GAIN_DEFAULT);
 } //}}}
 
 int main(int argc, char** argv)
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
 	FILE* file;
 	char opt;
 	char tty[] = "/dev/ttyUSB0";
-	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0;
+	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
 
 	uint16_t down_file;
 	uint16_t timer_ovf, timer_div;
@@ -52,12 +53,15 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sbg:o:vhu:ktcd")) != -1)
+	while ((opt = getopt(argc, argv, "sbg:ovhu:ktcd")) != -1)
 	{
 		switch(opt)
 		{
 			case 'd':
 				down = 1;
+			break;
+			case 'o':
+				count = 1;
 			break;
 			case 'c':
 				sconf.cal = 1;
@@ -111,6 +115,19 @@ int main(int argc, char** argv)
 			return EXIT_FAILURE;
 		}
 		fprintf(stderr, "------ Self Test PASSED ------\n");
+		return EXIT_SUCCESS;
+	}
+
+	// return the count
+	if (count)
+	{
+		uint32_t sample_count;
+		uint8_t type;
+
+		control(CONTROL_TYPE_GET_SAMPLE_COUNT, 0, 0, 0);
+		usleep(CONTROL_SLEEP_US); // since sample count is sent in ACK, wait for it
+		uart_rx_bytes(&type, &sample_count, sizeof(sample_count));
+		printf("%u\n", sample_count);
 		return EXIT_SUCCESS;
 	}
 

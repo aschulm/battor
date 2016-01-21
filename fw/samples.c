@@ -100,7 +100,7 @@ void samples_start() //{{{
 	timer_sleep_ms(10);
 
 	// start getting samples from the ADCs
-	dma_start(g_adcb0, g_adcb1, SAMPLES_LEN*sizeof(sample));
+	dma_start(g_adcb0, g_adcb1);
 } //}}}
 
 void samples_stop() //{{{
@@ -127,8 +127,6 @@ void samples_ringbuf_write(sample* s) //{{{
 	ringbuf_writes_remaining--;
 	if (!calibrated && ringbuf_writes_remaining == 0)
 		end_calibration();
-
-	printf("samples_ringbuf_write() len_b:%d\n", len_b); 
 
 #ifdef SAMPLE_ZERO
 	memset(s, 0, len_b);
@@ -263,6 +261,8 @@ int samples_store_write() //{{{
 			reads_remaining_prev = ringbuf_reads_remaining;
 			uart_get_tx_buffer(&uart_tx_buffer);
 		}
+		// clear bytes leftover from last write
+		uart_get_tx_buffer(&uart_tx_buffer);
 
 		// if there was a sample block written, write it to sd
 		if (ringbuf_reads_remaining < reads_remaining_prev)
@@ -316,9 +316,6 @@ void samples_store_read_uart_write() //{{{
 			dma_uart_tx_abort();
 			return;
 		}
-
-		// TODO if killed within write, this will loop forever
-		// must wait for UART tx, SD read shares DMA channel
 	}
 
 	end_uart_write();

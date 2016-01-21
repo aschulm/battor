@@ -11,15 +11,20 @@
 
 #include "uart.h"
 
-// receive byte interrupt, do as little as possible in here because we are operating close to the CPU clock rate
-static volatile uint8_t uart_rx_buffer[UART_BUFFER_LEN];
+static volatile uint32_t frame_sample_count;
+static volatile uint8_t uart_rx_buffer[UART_RX_BUFFER_LEN];
 static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
 static volatile uint8_t uart_tx_fc_ready;
-static uint8_t uart_tx_buffer[UART_BUFFER_LEN];
+static uint8_t uart_tx_buffer[UART_TX_BUFFER_LEN];
 static uint16_t uart_tx_buffer_len;
 static int uart_initialized = 0;
 
+/* Receive UART byte interrupt
+ *
+ * do as little as possible in here because
+ * we are operating close to the CPU clock rate
+ */
 ISR(USARTD0_RXC_vect) //{{{
 {
 	// UART error, just skip it
@@ -34,9 +39,16 @@ ISR(USARTD0_RXC_vect) //{{{
 		while ((USARTD0.STATUS & USART_RXCIF_bm) > 0)
 		{
 			uint8_t tmp = USARTD0.DATA;
+
+			// if byte is start byte then store sample count for it
+			if (tmp == UART_START_DELIM && 
+				(uart_rx_buffer_write_idx == 0 ||
+				uart_rx_buffer[uart_rx_buffer_write_idx] != UART_ESC_DELIM))
+				frame_sample_count = dma_get_sample_count();
+
 			// store byte
 			uart_rx_buffer[uart_rx_buffer_write_idx++] = tmp;
-			if (uart_rx_buffer_write_idx >= UART_BUFFER_LEN)
+			if (uart_rx_buffer_write_idx >= UART_RX_BUFFER_LEN)
 				uart_rx_buffer_write_idx = 0;
 
 			// only interrupt if a byte actually came in
@@ -103,6 +115,8 @@ void uart_init() //{{{
 	uart_tx_fc_ready = 1; // start with not waiting for flow control
 
 	uart_tx_buffer_len = 0; // start with a blank uart tx frame
+
+	frame_sample_count = 0; // reset sample count for frame
 
 	// set stdout to uart so we can use printf for debugging
 #ifdef DEBUG
@@ -191,7 +205,7 @@ inline uint8_t uart_rx_byte() //{{{
 
 	interrupt_disable();
 	ret = uart_rx_buffer[uart_rx_buffer_read_idx++];
-	if (uart_rx_buffer_read_idx >= UART_BUFFER_LEN)
+	if (uart_rx_buffer_read_idx >= UART_RX_BUFFER_LEN)
 		uart_rx_buffer_read_idx = 0;
 	interrupt_enable();
 
@@ -238,6 +252,11 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 	return bytes_read;
 } //}}}
 
+uint32_t uart_rx_sample_count() //{{{
+{
+	return frame_sample_count;
+} // }}}
+
 void uart_rx_flush() //{{{
 {
 	uart_rx_buffer_read_idx = 0;
@@ -273,7 +292,8 @@ int uart_putchar(char c, FILE* stream) //{{{
 	if (!in_message)
 	{
 		uart_tx_end_prepare();
-		uart_tx();
+		uart_tx_dma();
+		while (!uart_tx_ready());
 	}
 
 	return 0;

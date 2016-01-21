@@ -5,12 +5,14 @@
 
 #include "../error.h"
 #include "../interrupt.h"
+#include "../samples.h"
 #include "adc.h"
 #include "timer.h"
 #include "dma.h"
 #include "gpio.h"
 
 static uint8_t uart_in_progress;
+static volatile uint32_t sample_count;
 
 ISR(DMA_CH2_vect)
 {
@@ -20,6 +22,10 @@ ISR(DMA_CH2_vect)
 
 	if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		halt(ERROR_DMA_CH2_OVERFLOW);
+
+	// increment the sample counter for the collected samples
+	sample_count += SAMPLES_LEN;
+
 	interrupt_set(INTERRUPT_DMA_CH2);
 	DMA.INTFLAGS = DMA_CH2TRNIF_bm; // clear the interrupt
 }
@@ -31,6 +37,10 @@ ISR(DMA_CH3_vect)
 
 	if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		halt(ERROR_DMA_CH3_OVERFLOW);
+
+	// increment the sample counter for the collected samples
+	sample_count += SAMPLES_LEN;
+
 	interrupt_set(INTERRUPT_DMA_CH3);
 	DMA.INTFLAGS = DMA_CH3TRNIF_bm; // clear the interrupt
 }
@@ -53,13 +63,21 @@ void dma_init()
 
 	// reset UART transaction status
 	uart_in_progress = 0;
+
+	// reset the sample counter
+	sample_count = 0;
 }
 
-void dma_start(void* adcb_samples0, void* adcb_samples1, uint16_t samples_len)
+void dma_start(void* adcb_samples0, void* adcb_samples1)
 {
+	uint16_t samples_len = SAMPLES_LEN * sizeof(sample);
+
 	// clear the buffers
 	memset(adcb_samples0, 0, samples_len);
 	memset(adcb_samples1, 0, samples_len);
+
+	// reset the sample counter
+	sample_count = 0;
 
 	// repeat forevr
 	DMA.CH2.REPCNT = 0;
@@ -121,6 +139,25 @@ void dma_stop()
 	DMA.INTFLAGS = 0xFF; // clear all interrups
 
 	EVSYS.CH0MUX = 0; // stop event channel 0
+}
+
+uint32_t dma_get_sample_count()
+{
+	uint16_t samples_len = SAMPLES_LEN * sizeof(sample);
+
+	// DMA is not enabled, fail by returning first sample
+	if ((DMA.CH2.CTRLA & DMA_CH_ENABLE_bm) == 0 &&
+		(DMA.CH3.CTRLA & DMA_CH_ENABLE_bm) == 0)
+		return 0;
+
+	/* 
+	 * The dma resets trfcnt at the end of a transfer so we can just subtract.
+	 * Also, we divide by 4 to convert byte count to sample count.
+	 */
+	uint16_t count_ch2 = samples_len - (DMA.CH2.TRFCNT >> 2);
+	uint16_t count_ch3 = samples_len - (DMA.CH3.TRFCNT >> 2);
+
+	return sample_count + count_ch2 + count_ch3;
 }
 
 void dma_uart_tx(const void* data, uint16_t len)
