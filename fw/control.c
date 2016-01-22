@@ -104,6 +104,11 @@ int8_t control_run_message(control_message* m) //{{{
 			uart_tx_bytes_prepare(&u32, sizeof(u32));
 			uart_tx_end_prepare();
 			uart_tx();
+
+			// toggle CTS to force FTDI chip to flush the buffer
+			uart_set_rts(0);
+			timer_sleep_ms(1);
+			uart_set_rts(1);
 			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:

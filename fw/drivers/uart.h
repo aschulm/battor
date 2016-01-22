@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+// these are defined by their pin on the FTDI chip
 #define UART_RTS_bm (1<<5)
 #define UART_RTS_bp 5
 #define UART_CTS_bm (1<<4)
@@ -23,6 +24,7 @@ typedef enum UART_TYPE_enum
 #define UART_RX_BUFFER_LEN 200 
 
 void uart_init();
+void uart_set_rts(uint8_t ready);
 void uart_tx_start_prepare(uint8_t type);
 void uart_tx_bytes_prepare(void* b, uint16_t len);
 void uart_tx_end_prepare();

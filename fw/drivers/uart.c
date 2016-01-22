@@ -128,6 +128,15 @@ void uart_init() //{{{
 	uart_initialized = 1;
 } //}}}
 
+void uart_set_rts(uint8_t ready) //{{{
+{
+	// set the CTS pin on the FTDI to assert or deassert RTS
+	if (ready)
+		PORTD.DIR |= UART_CTS_bm;
+	else
+		PORTD.DIR &= ~UART_CTS_bm;
+} //}}}
+
 void uart_tx_start_prepare(uint8_t type) //{{{
 {
 	uart_tx_buffer[uart_tx_buffer_len++] = UART_START_DELIM;
@@ -203,11 +212,9 @@ inline uint8_t uart_rx_byte() //{{{
 	// wait for byte to arrive
 	while (uart_rx_buffer_read_idx == uart_rx_buffer_write_idx);
 
-	interrupt_disable();
 	ret = uart_rx_buffer[uart_rx_buffer_read_idx++];
 	if (uart_rx_buffer_read_idx >= UART_RX_BUFFER_LEN)
 		uart_rx_buffer_read_idx = 0;
-	interrupt_enable();
 
 	return ret;
 } //}}}
