@@ -95,7 +95,7 @@ int8_t control_run_message(control_message* m) //{{{
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
 			uart_tx_bytes_prepare(buf, m->value1);
 			uart_tx_end_prepare();
-			uart_tx();
+			uart_tx_dma();
 			ret = -1;
 		break;
 		case CONTROL_TYPE_GET_SAMPLE_COUNT:
@@ -103,8 +103,10 @@ int8_t control_run_message(control_message* m) //{{{
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
 			uart_tx_bytes_prepare(&u32, sizeof(u32));
 			uart_tx_end_prepare();
-			uart_tx();
 
+			uart_tx_dma();
+
+			while (!dma_uart_tx_ready());
 			// toggle CTS to force FTDI chip to flush the buffer
 			uart_set_rts(0);
 			timer_sleep_ms(1);

@@ -22,6 +22,7 @@ typedef enum ERROR_enum
 } ERROR_t;
 
 void halt(uint8_t code);
+void dump_stack();
 
 extern uint8_t g_error_last;
 

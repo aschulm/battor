@@ -238,6 +238,10 @@ int samples_store_write() //{{{
 	uint8_t* uart_tx_buffer;
 	int16_t reads_remaining_prev = -1;
 
+	// SD shares a DMA channel with UART - abort if UART is in use
+	if (!dma_uart_tx_ready())
+		return 1;
+
 	// a write is in progress, continue it
 	if (fs_busy())
 		fs_update();
