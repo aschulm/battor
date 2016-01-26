@@ -180,6 +180,9 @@ void dma_uart_tx(const void* data, uint16_t len)
 
 void dma_uart_tx_pause(uint8_t on_off)
 {
+	if (!uart_in_progress)
+		return;
+
 	if (on_off)
 		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
 	else
