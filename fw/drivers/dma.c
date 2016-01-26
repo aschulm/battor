@@ -239,11 +239,11 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			DMA_CH_DESTDIR_INC_gc;
 		set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)&(usart->DATA));
 		set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)(rxd));
-		DMA.CH0.TRFCNT = len;
 		if (usart == &USARTC1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
 		if (usart == &USARTE1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_RXC_gc;
+		DMA.CH0.TRFCNT = len;
 
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	}
@@ -266,12 +266,12 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	// setup transmit DMA
 	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 	DMA.CH1.CTRLB = DMA_CH_TRNIF_bm; // clear flag
-	DMA.CH1.TRFCNT = len - 1;
 	set_24_bit_addr(&(DMA.CH1.DESTADDR0), (uint16_t)&(usart->DATA));
 	if (usart == &USARTC1)
 		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_DRE_gc;
 	if (usart == &USARTE1)
 		DMA.CH1.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_DRE_gc;
+	DMA.CH1.TRFCNT = len - 1;
 
 	// setup transmit DMA address control
 	DMA.CH1.ADDRCTRL =
