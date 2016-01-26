@@ -162,6 +162,11 @@ uint32_t dma_get_sample_count()
 
 void dma_uart_tx(const void* data, uint16_t len)
 {
+	// reset DMA channel
+	DMA.CH0.CTRLA = DMA_CH_RESET_bm;
+	loop_until_bit_is_clear(DMA.CH0.CTRLA, DMA_CH_RESET_bp);
+
+	// setup transmit DMA
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 	DMA.CH0.ADDRCTRL = 
@@ -220,6 +225,10 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 		while ((usart->STATUS		& USART_RXCIF_bm) > 0)
 			usart->DATA;
 
+		// reset DMA channel
+		DMA.CH0.CTRLA = DMA_CH_RESET_bm;
+		loop_until_bit_is_clear(DMA.CH0.CTRLA, DMA_CH_RESET_bp);
+
 		// setup receive DMA
 		DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
 		DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
@@ -249,6 +258,10 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	 */
 	uint8_t ff = 0xFF;
 	uint8_t last_byte = 0;
+
+	// reset DMA channel
+	DMA.CH1.CTRLA = DMA_CH_RESET_bm;
+	loop_until_bit_is_clear(DMA.CH1.CTRLA, DMA_CH_RESET_bp);
 
 	// setup transmit DMA
 	DMA.CH1.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
