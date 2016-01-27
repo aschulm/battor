@@ -200,6 +200,10 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	uint8_t* txd_b = (uint8_t*)txd;
 	uint8_t* rxd_b = (uint8_t*)rxd;
 
+	// abort if no bytes to tx/rx
+	if (len == 0)
+		return;
+
 	// skip to manual tx/rx if only one byte
 	if (len == 1)
 		goto last_byte;
