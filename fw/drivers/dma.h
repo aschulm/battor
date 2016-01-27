@@ -3,7 +3,6 @@
 
 void dma_init();
 void dma_start(void* adcb_samples0, void* adcb_samples1);
-void inline dma_pause(uint8_t on_off);
 void dma_stop();
 uint32_t dma_get_sample_count();
 

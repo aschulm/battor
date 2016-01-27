@@ -12,7 +12,6 @@
 #include "dma.h"
 #include "gpio.h"
 
-static uint8_t uart_in_progress;
 static volatile uint32_t sample_count;
 
 ISR(DMA_CH2_vect)
@@ -46,11 +45,19 @@ ISR(DMA_CH3_vect)
 	DMA.INTFLAGS = DMA_CH3TRNIF_bm; // clear the interrupt
 }
 
-void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
+static void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
 {
 	d[0] = (v & 0x00FF) >> 0;
 	d[1] = (v & 0xFF00) >> 8;
 	d[2] = 0;
+}
+
+static uint8_t cmp_24_bit_addr(volatile uint8_t* d, uint16_t v)
+{
+	return 
+		d[0] == (v & 0x00FF) >> 0 &&
+		d[1] == (v & 0xFF00) >> 8 &&
+		d[2] == 0;
 }
 
 void dma_init()
@@ -61,9 +68,6 @@ void dma_init()
 	loop_until_bit_is_clear(DMA.CTRL, DMA_RESET_bp);
 	
 	DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 2,3 (ADCB)
-
-	// reset UART transaction status
-	uart_in_progress = 0;
 
 	// reset the sample counter
 	sample_count = 0;
@@ -118,20 +122,6 @@ void dma_start(void* adcb_samples0, void* adcb_samples1)
 	EVSYS.CH0MUX = EVSYS_CHMUX_TCD0_OVF_gc; // event channel 0 will fire when TCD0 overflows
 }
 
-void inline dma_pause(uint8_t on_off)
-{
-	if (on_off)
-	{
-		DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
-		DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
-	}
-	else
-	{
-		DMA.CH2.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
-		DMA.CH3.TRIGSRC = DMA_CH_TRIGSRC_ADCB_CH1_gc;
-	}
-}
-
 void dma_stop()
 {
 	DMA.CH2.CTRLA &= ~DMA_CH_ENABLE_bm; // stop DMA channel 2 for ADCB
@@ -169,7 +159,6 @@ void dma_uart_tx(const void* data, uint16_t len)
 
 	// setup transmit DMA
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 	DMA.CH0.ADDRCTRL = 
 		DMA_CH_SRCRELOAD_NONE_gc |
 		DMA_CH_SRCDIR_INC_gc |
@@ -181,12 +170,12 @@ void dma_uart_tx(const void* data, uint16_t len)
 	DMA.CH0.TRFCNT = len;
 
 	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
-	uart_in_progress = 1;
 }
 
 void dma_uart_tx_pause(uint8_t on_off)
 {
-	if (!uart_in_progress)
+	// check to see if DMA channel is connected to UART - abort if not
+	if (!cmp_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA)))
 		return;
 
 	if (on_off)
@@ -199,23 +188,11 @@ void dma_uart_tx_abort()
 {
 	// stop the DMA channel
 	DMA.CH0.CTRLA = 0;
-
-	uart_in_progress = 0;
 }
 
 uint8_t dma_uart_tx_ready()
 {
-	// no DMA transaction started so it is ready
-	if (!uart_in_progress)
-		return 1;
-
-	if ((DMA.CH0.CTRLB & DMA_CH_TRNIF_bm) > 0)
-	{
-		uart_in_progress = 0;
-		return 1;
-	}
-
-	return 0;
+	return ((DMA.CH0.CTRLA & DMA_CH_ENABLE_bm) == 0);
 }
 
 void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
