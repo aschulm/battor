@@ -233,8 +233,6 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 		if (usart == &USARTE1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_RXC_gc;
 		DMA.CH0.TRFCNT = len - 1;
-
-		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	}
 
 	/*
@@ -285,6 +283,8 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 		last_byte_tx = ff;
 	}
 
+	if (rxd != NULL)
+		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
 
 	// wait for tx to complete
@@ -292,9 +292,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 
 	// wait for rx to complete
 	if (rxd != NULL)
-	{
 		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
-	}
 
 last_byte:
 	/*
