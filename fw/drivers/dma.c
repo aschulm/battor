@@ -197,6 +197,13 @@ uint8_t dma_uart_tx_ready()
 
 void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 {
+	uint8_t* txd_b = (uint8_t*)txd;
+	uint8_t* rxd_b = (uint8_t*)rxd;
+
+	// skip to manual tx/rx if only one byte
+	if (len == 1)
+		goto last_byte;
+
 	if (rxd != NULL)
 	{
 		// clear out all rx data
@@ -259,12 +266,10 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	// if tx mode then transmit data 
 	if (txd != NULL)
 	{
-		uint8_t* txd_b = (uint8_t*)txd;
 		DMA.CH1.ADDRCTRL |=
 			DMA_CH_SRCRELOAD_NONE_gc |
 			DMA_CH_SRCDIR_INC_gc;
 		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(txd));
-		last_byte_tx = txd_b[len - 1];
 	}
 	// if not tx mode just transmit 0xFF
 	else
@@ -283,15 +288,22 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 
 	// wait for rx to complete
 	if (rxd != NULL)
+	{
 		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
+	}
 
+last_byte:
 	/*
 	 * Send and receive last byte manually
 	 */
+	if (txd != NULL)
+		last_byte_tx = txd_b[len - 1];
+	else
+		last_byte_tx = ff;
+
 	usart_spi_txrx(usart, &last_byte_tx, &last_byte_rx, 1);
 	if (rxd != NULL)
 	{
-		uint8_t* rxd_b = (uint8_t*)rxd;
 		rxd_b[len - 1] = last_byte_rx;
 	}
 }
