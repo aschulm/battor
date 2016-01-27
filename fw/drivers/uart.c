@@ -299,8 +299,7 @@ int uart_putchar(char c, FILE* stream) //{{{
 	if (!in_message)
 	{
 		uart_tx_end_prepare();
-		uart_tx_dma();
-		while (!uart_tx_ready());
+		uart_tx();
 	}
 
 	return 0;

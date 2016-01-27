@@ -99,18 +99,25 @@ int8_t control_run_message(control_message* m) //{{{
 			ret = -1;
 		break;
 		case CONTROL_TYPE_GET_SAMPLE_COUNT:
+			// abort if UART is not already ready to prevent overflow
+			if (!uart_tx_ready())
+			{
+				ret = -1;
+				break;
+			}
+
 			u32 = uart_rx_sample_count();
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
 			uart_tx_bytes_prepare(&u32, sizeof(u32));
 			uart_tx_end_prepare();
 
 			uart_tx_dma();
-
 			while (!dma_uart_tx_ready());
+
 			// toggle CTS to force FTDI chip to flush the buffer
 			uart_set_rts(0);
-			timer_sleep_ms(1);
 			uart_set_rts(1);
+
 			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:
