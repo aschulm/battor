@@ -7,6 +7,7 @@
 #include "../interrupt.h"
 #include "../samples.h"
 #include "adc.h"
+#include "usart.h"
 #include "timer.h"
 #include "dma.h"
 #include "gpio.h"
@@ -243,7 +244,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTC1_RXC_gc;
 		if (usart == &USARTE1)
 			DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTE1_RXC_gc;
-		DMA.CH0.TRFCNT = len;
+		DMA.CH0.TRFCNT = len - 1;
 
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	}
@@ -257,7 +258,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	 * can be determined to be complete.
 	 */
 	uint8_t ff = 0xFF;
-	uint8_t last_byte = 0;
+	uint8_t last_byte_tx = 0, last_byte_rx = 0;
 
 	// reset DMA channel
 	DMA.CH1.CTRLA = DMA_CH_RESET_bm;
@@ -286,7 +287,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			DMA_CH_SRCRELOAD_NONE_gc |
 			DMA_CH_SRCDIR_INC_gc;
 		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(txd));
-		last_byte = txd_b[len-1];
+		last_byte_tx = txd_b[len - 1];
 	}
 	// if not tx mode just transmit 0xFF
 	else
@@ -295,7 +296,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			DMA_CH_SRCRELOAD_BURST_gc |
 			DMA_CH_SRCDIR_FIXED_gc;
 		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
-		last_byte = ff;
+		last_byte_tx = ff;
 	}
 
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
@@ -303,18 +304,17 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	// wait for tx to complete
 	loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
 
-	/*
-	 * Send last byte manually
-	 */
-
-	// wait for tx buffer to empty
-	loop_until_bit_is_set(usart->STATUS, USART_DREIF_bp);
-	usart->STATUS = USART_TXCIF_bm; // clear flag
-	usart->DATA = last_byte;
-	// wait for tx to complete
-	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp); 
-
 	// wait for rx to complete
 	if (rxd != NULL)
 		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
+
+	/*
+	 * Send and receive last byte manually
+	 */
+	usart_spi_txrx(usart, &last_byte_tx, &last_byte_rx, 1);
+	if (rxd != NULL)
+	{
+		uint8_t* rxd_b = (uint8_t*)rxd;
+		rxd_b[len - 1] = last_byte_rx;
+	}
 }
