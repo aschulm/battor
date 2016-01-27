@@ -125,7 +125,6 @@ int main(int argc, char** argv)
 		uint8_t type;
 
 		control(CONTROL_TYPE_GET_SAMPLE_COUNT, 0, 0, 0);
-		usleep(CONTROL_SLEEP_US); // since sample count is sent in ACK, wait for it
 		uart_rx_bytes(&type, &sample_count, sizeof(sample_count));
 		printf("%u\n", sample_count);
 		return EXIT_SUCCESS;
