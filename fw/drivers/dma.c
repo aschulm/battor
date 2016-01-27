@@ -223,7 +223,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	if (rxd != NULL)
 	{
 		// clear out all rx data
-		while ((usart->STATUS		& USART_RXCIF_bm) > 0)
+		while ((usart->STATUS & USART_RXCIF_bm) > 0)
 			usart->DATA;
 
 		// reset DMA channel

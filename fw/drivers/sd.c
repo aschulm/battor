@@ -297,7 +297,7 @@ int sd_write_block_update() //{{{
 	rx[sizeof(rx) - 1] = 0;
 
 	// cycle the clock several times to advance write progress
-	dma_spi_txrx(&USARTE1, NULL, &rx, sizeof(rx));
+	dma_spi_txrx(&USARTE1, NULL, rx, sizeof(rx));
 
 	// is transfer complete?
 	if (rx[sizeof(rx) - 1] != 0)
