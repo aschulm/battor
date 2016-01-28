@@ -159,6 +159,7 @@ void dma_uart_tx(const void* data, uint16_t len)
 
 	// setup transmit DMA
 	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
 	DMA.CH0.ADDRCTRL = 
 		DMA_CH_SRCRELOAD_NONE_gc |
 		DMA_CH_SRCDIR_INC_gc |
@@ -204,9 +205,12 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	if (len == 0)
 		return;
 
-	// skip to manual tx/rx if only one byte
+	// do a manual tx/rx if only one byte
 	if (len == 1)
-		goto last_byte;
+	{
+		usart_spi_txrx(usart, txd, rxd, len);
+		return;
+	}
 
 	if (rxd != NULL)
 	{
@@ -244,7 +248,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	 * can be determined to be complete.
 	 */
 	uint8_t ff = 0xFF;
-	uint8_t last_byte_tx = 0, last_byte_rx = 0;
+	uint8_t last_byte_tx = 0;
 
 	// reset DMA channel
 	DMA.CH1.CTRLA = DMA_CH_RESET_bm;
@@ -280,32 +284,36 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			DMA_CH_SRCRELOAD_BURST_gc |
 			DMA_CH_SRCDIR_FIXED_gc;
 		set_24_bit_addr(&(DMA.CH1.SRCADDR0), (uint16_t)(&ff));
-		last_byte_tx = ff;
 	}
 
 	if (rxd != NULL)
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
 
-	// wait for tx to complete
-	loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
-
 	// wait for rx to complete
 	if (rxd != NULL)
 		loop_until_bit_is_set(DMA.CH0.CTRLB, DMA_CH_TRNIF_bp);
+	// wait for tx to complete
+	else
+		loop_until_bit_is_set(DMA.CH1.CTRLB, DMA_CH_TRNIF_bp);
 
-last_byte:
-	/*
-	 * Send and receive last byte manually
-	 */
+	// send last byte manually
 	if (txd != NULL)
 		last_byte_tx = txd_b[len - 1];
 	else
 		last_byte_tx = ff;
+	// wait until usart is ready to send last byte
+	loop_until_bit_is_set(usart->STATUS, USART_DREIF_bp);
+	usart->STATUS = USART_TXCIF_bm; // clear flag
+	usart->DATA = last_byte_tx;
 
-	usart_spi_txrx(usart, &last_byte_tx, &last_byte_rx, 1);
+	// wait until usart has sent all bytes
+	loop_until_bit_is_set(usart->STATUS, USART_TXCIF_bp);
+
+	// receive last byte manually
+	loop_until_bit_is_set(usart->STATUS, USART_RXCIF_bp);
 	if (rxd != NULL)
-	{
-		rxd_b[len - 1] = last_byte_rx;
-	}
+		rxd_b[len - 1] = usart->DATA;
+	else
+		usart->DATA;
 }
