@@ -1,7 +1,7 @@
 #ifndef DMA_H
 #define DMA_H
 
-void dma_init();
+void dma_init(uint8_t spi_uart_only);
 void dma_start(void* adcb_samples0, void* adcb_samples1);
 void dma_stop();
 uint32_t dma_get_sample_count();

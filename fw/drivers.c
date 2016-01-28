@@ -11,7 +11,7 @@ void drivers_init() //{{{
 	timer_init(&TCC0, TC_OVFINTLVL_LO_gc);
 	timer_set(&TCC0, TC_CLKSEL_DIV64_gc, 499);
 
-	dma_init();
+	dma_init(0);
 	mux_init();
 	pot_init();
 	sram_init();

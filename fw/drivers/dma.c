@@ -13,6 +13,7 @@
 #include "gpio.h"
 
 static volatile uint32_t sample_count;
+static DMA_CH_t* uart_ch;
 
 ISR(DMA_CH2_vect)
 {
@@ -60,17 +61,25 @@ static uint8_t cmp_24_bit_addr(volatile uint8_t* d, uint16_t v)
 		d[2] == 0;
 }
 
-void dma_init()
+void dma_init(uint8_t spi_uart_only)
 {
 	// reset the DMA controller
 	DMA.CTRL = 0;
 	DMA.CTRL = DMA_RESET_bm;
 	loop_until_bit_is_clear(DMA.CTRL, DMA_RESET_bp);
-	
-	DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 2,3 (ADCB)
+
+	if (!spi_uart_only)
+		DMA.CTRL |= DMA_DBUFMODE_CH23_gc | DMA_PRIMODE_RR0123_gc; // enable DMA, double buffer 2,3 (ADCB)
+	DMA.CTRL |= DMA_ENABLE_bm; 
 
 	// reset the sample counter
 	sample_count = 0;
+
+	// set the UART DMA channel corresponding to the operating mode
+	if (!spi_uart_only)
+		uart_ch = &(DMA.CH0);
+	else
+		uart_ch = &(DMA.CH2);
 }
 
 void dma_start(void* adcb_samples0, void* adcb_samples1)
@@ -154,46 +163,46 @@ uint32_t dma_get_sample_count()
 void dma_uart_tx(const void* data, uint16_t len)
 {
 	// reset DMA channel
-	DMA.CH0.CTRLA = DMA_CH_RESET_bm;
-	loop_until_bit_is_clear(DMA.CH0.CTRLA, DMA_CH_RESET_bp);
+	uart_ch->CTRLA = DMA_CH_RESET_bm;
+	loop_until_bit_is_clear(uart_ch->CTRLA, DMA_CH_RESET_bp);
 
 	// setup transmit DMA
-	DMA.CH0.CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-	DMA.CH0.CTRLB = DMA_CH_TRNIF_bm; // clear flag
-	DMA.CH0.ADDRCTRL = 
+	uart_ch->CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+	uart_ch->CTRLB = DMA_CH_TRNIF_bm; // clear flag
+	uart_ch->ADDRCTRL = 
 		DMA_CH_SRCRELOAD_NONE_gc |
 		DMA_CH_SRCDIR_INC_gc |
 		DMA_CH_DESTRELOAD_BURST_gc |
 		DMA_CH_DESTDIR_FIXED_gc;
-	set_24_bit_addr(&(DMA.CH0.SRCADDR0), (uint16_t)(data));
-	set_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA));
-	DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
-	DMA.CH0.TRFCNT = len;
+	set_24_bit_addr(&(uart_ch->SRCADDR0), (uint16_t)(data));
+	set_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA));
+	uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+	uart_ch->TRFCNT = len;
 
-	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
+	uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
 }
 
 void dma_uart_tx_pause(uint8_t on_off)
 {
 	// check to see if DMA channel is connected to UART - abort if not
-	if (!cmp_24_bit_addr(&(DMA.CH0.DESTADDR0), (uint16_t)&(USARTD0.DATA)))
+	if (!cmp_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA)))
 		return;
 
 	if (on_off)
-		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
 	else
-		DMA.CH0.TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
 }
 
 void dma_uart_tx_abort()
 {
 	// stop the DMA channel
-	DMA.CH0.CTRLA = 0;
+	uart_ch->CTRLA = 0;
 }
 
 uint8_t dma_uart_tx_ready()
 {
-	return ((DMA.CH0.CTRLA & DMA_CH_ENABLE_bm) == 0);
+	return ((uart_ch->CTRLA & DMA_CH_ENABLE_bm) == 0);
 }
 
 void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
