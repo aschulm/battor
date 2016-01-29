@@ -143,8 +143,6 @@ void dma_stop()
 
 uint32_t dma_get_sample_count()
 {
-	uint16_t samples_len = SAMPLES_LEN * sizeof(sample);
-
 	// DMA is not enabled, fail by returning first sample
 	if ((DMA.CH2.CTRLA & DMA_CH_ENABLE_bm) == 0 &&
 		(DMA.CH3.CTRLA & DMA_CH_ENABLE_bm) == 0)
@@ -154,8 +152,8 @@ uint32_t dma_get_sample_count()
 	 * The dma resets trfcnt at the end of a transfer so we can just subtract.
 	 * Also, we divide by 4 to convert byte count to sample count.
 	 */
-	uint16_t count_ch2 = samples_len - (DMA.CH2.TRFCNT >> 2);
-	uint16_t count_ch3 = samples_len - (DMA.CH3.TRFCNT >> 2);
+	uint16_t count_ch2 = SAMPLES_LEN - (DMA.CH2.TRFCNT >> 2);
+	uint16_t count_ch3 = SAMPLES_LEN - (DMA.CH3.TRFCNT >> 2);
 
 	return sample_count + count_ch2 + count_ch3;
 }
