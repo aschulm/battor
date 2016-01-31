@@ -159,8 +159,8 @@ int sd_init() //{{{
 	}
 
 	// set the SPI clock to a much higher rate
-	USARTE1.BAUDCTRLA = 0;
 	USARTE1.BAUDCTRLB = 0;
+	USARTE1.BAUDCTRLA = 1; // must divide by at least 4 so rx DMA channel can keep up
 
 	// get the CSD register 
 	gpio_off(&PORTE, SPI_SS_PIN_bm);

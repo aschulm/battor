@@ -13,6 +13,7 @@ sample g_adcb0[SAMPLES_LEN], g_adcb1[SAMPLES_LEN];
 static ringbuf rb;
 static uint8_t samples_tmp[sizeof(uint32_t) + sizeof(uint16_t) +
 	(SAMPLES_LEN * sizeof(sample))];
+static uint8_t uart_tx_buffer[UART_TX_BUFFER_LEN];
 
 static uint8_t state;
 static uint8_t calibrated;
@@ -284,10 +285,18 @@ int samples_store_write() //{{{
 void samples_store_read_uart_write() //{{{
 {
 	int ret;
+	uint16_t tries;
 	uint16_t len;
 	sample sd_samples[SAMPLES_LEN];
-	uint8_t* uart_tx_buffer;
-	uint16_t tries;
+	uint8_t* uart_driver_tx_buffer;
+	uint8_t* tx_buffer_a;
+	uint8_t* tx_buffer_b;
+
+	// wait until any outstanding UART transactions are done
+	while(!dma_uart_tx_ready());
+
+	// switch DMA into UART and SPI only mode because 3 channels are needed
+	dma_init(1);
 
 	// init sampling state
 	samples_init();
@@ -296,31 +305,55 @@ void samples_store_read_uart_write() //{{{
 	if (fs_open(0) < 0)
 		halt(ERROR_FS_OPEN_FAIL);
 
-	// TODO to speed this up we need to get the UART TX on a different
-	// DMA channel and get it running simulataniously with reading new
-	// frames
+	// remember the uart driver's default buffer
+	uart_get_tx_buffer(&uart_driver_tx_buffer);
+
+	// setup double_buffering
+	tx_buffer_a = uart_driver_tx_buffer;
+	tx_buffer_b = uart_tx_buffer;
+
 	while ((ret = fs_read(sd_samples, sizeof(sd_samples))) != FS_ERROR_EOF)
 	{
+		uint8_t* tx_buffer_tmp;
+
+		// write the samples to the ring buffer like during streaming operation
 		samples_ringbuf_write(sd_samples);
+
+		// write the samples to the uart buffer
 		while (samples_uart_write(1) >= 0);
-
-		len = uart_get_tx_buffer(&uart_tx_buffer);
-
-		dma_uart_tx(uart_tx_buffer, len);
 
 		// wait for uart transmission to complete
 		tries = 0;
 		while(!uart_tx_ready() &&
-			tries++ < SAMPLES_UART_TX_TIMEOUT_MS)
-			timer_sleep_ms(1);
+			tries++ < SAMPLES_UART_TX_TIMEOUT_20US)
+			_delay_us(50);
 
-		// abort if one of the uart txs is taking too long
-		if (tries >= SAMPLES_UART_TX_TIMEOUT_MS)
+		// timeout waiting for uart tx to complete
+		if (tries >= SAMPLES_UART_TX_TIMEOUT_20US)
 		{
 			dma_uart_tx_abort();
-			return;
+			goto cleanup;
 		}
+
+		// switch the uart driver to the other uart buffer
+		len = uart_set_tx_buffer(tx_buffer_b);
+
+		// transmit the uart buffer that was just filled
+		dma_uart_tx(tx_buffer_a, len);
+
+		// swap the buffers
+		tx_buffer_tmp = tx_buffer_a;
+		tx_buffer_a = tx_buffer_b;
+		tx_buffer_b = tx_buffer_tmp;
 	}
 
+	// write the last frame to indicate the download is over
 	end_uart_write();
+
+cleanup:
+	// set the uart buffer back to the default
+	uart_set_tx_buffer(uart_driver_tx_buffer);
+
+	// switch DMA back into normal mode
+	dma_init(0);
 } //}}}

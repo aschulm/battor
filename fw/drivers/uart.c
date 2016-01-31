@@ -16,7 +16,8 @@ static volatile uint8_t uart_rx_buffer[UART_RX_BUFFER_LEN];
 static volatile uint8_t uart_rx_buffer_write_idx;
 static volatile uint8_t uart_rx_buffer_read_idx;
 static volatile uint8_t uart_tx_fc_ready;
-static uint8_t uart_tx_buffer[UART_TX_BUFFER_LEN];
+static uint8_t* uart_tx_buffer;
+static uint8_t uart_tx_buffer_default[UART_TX_BUFFER_LEN];
 static uint16_t uart_tx_buffer_len;
 static int uart_initialized = 0;
 
@@ -118,6 +119,9 @@ void uart_init() //{{{
 
 	frame_sample_count = 0; // reset sample count for frame
 
+	// set uart tx buffer to the local buffer
+	uart_tx_buffer = uart_tx_buffer_default;
+
 	// set stdout to uart so we can use printf for debugging
 #ifdef DEBUG
 	stdout = &g_uart_stream;
@@ -201,6 +205,16 @@ uint16_t uart_get_tx_buffer(uint8_t** tx_buffer) //{{{
 	uart_tx_buffer_len = 0;
 
 	*tx_buffer = uart_tx_buffer;
+
+	return tx_buffer_len;
+} //}}}
+
+uint16_t uart_set_tx_buffer(uint8_t* tx_buffer) //{{{
+{
+	uint16_t tx_buffer_len = uart_tx_buffer_len;
+	uart_tx_buffer_len = 0;
+
+	uart_tx_buffer = tx_buffer;
 
 	return tx_buffer_len;
 } //}}}

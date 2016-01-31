@@ -32,6 +32,7 @@ void uart_tx();
 void uart_tx_dma();
 void uart_tx_bytes(void* b, uint16_t len);
 uint16_t uart_get_tx_buffer(uint8_t** tx_buffer);
+uint16_t uart_set_tx_buffer(uint8_t* tx_buffer);
 uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len);
 void uart_rx_flush();
 uint32_t uart_rx_sample_count();

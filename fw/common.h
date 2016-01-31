@@ -5,6 +5,7 @@
 #include <string.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <util/delay.h>
 
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
