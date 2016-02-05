@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#define UART_TX_TIMEOUT_20US 40000
+
 // these are defined by their pin on the FTDI chip
 #define UART_RTS_bm (1<<5)
 #define UART_RTS_bp 5

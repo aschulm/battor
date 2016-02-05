@@ -326,7 +326,7 @@ void samples_store_read_uart_write() //{{{
 		tries = 0;
 		while(!uart_tx_ready() &&
 			tries++ < SAMPLES_UART_TX_TIMEOUT_20US)
-			_delay_us(50);
+			_delay_us(20);
 
 		// timeout waiting for uart tx to complete
 		if (tries >= SAMPLES_UART_TX_TIMEOUT_20US)

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "dma.h"
 #include "usart.h"
@@ -180,15 +181,23 @@ void uart_tx_end_prepare() //{{{
 void uart_tx() //{{{
 {
 	uint16_t i;
+	uint16_t tries = 0;
 
 	for (i = 0; i < uart_tx_buffer_len; i++)
 	{
 		// wait for flow control
-		while (!uart_tx_ready());
+		while (!uart_tx_ready() &&
+			tries++ < UART_TX_TIMEOUT_20US)
+			_delay_us(20);
+		
+		if (tries >= UART_TX_TIMEOUT_20US)
+			goto cleanup;
 
 		loop_until_bit_is_set(USARTD0.STATUS, USART_DREIF_bp); // wait for tx buffer to empty
 		USARTD0.DATA = uart_tx_buffer[i]; // put the data in the tx buffer
 	}
+
+cleanup:
 	uart_tx_buffer_len = 0;
 } //}}}
 
