@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [BattOr - Power monitor for smartphones and tablets](#battor---power-monitor-for-smartphones-and-tablets)
+  - [Directory structure](#directory-structure)
+  - [Build and install instructions](#build-and-install-instructions)
+    - [Software](#software)
+      - [Build](#build)
+      - [User permission](#user-permission)
+    - [Systrace](#systrace)
+      - [Dependencies](#dependencies)
+    - [Firmware](#firmware)
+      - [Dependencies](#dependencies-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # BattOr - Power monitor for smartphones and tablets
 
 ## Directory structure
