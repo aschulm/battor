@@ -60,6 +60,7 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
 ## Usage
 
 ### LED status codes
+
 * Fast blinking *YELLOW*: In bootloader
 * Slow blinking *YELLOW*: Idle
 * Blinking *RED*: Buffering to SD card
@@ -70,7 +71,8 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
 
 **Streaming**
 
-Streaming samples live from the BattOr
+To stream samples from the BattOr over USB, run the following on the command line.
+Often you will want to redirect the output to a file.
 
     $ battor -s
 
@@ -83,8 +85,9 @@ be measured while on the move.
     $ battor -b
 
 To end buffering and download the trace, run the following on the command line.
-The BattOr will have a solid *RED* LED until the download is completed. Note
-that currently downloading buffered power measurements takes approximately 1/4
-of the time 
+Often you will want to redirect the output to a file. The BattOr will have a
+solid *RED* LED until the download is completed. Note that currently
+downloading buffered power measurements takes approximately 1/4 of time that
+the samples were buffered.
 
     $ battor -d
