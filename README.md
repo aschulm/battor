@@ -2,51 +2,41 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [BattOr - Power monitor for smartphones and tablets](#battor---power-monitor-for-smartphones-and-tablets)
+- [BattOr: Power monitor for smartphones and laptops](#battor-power-monitor-for-smartphones-and-laptops)
   - [Directory structure](#directory-structure)
-  - [Build and install instructions](#build-and-install-instructions)
+  - [Installation](#installation)
     - [Software](#software)
-      - [Build](#build)
-      - [User permission](#user-permission)
     - [Systrace](#systrace)
-      - [Dependencies](#dependencies)
     - [Firmware](#firmware)
-      - [Dependencies](#dependencies-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# BattOr - Power monitor for smartphones and tablets
+# BattOr: Power monitor for smartphones and laptops
 
 ## Directory structure
 
+* sw - PC software for collecting power measurements from the BattOr
 * fw - Atmel XMega192A3 firmware for the BattOr hardware
-* sw - PC software for configuring and installing BattOr
 * systrace - Fork of Android systrace for visualizing power measurments synced with phone events
 
-## Build and install instructions
+## Installation
 
 ### Software
 
-The software can stream at max 10 ksps over USB and store at 1 ksps to the board's SD card.
-
-#### Build
-The software should build and run on Linux and OSX. However, if you are
-using OSX 10.9 (Maverics) you will need to disable the OSX FTDI USB-to-serial
-driver.
+The software should build and run on most variants of Linux. The build and install instructions are as follows:
 
     $ ./bootstrap
     $ ./configure
     $ make
     $ sudo make install
 
-#### User permission
 To run BattOr without root on Linux you will need to add your user to the "dialout" group. You need to logout and login for these settings to take effect.
 
     $ sudo usermod -a -G dialout <userName>
     
 ### Systrace
 
-#### Dependencies
+**Dependencies**
 * Chrome
 * Android adb
 
@@ -54,7 +44,7 @@ Systrace collects trace data from BattOr and Android and produces an interactive
 
 ### Firmware
 
-#### Dependencies
+**Dependencies**
 * BattOr software installed
 * [AVR 8-bit toolchain](http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx) >3.4
 * avrdude
@@ -63,3 +53,5 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
 
     $ make
     $ make flash
+
+The software can stream at max 10 ksps over USB and store at 1 ksps to the board's SD card.
