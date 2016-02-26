@@ -2,12 +2,14 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [BattOr: Power monitor for smartphones and laptops](#battor-power-monitor-for-smartphones-and-laptops)
+- [BattOr: Mobile device power monitor](#battor-mobile-device-power-monitor)
   - [Directory structure](#directory-structure)
   - [Installation](#installation)
     - [Software](#software)
     - [Systrace](#systrace)
     - [Firmware](#firmware)
+  - [Usage](#usage)
+    - [LED status codes](#led-status-codes)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -57,8 +59,31 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
 ## Usage
 
 ### LED status codes
-* Fast blinking yellow: In bootloader
-* Slow blinking yellow: Idle
-* Blinking red: Buffering to SD card
-* Solid red: Downloading from SD card
-* Blinking green: Streaming over USB
+* Fast blinking *YELLOW*: In bootloader
+* Slow blinking *YELLOW*: Idle
+* Blinking *RED*: Buffering to SD card
+* Solid *RED*: Downloading from SD card
+* Blinking *GREEN*: Streaming over USB
+
+### Software
+
+**Streaming**
+
+Streaming samples live from the BattOr
+
+    $ battor -s
+
+**Buffering**
+
+To start buffering power measurements, run the following on the command line.
+Once the BattOr has a blinking *RED* LED, it can be disconnected from USB so power can
+be measured while on the move.
+
+    $ battor -b
+
+To end buffering and download the trace, run the following on the command line.
+The BattOr will have a solid *RED* LED until the download is completed. Note
+that currently downloading buffered power measurements takes approximately 1/4
+of the time 
+
+    $ battor -d
