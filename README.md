@@ -10,6 +10,7 @@
     - [Firmware](#firmware)
   - [Usage](#usage)
     - [LED status codes](#led-status-codes)
+    - [Software](#software-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
