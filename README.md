@@ -11,7 +11,7 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# BattOr: Power monitor for smartphones and laptops
+# BattOr: Mobile device power monitor
 
 ## Directory structure
 
@@ -54,4 +54,11 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
     $ make
     $ make flash
 
-The software can stream at max 10 ksps over USB and store at 1 ksps to the board's SD card.
+## Usage
+
+### LED status codes
+* Fast blinking yellow: In bootloader
+* Slow blinking yellow: Idle
+* Blinking red: Buffering to SD card
+* Solid red: Downloading from SD card
+* Blinking green: Streaming over USB
