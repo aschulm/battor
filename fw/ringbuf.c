@@ -22,8 +22,6 @@ int ringbuf_init(ringbuf* rb, uint32_t base, uint32_t base_len, //{{{
 
 int ringbuf_write(ringbuf* rb, void* src, uint16_t len) //{{{
 {
-	printf("ringbuf_write() len:%u ringbuf.len:%lu\n", len, rb->len);
-
 	// check write too long
 	if ((rb->len + len) > rb->base_len)
 		return -1;
