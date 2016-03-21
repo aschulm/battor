@@ -324,7 +324,7 @@ void samples_store_read_uart_write() //{{{
 
 		// wait for uart transmission to complete
 		tries = 0;
-		while(!uart_tx_ready() &&
+		while(!dma_uart_tx_ready() &&
 			tries++ < SAMPLES_UART_TX_TIMEOUT_20US)
 			_delay_us(20);
 

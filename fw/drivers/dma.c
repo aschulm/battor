@@ -54,14 +54,6 @@ static void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
 	d[2] = 0;
 }
 
-static uint8_t cmp_24_bit_addr(volatile uint8_t* d, uint16_t v)
-{
-	return 
-		d[0] == (v & 0x00FF) >> 0 &&
-		d[1] == (v & 0xFF00) >> 8 &&
-		d[2] == 0;
-}
-
 void dma_init(uint8_t spi_uart_only)
 {
 	// reset the DMA controller
@@ -196,12 +188,12 @@ void dma_uart_tx(const void* data, uint16_t len)
 	interrupt_enable();
 }
 
-void dma_uart_tx_pause(uint8_t on_off)
+inline void dma_uart_tx_pause(uint8_t on_off)
 {
 	uart_tx_paused = on_off;
 
-	// check to see if DMA channel is connected to UART - abort if not
-	if (!cmp_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA)))
+	if (!(uart_ch->TRIGSRC == DMA_CH_TRIGSRC_OFF_gc ||
+		uart_ch->TRIGSRC == DMA_CH_TRIGSRC_USARTD0_DRE_gc))
 		return;
 
 	if (on_off)
@@ -314,6 +306,7 @@ void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 	if (rxd != NULL)
 		DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	DMA.CH1.CTRLA |= DMA_CH_ENABLE_bm;
+
 
 	// wait for rx to complete
 	if (rxd != NULL)
