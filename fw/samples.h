@@ -3,7 +3,7 @@
 
 #define SAMPLES_LEN 100
 #define SAMPLES_CAL_BUFFERS 5
-#define SAMPLES_UART_TX_TIMEOUT_20US 40000
+#define SAMPLES_UART_TX_TIMEOUT_20US 100000
 
 typedef struct sample_
 {

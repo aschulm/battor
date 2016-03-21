@@ -285,7 +285,7 @@ int samples_store_write() //{{{
 void samples_store_read_uart_write() //{{{
 {
 	int ret;
-	uint16_t tries;
+	uint32_t tries;
 	uint16_t len;
 	sample sd_samples[SAMPLES_LEN];
 	uint8_t* uart_driver_tx_buffer;
