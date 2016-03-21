@@ -13,6 +13,7 @@
 #include "gpio.h"
 
 static volatile uint32_t sample_count;
+static volatile uint8_t uart_tx_paused;
 static DMA_CH_t* uart_ch;
 
 ISR(DMA_CH2_vect)
@@ -80,6 +81,9 @@ void dma_init(uint8_t spi_uart_only)
 		uart_ch = &(DMA.CH0);
 	else
 		uart_ch = &(DMA.CH2);
+
+	// start with the uart tx unpaused
+	uart_tx_paused = 0;
 }
 
 void dma_start(void* adcb_samples0, void* adcb_samples1)
@@ -174,7 +178,13 @@ void dma_uart_tx(const void* data, uint16_t len)
 		DMA_CH_DESTDIR_FIXED_gc;
 	set_24_bit_addr(&(uart_ch->SRCADDR0), (uint16_t)(data));
 	set_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA));
-	uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+
+	// set the trigger based on the current UART flow control state
+	if (uart_tx_paused)
+		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+	else
+		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+
 	uart_ch->TRFCNT = len;
 
 	uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
@@ -182,6 +192,8 @@ void dma_uart_tx(const void* data, uint16_t len)
 
 void dma_uart_tx_pause(uint8_t on_off)
 {
+	uart_tx_paused = on_off;
+
 	// check to see if DMA channel is connected to UART - abort if not
 	if (!cmp_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA)))
 		return;
