@@ -164,6 +164,9 @@ uint32_t dma_get_sample_count()
 
 void dma_uart_tx(const void* data, uint16_t len)
 {
+	// do not allow flow control to change trigger state while setting up channel
+	interrupt_disable();
+
 	// reset DMA channel
 	uart_ch->CTRLA = DMA_CH_RESET_bm;
 	loop_until_bit_is_clear(uart_ch->CTRLA, DMA_CH_RESET_bp);
@@ -188,6 +191,9 @@ void dma_uart_tx(const void* data, uint16_t len)
 	uart_ch->TRFCNT = len;
 
 	uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
+
+	// re-enable flow control interrupt now that DMA channel is set up
+	interrupt_enable();
 }
 
 void dma_uart_tx_pause(uint8_t on_off)
