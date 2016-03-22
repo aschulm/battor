@@ -3,9 +3,9 @@
 # Copyright: <insert your copyright message here>
 # License: Apache License 2.0
  
-VERSION = 1.0
+GIT_HASH := $(shell git describe --always --tags)
 
-CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -O2 #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0 -DGPIO_MAIN_LOOP=0
+CFLAGS     = -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -O2 -DGIT_HASH=\"$(GIT_HASH)\" #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0 -DGPIO_MAIN_LOOP=0
 OBJECTS    = drivers/led.o drivers/clock.o drivers/usart.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o drivers/reset.o drivers/eeprom.o drivers/sram.o blink.o main.o drivers.o interrupt.o error.o control.o samples.o ringbuf.o params.o fs.o
 FUSES      = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
@@ -14,6 +14,7 @@ DEBUG_PORT = 4242
 USBDEV = /dev/ttyUSB0
 
 COMPILE = avr-gcc $(CFLAGS) 
+
 
 # symbolic targets:
 all:	main.hex
@@ -86,9 +87,6 @@ debug: gdb-config main.elf
 	avarice -j usb --mkII --erase --program --file \
 		main.elf localhost:$(DEBUG_PORT)
 	@avr-gdb --command=.gdbinit
-
-dist-gzip:
-	tar cvfz battor-atmel-$(VERSION).tar.gz *.h *.c Makefile
 
 console:
 	picocom -b 115200 $(USBDEV)

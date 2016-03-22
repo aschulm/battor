@@ -34,7 +34,7 @@ typedef enum PARAM_GAIN_enum
 #define OVERSAMPLE_BITS_MAX 1
 
 // control
-#define CONTROL_EEPROM_ATTEMPTS 5
+#define CONTROL_ATTEMPTS 5
 #define CONTROL_SLEEP_US 500000
 
 // uart
@@ -42,6 +42,10 @@ typedef enum PARAM_GAIN_enum
 #define UART_RX_ATTEMPTS 100
 #define UART_READ_SLEEP_NS 1000000 
 
+// git hash
+#define GIT_HASH_LEN 7
+
+// eeprom
 struct eeprom_params_
 {
 	uint8_t magic[4];       // Magic (0x31103110)
@@ -72,6 +76,7 @@ struct eeprom_params_
 typedef struct eeprom_params_ eeprom_params;
 
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
+int param_check_version();
 int param_read_eeprom(eeprom_params* params);
 
 #endif

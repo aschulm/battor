@@ -155,6 +155,13 @@ int main(int argc, char** argv)
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
 
+	// check the firmware version
+	if (param_check_version() < 0)
+	{
+		fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
+		return EXIT_FAILURE;
+	}
+
 	// read the BattOr's calibration params from its EEPROM
 	if (param_read_eeprom(eeparams) < 0)
 	{

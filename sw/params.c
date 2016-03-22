@@ -1,5 +1,35 @@
 #include "common.h"
 
+// compare the firmware and software git version
+int param_check_version()
+{
+	uint8_t tries = 0;
+	uint8_t type;
+	uint8_t git_hash[GIT_HASH_LEN];
+
+	while (tries++ < CONTROL_ATTEMPTS)
+	{
+		memset(git_hash, 0, sizeof(git_hash));
+		control(CONTROL_TYPE_GET_GIT_HASH, 0, 0, 0);
+		usleep(CONTROL_SLEEP_US); // since GIT HASH is sent in ACK, wait for it
+		if (uart_rx_bytes(&type, git_hash, GIT_HASH_LEN) == GIT_HASH_LEN)
+		{
+			if (memcmp(git_hash, GIT_HASH, GIT_HASH_LEN) != 0)
+			{
+				fprintf(stderr, "fw version [%.7s] sw version [%.7s]\n",
+					 git_hash, GIT_HASH);
+				return -1;
+			}
+			break;
+		}
+	}
+
+	if (tries >= CONTROL_ATTEMPTS)
+		return -2;
+	else
+		return 0;
+}
+
 // read parameters from the battor's eeprom
 int param_read_eeprom(eeprom_params* params)
 {
@@ -7,7 +37,7 @@ int param_read_eeprom(eeprom_params* params)
 	uint8_t magic[4] = {0x31, 0x10, 0x31, 0x10};
 	uint8_t type;
 
-	while (tries++ < CONTROL_EEPROM_ATTEMPTS)
+	while (tries++ < CONTROL_ATTEMPTS)
 	{
 		memset(params, 0, sizeof(eeprom_params));
 		control(CONTROL_TYPE_READ_EEPROM, sizeof(eeprom_params), 0, 0);
@@ -49,7 +79,7 @@ int param_read_eeprom(eeprom_params* params)
 		}
 	}
 
-	if (tries >= CONTROL_EEPROM_ATTEMPTS)
+	if (tries >= CONTROL_ATTEMPTS)
 		return -1;
 	else
 		return 0;
