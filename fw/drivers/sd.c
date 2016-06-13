@@ -14,23 +14,48 @@
 
 // Note: This driver does not support MMC cards, only SDHC cards.
 
-static sd_csd csd;
+static uint8_t csd[16];
 static uint8_t write_in_progress;
 
-static void swap_bytes(uint8_t* d, uint16_t len) //{{{
+static int read_csd()
 {
-	uint8_t i_s = 0, i_e = len-1;
-	uint8_t t;
+	uint8_t tries;
+	uint8_t rx;
 
-	while (i_s < len && i_e >= 0 && i_s < i_e)
-	{
-		t = d[i_s];
-		d[i_s] = d[i_e];
-		d[i_e] = t;
-		i_s++;
-		i_e--;
-	}
-} //}}}
+	// get the CSD register
+	rx = 0xFF;
+	gpio_off(&PORTE, SPI_SS_PIN_bm);
+	sd_command(9, 0x00, 0x00, 0x00, 0x00, 0x00, &rx, 1); // CMD9, R1
+
+	if (rx != 0x00)
+		return -1;
+
+	// find the beginning of the SDHC/XC CSD
+	// it must be in the first four bytes because
+	// some SD cards include a data token for the
+	// CSD
+	tries = 0;
+	while (rx != 0x40 && tries++ < 4)
+		usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+
+	if (tries >= 4)
+		return -2;
+
+	// read the rest of the CSD
+	csd[0] = rx;
+	usart_spi_txrx(&USARTE1, NULL, csd+1, sizeof(csd)-1);
+
+	// throw away the trailing CRC16
+	usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+	usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+
+	// 8 more clock cycles to prepare for next command
+	usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+
+	gpio_on(&PORTE, SPI_SS_PIN_bm);
+
+	return 0;
+}
 
 int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint8_t crc, uint8_t* response, uint16_t response_len) //{{{
 {
@@ -61,11 +86,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	}
 
 	if (tries >= SD_MAX_RESP_TRIES)
-	{
-		//led_on(LED_GREEN_bm);
-		//while(1);
 		return -1;
-	}
 
 	if (response_len > 1)
 		usart_spi_txrx(&USARTE1, NULL, (response+1), response_len-1);
@@ -82,8 +103,6 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 	}
 
 	if (tries >= SD_MAX_BUSY_TRIES)
-		//led_on(LED_YELLOW_bm);
-		//while(1);
 		return -2;
 
 	return 0;
@@ -162,13 +181,6 @@ int sd_init() //{{{
 	USARTE1.BAUDCTRLB = 0;
 	USARTE1.BAUDCTRLA = 1; // must divide by at least 4 so rx DMA channel can keep up
 
-	// get the CSD register 
-	gpio_off(&PORTE, SPI_SS_PIN_bm);
-	sd_command(9, 0x00, 0x00, 0x00, 0x00, 0x00, resp, 2+sizeof(csd)); // CMD9, R1 + DATA BYTE (0b11111110)
-	gpio_on(&PORTE, SPI_SS_PIN_bm);
-	swap_bytes(resp+2, sizeof(csd));
-	memcpy(&csd, resp+2, sizeof(csd));
-
 	// check the OCR register to see if it's a high capacity card (V2)
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
 	sd_command(58, 0x00, 0x00, 0x00, 0x00, 0x00, resp, 5); // CMD58
@@ -176,12 +188,17 @@ int sd_init() //{{{
 	if ((resp[1] & 0x40) == 0)
 		return -4;
 
+	if (read_csd() < 0)
+		return -5;
+
 	return 0;
 } //}}}
 
 uint32_t sd_capacity() //{{{
 {
-	return (csd.c_size+1) << 10;
+	return ((((uint32_t)csd[7] & 0x3F) << 16) |
+		((uint16_t)csd[8] << 8) |
+		csd[9]) + 1;
 } //}}}
 
 int sd_read_block(void* block, uint32_t block_num) //{{{
