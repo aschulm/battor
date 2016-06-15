@@ -194,11 +194,14 @@ int sd_init() //{{{
 	return 0;
 } //}}}
 
+
 uint32_t sd_capacity() //{{{
 {
-	return ((((uint32_t)csd[7] & 0x3F) << 16) |
+	uint32_t csize = ((((uint32_t)csd[7] & 0x3F) << 16) |
 		((uint16_t)csd[8] << 8) |
 		csd[9]) + 1;
+	// convert to number of blocks
+	return csize << 10;
 } //}}}
 
 int sd_read_block(void* block, uint32_t block_num) //{{{
@@ -317,6 +320,9 @@ int sd_self_test() //{{{
 	uint32_t* block_int = (uint32_t*)block;
 
 	printf("sd self test\n");
+
+	printf("the inserted SD card's capacity is %lu blocks\n",
+	       sd_capacity());
 
 	printf("one block write and read...");
 	for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
