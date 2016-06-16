@@ -12,8 +12,8 @@
 
 // computed with a graph based on the formulas in the datasheet and a 16MHz f_per 
 
-#define USART_BSCALE_50000BPS 0b0011 // 2's 3
-#define USART_BSEL_50000BPS 4
+#define USART_BSCALE_20000BPS 0b0011 // 2's 3
+#define USART_BSEL_20000BPS 100
 
 #define USART_BSCALE_100000BPS 0b0010 // 2's 2 
 #define USART_BSEL_100000BPS 4

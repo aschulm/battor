@@ -22,8 +22,8 @@ static void pot_config_spi()
 	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
 
 	// set to a low baud rate that works with the pull-up on MISO
-	USARTC1.BAUDCTRLB = USART_BSCALE_50000BPS << USART_BSCALE_gp;
-	USARTC1.BAUDCTRLA = USART_BSEL_50000BPS & USART_BSEL_gm;
+	USARTC1.BAUDCTRLB = USART_BSCALE_20000BPS << USART_BSCALE_gp;
+	USARTC1.BAUDCTRLA = USART_BSEL_20000BPS & USART_BSEL_gm;
 
 	// set transfer parameters
 	USARTC1.CTRLC =
