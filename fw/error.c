@@ -38,3 +38,11 @@ void inline halt(uint8_t code) //{{{
 	reset();
 } //}}}
 
+void print_buffer(uint8_t* buf, uint16_t len) //{{{
+{
+	uint16_t i;
+	printf("[");
+	for (i = 0; i < len; i++)
+		printf(" %02X", buf[i]);
+	printf(" ]");
+} //}}}
