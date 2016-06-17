@@ -18,8 +18,7 @@ void sram_config_spi()
 	PORTC.DIR &= ~USART1_RXD_PIN; // set the RX pin to input
 
 	// set to very fast baud rate
-	USARTC1.BAUDCTRLB = 0;
-	USARTC1.BAUDCTRLA = 1; // must divide by at least 4 so rx DMA channel can keep up
+	usart_set_baud(&USARTC1, 1, 0);
 
 	PORTC.PIN5CTRL |= PORT_INVEN_bm; // invert the SCK pin for SPI mode 3
 

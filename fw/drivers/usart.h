@@ -12,11 +12,11 @@
 
 // computed with a graph based on the formulas in the datasheet and a 16MHz f_per 
 
-#define USART_BSCALE_20000BPS 0b0011 // 2's 3
-#define USART_BSEL_20000BPS 100
+#define USART_BSCALE_SPI_20000BPS 0
+#define USART_BSEL_SPI_20000BPS 799
 
-#define USART_BSCALE_100000BPS 0b0010 // 2's 2 
-#define USART_BSEL_100000BPS 4
+#define USART_BSCALE_SPI_100000BPS 0b0000 // 2's 2 
+#define USART_BSEL_SPI_100000BPS 159
 
 #define USART_BSCALE_115200BPS 0b1100 // 2's -4
 #define USART_BSEL_115200BPS 122 
@@ -37,5 +37,6 @@
 #define USART_BSEL_2000000BPS 0
 
 void usart_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len);
+void usart_set_baud(USART_t* usart, uint16_t bsel, uint8_t bscale);
 
 #endif

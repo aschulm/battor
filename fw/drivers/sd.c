@@ -123,8 +123,7 @@ int sd_init() //{{{
 	gpio_on(&PORTE, SPI_SS_PIN_bm);
 
 	// set to a low baud rate for initial SD CARD 
-	USARTE1.BAUDCTRLB = USART_BSCALE_100000BPS << USART_BSCALE_gp;
-	USARTE1.BAUDCTRLA = USART_BSEL_100000BPS & USART_BSEL_gm;
+	usart_set_baud(&USARTE1, USART_BSEL_SPI_100000BPS, USART_BSCALE_SPI_100000BPS);
 
 	// set transfer parameters
 	USARTE1.CTRLC = USART_CMODE_MSPI_gc;
@@ -178,8 +177,7 @@ int sd_init() //{{{
 	}
 
 	// set the SPI clock to a much higher rate
-	USARTE1.BAUDCTRLB = 0;
-	USARTE1.BAUDCTRLA = 1; // must divide by at least 4 so rx DMA channel can keep up
+	usart_set_baud(&USARTE1, 1, 0);
 
 	// check the OCR register to see if it's a high capacity card (V2)
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
