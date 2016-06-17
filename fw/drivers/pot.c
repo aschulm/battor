@@ -35,6 +35,11 @@ static void pot_config_spi()
 	USARTC1.CTRLB |= USART_TXEN_bm; // enable transmitter
 
 	PORTC.PIN6CTRL |= PORT_OPC_PULLUP_gc; // pot requires a pullup on the SDO (MISO) pin
+
+	// Wait for the transmitter to go through the first clock cycle.
+	// this is needed because the clock rate is so slow here that the transmitter
+	// may not be ready for the first clock cycle
+	timer_sleep_ms(2);
 }
 
 static void pot_unconfig_spi()
@@ -48,7 +53,10 @@ static void pot_unconfig_spi()
 	USARTC1.CTRLB &= ~USART_RXEN_bm; // disable receiver
 	USARTC1.CTRLB &= ~USART_TXEN_bm; // disable transmitter
 
-	PORTC.DIR &= ~(SPI_MOSI_PIN_bm | SPI_SCK_PIN_bm); // unconfigure output pins
+	// Wait for the transmitter to go through the last clock cycle.
+	// this is needed because the clock rate is so slow here that the transmitter
+	// may be going through a clock cycle as the next transmission begins 
+	timer_sleep_ms(2);
 }
 
 // the pots are not normal SPI devices, you have to put the output pin in high impedience mode when done
