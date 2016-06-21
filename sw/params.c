@@ -84,3 +84,13 @@ int param_read_eeprom(eeprom_params* params)
 	else
 		return 0;
 }
+
+char gain_to_char(enum PARAM_GAIN_enum gain)
+{
+	switch (gain)
+	{
+		case PARAM_GAIN_LOW: return 'L';
+		case PARAM_GAIN_HIGH: return 'H';
+		default: return 'E';
+	}
+}

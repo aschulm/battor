@@ -22,7 +22,7 @@ Options:                                                                    \n\
 Output:                                                                     \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
-", name, name, name, name, name, GAIN_DEFAULT);
+", name, name, name, name, name, gain_to_char(GAIN_DEFAULT));
 } //}}}
 
 int main(int argc, char** argv)
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char tty[] = "/dev/ttyUSB0";
+	char* tty = NULL;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
 
 	uint16_t down_file;
@@ -103,6 +103,21 @@ int main(int argc, char** argv)
 				return EXIT_FAILURE;
 		}
 	}
+
+	if (optind == argc)
+	{
+		tty = strdup(DEFAULT_TTY);
+	}
+	else if (optind == argc - 1)
+	{
+		tty = strdup(argv[optind]);
+	}
+	else
+	{
+		usage(argv[0]);
+		return EXIT_FAILURE;
+	}
+	fprintf(stderr, "Connecting to BattOr on port %s\n", tty);
 
 	uart_init(tty);
 
@@ -199,6 +214,11 @@ int main(int argc, char** argv)
 	if (buffer)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
+	}
+
+	if (tty)
+	{
+		free(tty);
 	}
 	
 	return EXIT_SUCCESS;
