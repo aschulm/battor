@@ -22,3 +22,4 @@
 #include "drivers/reset.h"
 #include "drivers/eeprom.h"
 #include "drivers/sram.h"
+#include "drivers/button.h"

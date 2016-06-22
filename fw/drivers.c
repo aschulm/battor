@@ -24,6 +24,8 @@ void drivers_init() //{{{
 
 	led_init();
 
+	button_init();
+
 	// gpio outputs for debugging
 #ifdef GPIO_SAMPLE_WRITE_DONE
 	PORTE.DIR |= (1<<GPIO_SAMPLE_WRITE_DONE);
