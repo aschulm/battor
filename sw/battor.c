@@ -106,11 +106,11 @@ int main(int argc, char** argv)
 
 	if (optind == argc)
 	{
-		tty = strdup(DEFAULT_TTY);
+		tty = DEFAULT_TTY;
 	}
 	else if (optind == argc - 1)
 	{
-		tty = strdup(argv[optind]);
+		tty = argv[optind];
 	}
 	else
 	{
@@ -216,10 +216,5 @@ int main(int argc, char** argv)
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
 	}
 
-	if (tty)
-	{
-		free(tty);
-	}
-	
 	return EXIT_SUCCESS;
 }

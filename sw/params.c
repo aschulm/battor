@@ -91,6 +91,6 @@ char gain_to_char(enum PARAM_GAIN_enum gain)
 	{
 		case PARAM_GAIN_LOW: return 'L';
 		case PARAM_GAIN_HIGH: return 'H';
-		default: return 'E';
+		default: return 'E'; // Error
 	}
 }
