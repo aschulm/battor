@@ -41,6 +41,7 @@ typedef enum PARAM_GAIN_enum
 // needs at least the latency of the FTDI, so 20ms is plenty
 #define UART_RX_ATTEMPTS 100
 #define UART_READ_SLEEP_NS 1000000 
+#define DEFAULT_TTY "dev/ttyUSB0"
 
 // git hash
 #define GIT_HASH_LEN 7
@@ -78,5 +79,6 @@ typedef struct eeprom_params_ eeprom_params;
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 int param_check_version();
 int param_read_eeprom(eeprom_params* params);
+char gain_to_char(enum PARAM_GAIN_enum gain);
 
 #endif
