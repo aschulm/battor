@@ -6,7 +6,7 @@
 
 void button_init()
 {
-	PORTE.DIR &= BUTTON_bm;
+	PORTE.DIR &= ~BUTTON_bm;
 	// button requires a pullup
 	PORTE.PIN0CTRL |= PORT_OPC_PULLUP_gc;
 }

@@ -5,4 +5,6 @@
 
 void button_init();
 
+int button_self_test();
+
 #endif

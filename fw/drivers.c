@@ -41,11 +41,13 @@ int drivers_self_test() //{{{
 {
 	if (led_self_test())
 		return 1;
-	if (pot_self_test())
+	if (button_self_test())
 		return 2;
-	if (sram_self_test())
+	if (pot_self_test())
 		return 3;
-	if (sd_self_test())
+	if (sram_self_test())
 		return 4;
+	if (sd_self_test())
+		return 5;
 	return 0;
 } //}}}
