@@ -9,5 +9,6 @@ void led_init();
 void led_on(char led);
 void led_off(char led);
 void led_toggle(char led);
+int led_self_test();
 
 #endif

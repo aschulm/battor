@@ -38,11 +38,13 @@ void drivers_init() //{{{
 
 int drivers_self_test() //{{{
 {
-	if (pot_self_test())
+	if (led_self_test())
 		return 1;
-	if (sram_self_test())
+	if (pot_self_test())
 		return 2;
-	if (sd_self_test())
+	if (sram_self_test())
 		return 3;
+	if (sd_self_test())
+		return 4;
 	return 0;
 } //}}}

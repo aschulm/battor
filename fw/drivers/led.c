@@ -22,3 +22,9 @@ void led_toggle(char led)
 {
 	PORTC.OUT ^= led;
 }
+
+int led_self_test()
+{
+	led_on(LED_RED_bm | LED_YELLOW_bm | LED_GREEN_bm);
+	return 0;
+}
