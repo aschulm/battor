@@ -23,6 +23,7 @@ void drivers_init() //{{{
 	timer_set(&TCD0, TC_CLKSEL_DIV1024_gc, 0xFFFF);
 
 	led_init();
+	button_init();
 
 	// gpio outputs for debugging
 #ifdef GPIO_SAMPLE_WRITE_DONE
