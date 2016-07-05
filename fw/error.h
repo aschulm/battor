@@ -23,6 +23,7 @@ typedef enum ERROR_enum
 
 void halt(uint8_t code);
 void dump_stack();
+void print_buffer(uint8_t* buf, uint16_t len);
 
 extern uint8_t g_error_last;
 

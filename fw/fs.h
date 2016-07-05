@@ -2,7 +2,9 @@
 #define FS_H
 
 #define FS_SUPERBLOCK_IDX 0
-#define FS_VERSION 0
+#define FS_VERSION 1
+
+#define FS_FILE_SKIP_LEN 100
 
 typedef struct fs_superblock_
 {
@@ -13,9 +15,10 @@ typedef struct fs_superblock_
 
 typedef struct fs_file_startblock_
 {
+	uint32_t fmt_iter;
 	uint32_t seq;
 	uint32_t byte_len;
-	uint32_t fmt_iter;
+	uint32_t next_skip_file_startblock_idx;
 } fs_file_startblock;
 
 typedef enum FS_ERROR_enum

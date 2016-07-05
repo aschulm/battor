@@ -14,12 +14,18 @@ static int32_t file_startblock_idx;
 static uint32_t file_byte_idx;
 static uint32_t file_byte_len;
 static uint32_t file_seq;
+static int32_t file_prev_skip_startblock_idx;
 
 // write state
 static uint8_t write_in_progress;
 static uint8_t sd_write_in_progress;
 void* write_buf;
 uint16_t write_len;
+
+// testing state
+#ifdef FS_SKIP_TEST
+static uint32_t fs_open_reads;
+#endif
 
 static uint8_t magic[8] = {0xBA, 0x77, 0xBA, 0x77, 0xBA, 0x77, 0xBA, 0x77};
 
@@ -46,6 +52,7 @@ static void fs_init() //{{{
 	file_byte_idx = 0;
 	file_byte_len = 0;
 	file_seq = 0;
+	file_prev_skip_startblock_idx = -1;
 
 	block_idx = -1;
 
@@ -54,10 +61,15 @@ static void fs_init() //{{{
 	sd_write_in_progress = 0;
 
 	memset(block, 0, sizeof(block));
+
+#ifdef FS_SKIP_TEST
+	fs_open_reads = 0;
+#endif
 } //}}}
 
 static int format() //{{{
 {
+	int i;
 	fs_superblock* sb = (fs_superblock*)block;
 
 	// reset filesystem state
@@ -132,17 +144,37 @@ int fs_open(uint8_t new_file) //{{{
 		block_idx++;
 		if (!sd_read_block(block, block_idx))
 			return FS_ERROR_SD_READ;
+#ifdef FS_SKIP_TEST
+			fs_open_reads++;
+#endif
 
-		// file startblock found - skip to end of file
+		// file startblock found
 		if (file->fmt_iter == fs_fmt_iter && 
 			file->seq == file_seq)
 		{
-			block_idx_prev = block_idx;
-			file_byte_len_prev = file->byte_len;
-			// skip over file data
-			block_idx += BYTES_TO_BLOCKS(file->byte_len);
+			// store previous skip block idx so it can be written with next skip block
+			if ((file_seq % FS_FILE_SKIP_LEN) == 0)
+				file_prev_skip_startblock_idx = block_idx;
 
-			file_seq++; // increment current file sequence number
+			// at skip file - skip
+			if (file->next_skip_file_startblock_idx > 0)
+			{
+				// no prev file due to skip
+				block_idx_prev = -1;
+				file_byte_len_prev = -1;
+
+				block_idx = file->next_skip_file_startblock_idx-1;
+				file_seq += FS_FILE_SKIP_LEN;
+			}
+			// at normal file - seek to the end
+			else
+			{
+				block_idx_prev = block_idx;
+				file_byte_len_prev = file->byte_len;
+
+				block_idx += BYTES_TO_BLOCKS(file->byte_len);
+				file_seq++;
+			}
 		}
 		else
 		{
@@ -199,6 +231,23 @@ int fs_close() //{{{
 	if (!sd_write_block_start(block, file_startblock_idx))
 		return FS_ERROR_SD_WRITE;
 	while (sd_write_block_update() < 0);
+
+	// this is a skip file, point to it from the previous skip file
+	if ((file_seq % FS_FILE_SKIP_LEN) == 0 &&
+	    file_prev_skip_startblock_idx > 0)
+	{
+		// read the prev skip file startblock
+		fs_file_startblock* skip_file = (fs_file_startblock*)block;
+		memset(block, 0, sizeof(block));
+		if (!sd_read_block(block, file_prev_skip_startblock_idx))
+			return FS_ERROR_SD_READ;
+
+		// write prev skip file startblock with the new skip pointer
+		skip_file->next_skip_file_startblock_idx = file_startblock_idx;
+		if (!sd_write_block_start(block, file_prev_skip_startblock_idx))
+			return FS_ERROR_SD_WRITE;
+		while (sd_write_block_update() < 0);
+	}
 
 	// reset filesystem state
 	fs_init();
@@ -300,13 +349,14 @@ int fs_busy() //{{{
 int fs_self_test() //{{{
 {
 	uint8_t buf[SD_BLOCK_LEN], buf2[SD_BLOCK_LEN];
-	int ret, i;
 	uint32_t fmt_iter;
+	int ret, i;
+
 	printf("fs self test\n");
 
-	// always format so self test has consistant filesystem state
+	// start with clean fs and
+	// remember fs_fmt_iter so it can be read after fs_close()
 	format();
-	// remember the iteration so it can be checked after fs_close()
 	fmt_iter = fs_fmt_iter;
 
 	printf("fs_open new file with no existing file...");
@@ -317,7 +367,7 @@ int fs_self_test() //{{{
 	}
 	if (file_startblock_idx != 1)
 	{
-		printf("FAILED new file startblock is not block 1\n");
+		printf("FAILED first new file startblock is not block 1, it's %ld\n", file_startblock_idx);
 		return 1;
 	}
 	printf("PASSED\n");
@@ -347,6 +397,7 @@ int fs_self_test() //{{{
 	file1.seq = 0;
 	file1.byte_len = 0;
 	file1.fmt_iter = fmt_iter;
+	file1.next_skip_file_startblock_idx = 0;
 	if (memcmp(&file1, block, sizeof(file1)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -371,6 +422,7 @@ int fs_self_test() //{{{
 	file2.fmt_iter = fmt_iter;
 	file2.seq = 1;
 	file2.byte_len = 0;
+	file2.next_skip_file_startblock_idx = 0;
 
 	if (memcmp(&file2, block, sizeof(file2)) != 0)
 	{
@@ -400,6 +452,8 @@ int fs_self_test() //{{{
 	file3.fmt_iter = fmt_iter;
 	file3.seq = 2;
 	file3.byte_len = 10;
+	file3.next_skip_file_startblock_idx = 0;
+
 	if (memcmp(&file3, block, sizeof(file3)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -439,6 +493,8 @@ int fs_self_test() //{{{
 	file4.fmt_iter = fmt_iter;
 	file4.seq = 3;
 	file4.byte_len = 514;
+	file4.next_skip_file_startblock_idx = 0;
+
 	if (memcmp(&file4, block, sizeof(file3)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -531,6 +587,121 @@ int fs_self_test() //{{{
 		}
 	}
 	printf("PASSED\n");
+
+#ifdef FS_SKIP_TEST
+	fs_file_startblock *file = (fs_file_startblock*)block;
+
+	// start with clean fs so counting skip blocks is possible and
+	// remember fs_fmt_iter so it can be read after fs_close()
+	format();
+	fmt_iter = fs_fmt_iter;
+
+	printf("fs_open and fs_close %d files to check skip...", FS_FILE_SKIP_LEN+1);
+
+	for (i = 0; i < 101; i++)
+	{
+		if ((ret = fs_open(1)) < 0)
+		{
+			printf("FAILED fs_open failed, returned %d\n", ret);
+			return 1;
+		}
+		if ((ret = fs_close()) < 0)
+		{
+			printf("FAILED fs_close failed, returned %d\n", ret);
+			return 1;
+		}
+	}
+	// check file block
+	fs_file_startblock file_skip1;
+	file_skip1.fmt_iter = fmt_iter;
+	file_skip1.seq = 0;
+	file_skip1.byte_len = 0;
+	file_skip1.next_skip_file_startblock_idx = 101;
+	sd_read_block(block, 1);
+	if (memcmp(&file_skip1, block, sizeof(file_skip1)) != 0)
+	{
+		printf("FAILED file skip block is not idx 101, it's %lu\n",
+			file->next_skip_file_startblock_idx);
+		return 1;
+	}
+	printf("PASSED\n");
+
+	printf("check if fs_open new uses skip...");
+	if ((ret = fs_open(1)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	if (fs_open_reads != 3)
+	{
+		printf("FAILED should be 3 iterations to open a file with a skip block, was %ld\n", fs_open_reads);
+		return 1;
+	}
+	if (file_startblock_idx != 102)
+	{
+		printf("FAILED new file is not one after skip block\n");
+		return 1;
+	}
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	printf("PASSED\n");
+
+	printf("check if fs_open existing uses skip...");
+	if ((ret = fs_open(0)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	if (fs_open_reads != 4)
+	{
+		printf("FAILED should be 4 iterations to open a file with a skip block, was %ld\n", fs_open_reads);
+		return 1;
+	}
+	if (file_startblock_idx != 102)
+	{
+		printf("FAILED new file is not one after skip block\n");
+		return 1;
+	}
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	printf("PASSED\n");
+
+	printf("fs_open, fs_write, fs_close %d files to check 2nd skip...", FS_FILE_SKIP_LEN+1);
+	for (i = 0; i < 101; i++)
+	{
+		if ((ret = fs_open(1)) < 0)
+		{
+			printf("FAILED fs_open failed, returned %d\n", ret);
+			return 1;
+		}
+		fs_write(buf, 200);
+		if ((ret = fs_close()) < 0)
+		{
+			printf("FAILED fs_close failed, returned %d\n", ret);
+			return 1;
+		}
+	}
+	// check file block
+	fs_file_startblock file_skip2;
+	file_skip2.fmt_iter = fmt_iter;
+	file_skip2.seq = 100;
+	file_skip2.byte_len = 0;
+	file_skip2.next_skip_file_startblock_idx = 300;
+	sd_read_block(block, 101);
+	if (memcmp(&file_skip2, block, sizeof(file_skip2)) != 0)
+	{
+		printf("FAILED file skip block is not idx 300, it's %lu\n",
+			file->next_skip_file_startblock_idx);
+		return 1;
+	}
+	printf("PASSED\n");
+#endif
 
 	return 0;
 } //}}}
