@@ -92,6 +92,13 @@ static int format() //{{{
 		return FS_ERROR_SD_WRITE;
 	while (sd_write_block_update() < 0);
 
+	// fill the first file block with ones so it is invalid
+	for (i = 0; i < SD_BLOCK_LEN; i++)
+		block[i] = 0xFF;
+	if (!sd_write_block_start(block, block_idx + 1))
+		return FS_ERROR_SD_WRITE;
+	while (sd_write_block_update() < 0);
+
 	return FS_ERROR_NONE;
 } //}}}
 
