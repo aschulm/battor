@@ -680,7 +680,7 @@ int fs_self_test() //{{{
 
 	printf("fs_open and fs_close %d files to check skip...", FS_FILE_SKIP_LEN+1);
 
-	for (i = 0; i < 101; i++)
+	for (i = 0; i < 251; i++)
 	{
 		if ((ret = fs_open(1)) < 0)
 		{
@@ -698,11 +698,11 @@ int fs_self_test() //{{{
 	file_skip1.fmt_iter = fmt_iter;
 	file_skip1.seq = 0;
 	file_skip1.byte_len = 0;
-	file_skip1.next_skip_file_startblock_idx = 101;
+	file_skip1.next_skip_file_startblock_idx = 251;
 	sd_read_block(block, 1);
 	if (memcmp(&file_skip1, block, sizeof(file_skip1)) != 0)
 	{
-		printf("FAILED file skip block is not idx 101, it's %lu\n",
+		printf("FAILED file skip block is not idx 251, it's %lu\n",
 			file->next_skip_file_startblock_idx);
 		return 1;
 	}
@@ -719,7 +719,7 @@ int fs_self_test() //{{{
 		printf("FAILED should be 3 iterations to open a file with a skip block, was %ld\n", fs_open_reads);
 		return 1;
 	}
-	if (file_startblock_idx != 102)
+	if (file_startblock_idx != 252)
 	{
 		printf("FAILED new file is not one after skip block\n");
 		return 1;
@@ -742,7 +742,7 @@ int fs_self_test() //{{{
 		printf("FAILED should be 4 iterations to open a file with a skip block, was %ld\n", fs_open_reads);
 		return 1;
 	}
-	if (file_startblock_idx != 102)
+	if (file_startblock_idx != 252)
 	{
 		printf("FAILED new file is not one after skip block\n");
 		return 1;
@@ -755,7 +755,7 @@ int fs_self_test() //{{{
 	printf("PASSED\n");
 
 	printf("fs_open, fs_write, fs_close %d files to check 2nd skip...", FS_FILE_SKIP_LEN+1);
-	for (i = 0; i < 101; i++)
+	for (i = 0; i < 251; i++)
 	{
 		if ((ret = fs_open(1)) < 0)
 		{
@@ -772,13 +772,13 @@ int fs_self_test() //{{{
 	// check file block
 	fs_file_startblock file_skip2;
 	file_skip2.fmt_iter = fmt_iter;
-	file_skip2.seq = 100;
+	file_skip2.seq = 250;
 	file_skip2.byte_len = 0;
-	file_skip2.next_skip_file_startblock_idx = 300;
-	sd_read_block(block, 101);
+	file_skip2.next_skip_file_startblock_idx = 750;
+	sd_read_block(block, 251);
 	if (memcmp(&file_skip2, block, sizeof(file_skip2)) != 0)
 	{
-		printf("FAILED file skip block is not idx 300, it's %lu\n",
+		printf("FAILED file skip block is not idx 750, it's %lu\n",
 			file->next_skip_file_startblock_idx);
 		return 1;
 	}

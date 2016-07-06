@@ -4,7 +4,7 @@
 #define FS_SUPERBLOCK_IDX 0
 #define FS_VERSION 1
 
-#define FS_FILE_SKIP_LEN 100
+#define FS_FILE_SKIP_LEN 250
 
 #define FS_LAST_FILE_BLOCKS 50000
 
