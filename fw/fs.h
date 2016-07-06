@@ -6,6 +6,8 @@
 
 #define FS_FILE_SKIP_LEN 100
 
+#define FS_LAST_FILE_BLOCKS 50000
+
 typedef struct fs_superblock_
 {
 	uint8_t magic[8];

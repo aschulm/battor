@@ -8,6 +8,8 @@ static int32_t block_idx;
 
 // filesystem state
 static uint32_t fs_fmt_iter;
+static uint32_t fs_capacity;
+static uint8_t fs_force_capacity = 0;
 
 // open file state
 static int32_t file_startblock_idx;
@@ -48,6 +50,10 @@ static inline uint16_t BYTES_IN_LAST_BLOCK(uint32_t bytes) //{{{
 static void fs_init() //{{{
 {
 	fs_fmt_iter = 0;
+
+	if (!fs_force_capacity)
+		fs_capacity = sd_capacity();
+
 	file_startblock_idx = -1;
 	file_byte_idx = 0;
 	file_byte_len = 0;
@@ -116,7 +122,6 @@ static int format() //{{{
 
 int fs_open(uint8_t new_file) //{{{
 {
-	uint32_t capacity = sd_capacity();
 	uint32_t file_byte_len_prev = -1;
 	int32_t block_idx_prev = -1;
 
@@ -137,7 +142,7 @@ int fs_open(uint8_t new_file) //{{{
 		fs_fmt_iter = sb->fmt_iter;
 
 	// find the first free file
-	while (block_idx < capacity)
+	while (block_idx < (fs_capacity - FS_LAST_FILE_BLOCKS))
 	{
 		// read in a potential file block
 		fs_file_startblock* file = (fs_file_startblock*)block;
@@ -200,6 +205,14 @@ int fs_open(uint8_t new_file) //{{{
 		}
 	}
 
+	// the only free blocks are past the end of the last file
+	if (block_idx >= (fs_capacity - FS_LAST_FILE_BLOCKS))
+	{
+		// format and retry open
+		format();
+		return fs_open(new_file);
+	}
+
 	return FS_ERROR_FILE_TOO_LONG;
 } //}}}
 
@@ -215,9 +228,12 @@ int fs_close() //{{{
 		fs_update();
 
 	// there is one more partial block that remains to be written
-	if (file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx) != block_idx)
+	uint32_t last_block_idx = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
+	if (last_block_idx != block_idx)
 	{
-		sd_write_block_start(block, file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx));
+		if (last_block_idx >= fs_capacity)
+			return FS_ERROR_FILE_TOO_LONG;
+		sd_write_block_start(block, last_block_idx);
 		while (sd_write_block_update() < 0);
 	}
 
@@ -228,6 +244,8 @@ int fs_close() //{{{
 	file->fmt_iter = fs_fmt_iter;
 
 	// write file block
+	if (file_startblock_idx >= fs_capacity)
+			return FS_ERROR_FILE_TOO_LONG;
 	if (!sd_write_block_start(block, file_startblock_idx))
 		return FS_ERROR_SD_WRITE;
 	while (sd_write_block_update() < 0);
@@ -331,7 +349,10 @@ void fs_update() //{{{
 		// completed block --- write it to SD
 		if (block_byte_idx + to_write == SD_BLOCK_LEN)
 		{
-			sd_write_block_start(block, file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx));
+			uint32_t block_idx_to_write = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
+			if (block_idx_to_write >= fs_capacity)
+				return;
+			sd_write_block_start(block, block_idx_to_write);
 			sd_write_in_progress = 1;
 		}
 
@@ -587,6 +608,67 @@ int fs_self_test() //{{{
 		}
 	}
 	printf("PASSED\n");
+
+	// start with clean fs to see if reformat happens correctly
+	// remember fs_fmt_iter so it can be read after fs_close()
+	format();
+	fmt_iter = fs_fmt_iter;
+	fs_capacity = FS_LAST_FILE_BLOCKS + 2;
+	fs_force_capacity = 1;
+
+	printf("fs_open file near the end of the disk...");
+	if ((ret = fs_open(1)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	fs_write(buf, 10); // write one more block
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	// check file block
+	fs_file_startblock file5;
+	sd_read_block(block, 1);
+	file5.fmt_iter = fmt_iter;
+	file5.seq = 0;
+	file5.byte_len = 10;
+	file5.next_skip_file_startblock_idx = 0;
+	if (memcmp(&file5, block, sizeof(file5)) != 0)
+	{
+		printf("FAILED file block is incorrect\n");
+		return 1;
+	}
+	printf("PASSED\n");
+
+	printf("fs_open file past the end of the last blocks on the disk...");
+	if ((ret = fs_open(1)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	fs_write(buf, 10); // write one more block
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	// check file block
+	fs_file_startblock file6;
+	sd_read_block(block, 1);
+	file6.fmt_iter = fmt_iter+1;
+	file6.seq = 0;
+	file6.byte_len = 10;
+	file6.next_skip_file_startblock_idx = 0;
+	if (memcmp(&file6, block, sizeof(file6)) != 0)
+	{
+		printf("FAILED file block is incorrect\n");
+		return 1;
+	}
+	printf("PASSED\n");
+
+	fs_force_capacity = 0;
 
 #ifdef FS_SKIP_TEST
 	fs_file_startblock *file = (fs_file_startblock*)block;
