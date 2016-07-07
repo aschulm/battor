@@ -30,9 +30,3 @@ void usart_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
 			usart->DATA;
 	}
 }
-
-void usart_set_baud(USART_t* usart, uint16_t bsel, uint8_t bscale)
-{
-	usart->BAUDCTRLB = (bscale << USART_BSCALE_gp) | (bsel >> 8);
-	usart->BAUDCTRLA = bsel & USART_BSEL_gm;
-}

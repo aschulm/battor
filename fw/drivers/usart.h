@@ -37,6 +37,12 @@
 #define USART_BSEL_2000000BPS 0
 
 void usart_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len);
-void usart_set_baud(USART_t* usart, uint16_t bsel, uint8_t bscale);
+
+// this must be inlined or the UART will not init after a reboot properly
+static inline void usart_set_baud(USART_t* usart, uint16_t bsel, uint8_t bscale)
+{
+	usart->BAUDCTRLB = ((bscale << USART_BSCALE_gp) & 0xF0) | ((bsel >> 8) & 0x0F);
+	usart->BAUDCTRLA = bsel & USART_BSEL_gm;
+}
 
 #endif
