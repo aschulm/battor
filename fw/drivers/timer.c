@@ -49,3 +49,10 @@ void timer_sleep_ms(uint16_t ms)
 		ms_asleep++;
 	}
 }
+
+uint16_t timer_elapsed_ms(uint16_t prev, uint16_t curr)
+{
+	if (prev > curr)
+		return (0xFFFF - prev) + curr + 1;
+	return curr - prev;
+}

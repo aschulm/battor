@@ -7,13 +7,6 @@ static uint16_t blink_prev_ms_ticks;
 static uint8_t blink_led;
 static uint8_t blink_first;
 
-uint16_t ea(uint16_t p, uint16_t c) 
-{
-	if (p > c)
-		return (0xFFFF - p) + c + 1;
-	return c - p;
-}
-
 void blink_init(uint16_t interval_ms, uint8_t led)
 {
 	blink_ms = 0;
@@ -38,8 +31,8 @@ void blink_ms_timer_update()
 	}
 	else
 	{
-		blink_ms += ea(blink_prev_ms_ticks, g_timer_ms_ticks);
-		blink_strobe_ms += ea(blink_prev_ms_ticks, g_timer_ms_ticks);
+		blink_ms += timer_elapsed_ms(blink_prev_ms_ticks, g_timer_ms_ticks);
+		blink_strobe_ms += timer_elapsed_ms(blink_prev_ms_ticks, g_timer_ms_ticks);
 		blink_prev_ms_ticks = g_timer_ms_ticks;
 	}
 
@@ -48,8 +41,8 @@ void blink_ms_timer_update()
 		// strobe
 		if (blink_strobe_ms >= BLINK_ON_TIME_MS)
 		{
-			blink_strobe_ms = 0;
 			led_toggle(blink_led);
+			blink_strobe_ms = 0;
 		}
 	}
 	if (blink_ms >= blink_interval_ms + (BLINK_ON_TIME_MS * (blink_strobe_count*2)))

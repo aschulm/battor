@@ -20,6 +20,7 @@ static uint8_t calibrated;
 static uint32_t seqnum;
 static int16_t ringbuf_writes_remaining;
 static int16_t ringbuf_reads_remaining;
+static uint16_t samples_len;
 
 typedef enum STATE_enum
 {
@@ -27,6 +28,7 @@ typedef enum STATE_enum
 	STATE_MID_FRAME,
 	STATE_END_FRAME,
 } STATE_t;
+
 
 static void end_calibration() //{{{
 {
@@ -64,6 +66,8 @@ static void end_uart_write() //{{{
 
 static void samples_init() //{{{
 {
+	uint8_t port_avg_2pwr;
+
 	ringbuf_init(&rb, 0x00000000, SRAM_SIZE_BYTES,
 		sram_write, sram_read);
 
@@ -72,6 +76,14 @@ static void samples_init() //{{{
 	ringbuf_reads_remaining = SAMPLES_CAL_BUFFERS;
 	calibrated = 0;
 	seqnum = 0;
+
+	// start samples length with default
+	samples_len = (SAMPLES_LEN * sizeof(sample));
+	// divide samples length by number of averaged samples
+	if ((g_control_mode == CONTROL_MODE_PORT_IDLE ||
+		g_control_mode == CONTROL_MODE_PORT_STORE) &&
+		(port_avg_2pwr = params_get_port_avg_2pwr()) > 0)
+		samples_len = (samples_len >> port_avg_2pwr);
 } //}}}
 
 void samples_start() //{{{
@@ -81,9 +93,10 @@ void samples_start() //{{{
 	samples_init();
 
 	// open file if in storage mode
-	if (g_control_mode == CONTROL_MODE_STORE)
+	if (g_control_mode == CONTROL_MODE_USB_STORE ||
+		g_control_mode == CONTROL_MODE_PORT_STORE)
 	{
-		if ((ret = fs_open(1)) < 0)
+		if ((ret = fs_open(1, -1)) < 0)
 			halt(ERROR_FS_OPEN_FAIL);
 	}
 
@@ -109,7 +122,8 @@ void samples_stop() //{{{
 	dma_stop();
 
 	// close file if in storage mode
-	if (g_control_mode == CONTROL_MODE_STORE)
+	if (g_control_mode == CONTROL_MODE_USB_STORE ||
+		g_control_mode == CONTROL_MODE_PORT_STORE)
 	{
 		// read to the end of the ring buffer
 		while (samples_store_write());
@@ -119,18 +133,37 @@ void samples_stop() //{{{
 	}
 } //}}}
 
+void samples_avg(sample* s) //{{{
+{
+	uint8_t port_avg_2pwr;
+	if (g_control_mode != CONTROL_MODE_PORT_STORE ||
+		(port_avg_2pwr = params_get_port_avg_2pwr()) <= 0)
+		return;
+
+	// loop through all samples and average them by power of 2
+	uint16_t idx, idx_avg;
+	for (idx = 0; idx < (SAMPLES_LEN>>port_avg_2pwr); idx++)
+	{
+		uint32_t i_avg = 0, v_avg = 0;
+		for (idx_avg = 0; idx_avg < (1<<port_avg_2pwr); idx_avg++)
+		{
+			i_avg += s[(idx<<port_avg_2pwr) + idx_avg].i;
+			v_avg += s[(idx<<port_avg_2pwr) + idx_avg].v;
+		}
+		s[idx].i = (i_avg >> port_avg_2pwr);
+		s[idx].v = (v_avg >> port_avg_2pwr);
+	}
+} //}}}
+
 void samples_ringbuf_write(sample* s) //{{{
 {
-	int ret;
-	uint16_t len_b = SAMPLES_LEN * sizeof(sample);
-
 	// check to see if enough samples collected to complete calibration
 	ringbuf_writes_remaining--;
 	if (!calibrated && ringbuf_writes_remaining == 0)
 		end_calibration();
 
 #ifdef SAMPLE_ZERO
-	memset(s, 0, len_b);
+	memset(s, 0, samples_len);
 #endif
 
 #ifdef SAMPLE_INC
@@ -143,8 +176,7 @@ void samples_ringbuf_write(sample* s) //{{{
 #endif
 
 	// write samples
-	ret = ringbuf_write(&rb, s, len_b);
-	if (ret < 0)
+	if (ringbuf_write(&rb, s, samples_len) < 0)
 		halt(ERROR_RINGBUF_WRITE_FAIL);
 } //}}}
 
@@ -166,8 +198,8 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 		len = 0;
 
 		// compute length of samples in frame in bytes
-		uint16_t samples_len = 
-			(SAMPLES_LEN * sizeof(sample)) * ringbuf_reads_remaining;
+		uint16_t samples_len_hdr = samples_len *
+			ringbuf_reads_remaining;
 
 		// sequence number
 		memcpy(uart_buf + len, &seqnum,
@@ -176,7 +208,7 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 
 		// length (bytes)
 		memcpy(uart_buf + len,
-			&samples_len,
+			&samples_len_hdr,
 			sizeof(uint16_t));
 		len += sizeof(uint16_t);
 
@@ -195,9 +227,9 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 		len = 0;
 
 		// fetch samples from ringbuf
-		if (ringbuf_read(&rb, samples_tmp, (SAMPLES_LEN * sizeof(sample))) < 0)
+		if (ringbuf_read(&rb, samples_tmp, samples_len) < 0)
 			return -2; // no samples ready yet
-		len += (SAMPLES_LEN * sizeof(sample));
+		len += samples_len;
 		ringbuf_reads_remaining--;
 
 		uart_tx_bytes_prepare(samples_tmp, len);
@@ -250,8 +282,6 @@ int samples_store_write() //{{{
 	// no write in progress, try to write frame to the filesystem
 	else
 	{
-		uint16_t len = SAMPLES_LEN * sizeof(sample);
-
 		/*
 		 * This is very odd. The goal here is to
 		 * put the CPU into the same mode that it is in the
@@ -272,7 +302,7 @@ int samples_store_write() //{{{
 		// if there was a sample block written, write it to sd
 		if (ringbuf_reads_remaining < reads_remaining_prev)
 		{
-			if (fs_write(samples_tmp, len) < 0)
+			if (fs_write(samples_tmp, samples_len) < 0)
 				halt(ERROR_FS_WRITE_FAIL);
 		}
 		else
@@ -282,7 +312,7 @@ int samples_store_write() //{{{
 	return 1;
 } //}}}
 
-void samples_store_read_uart_write() //{{{
+void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 {
 	int ret;
 	uint32_t tries;
@@ -301,10 +331,6 @@ void samples_store_read_uart_write() //{{{
 	// init sampling state
 	samples_init();
 
-	// open last file
-	if (fs_open(0) < 0)
-		halt(ERROR_FS_OPEN_FAIL);
-
 	// remember the uart driver's default buffer
 	uart_get_tx_buffer(&uart_driver_tx_buffer);
 
@@ -312,7 +338,15 @@ void samples_store_read_uart_write() //{{{
 	tx_buffer_a = uart_driver_tx_buffer;
 	tx_buffer_b = uart_tx_buffer;
 
-	while ((ret = fs_read(sd_samples, sizeof(sd_samples))) != FS_ERROR_EOF)
+	// open file
+	if (fs_open(0, file_seq_to_open)  < 0)
+	{
+		// no file found, indicate as such by writing a blank end of file
+		end_uart_write();
+		goto cleanup;
+	}
+
+	while ((ret = fs_read(sd_samples, samples_len)) != FS_ERROR_EOF)
 	{
 		uint8_t* tx_buffer_tmp;
 

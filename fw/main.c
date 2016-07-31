@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "fs.h"
 #include "error.h"
 #include "blink.h"
 #include "control.h"
@@ -10,15 +11,28 @@
 
 int main() //{{{
 {
+	fs_superblock sb;
+
 	clock_set_crystal();
 	interrupt_init();
 	drivers_init();
 	params_init();
 
 	// setup an LED to blink while running, start with yellow to indicate not ready yet 
-	blink_init(1000, LED_YELLOW_bm); 
+	blink_init(2000, LED_YELLOW_bm);
 
-	g_control_mode = 0;
+	// boot into usb or portable mode depending on how the sd card is formatted
+	if ((fs_info(&sb) < 0) || !sb.portable)
+		g_control_mode = CONTROL_MODE_USB_IDLE;
+	else
+	{
+		g_control_mode = CONTROL_MODE_PORT_IDLE;
+
+		// indicate to the user that the battor is in portable mode
+		led_on(LED_GREEN_bm);
+		// indicate to the user what the next open file number is
+		blink_set_strobe_count(g_fs_file_seq + 1);
+	}
 
 	// main loop for interrupt bottom halves 
 	while (1) 
@@ -41,12 +55,15 @@ int main() //{{{
 		if (interrupt_is_set(INTERRUPT_TIMER_MS))
 		{
 			blink_ms_timer_update();
+			button_ms_timer_update();
 			interrupt_clear(INTERRUPT_TIMER_MS);
 		}
 
 		// ADCB DMA (channel 2)
 		if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
+			samples_avg(g_adcb0);
+
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb0);
 			interrupt_clear(INTERRUPT_DMA_CH2);
@@ -55,6 +72,8 @@ int main() //{{{
 		// other ADCB DMA (channel 3, double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
+			samples_avg(g_adcb1);
+
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb1);
 			interrupt_clear(INTERRUPT_DMA_CH3);
@@ -69,7 +88,8 @@ int main() //{{{
 #endif
 		}
 
-		if (g_control_mode == CONTROL_MODE_STORE)
+		if (g_control_mode == CONTROL_MODE_USB_STORE ||
+			g_control_mode == CONTROL_MODE_PORT_STORE)
 		{
 			samples_store_write();
 		}

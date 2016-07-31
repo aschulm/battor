@@ -122,11 +122,17 @@ void samples_print_loop(samples_config* conf) //{{{
 	while (samples_len == 0 || seqnum != 0)
 	{
 		samples_len = samples_read(samples, conf, &seqnum);
+
+		if (samples_len == -1)
+		{
+			fprintf(stderr, "ERROR: the file can not be found in the BattOr's storage\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (samples_len == 0)
 	{
-		fprintf(stderr, "ERROR: read zero samples\n");
+		fprintf(stderr, "ERROR: read zero calibration samples\n");
 		exit(EXIT_FAILURE);
 	}
 
