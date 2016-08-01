@@ -339,7 +339,7 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 	tx_buffer_b = uart_tx_buffer;
 
 	// open file
-	if (fs_open(0, file_seq_to_open)  < 0)
+	if (fs_open(0, file_seq_to_open) < 0)
 	{
 		// no file found, indicate as such by writing a blank end of file
 		end_uart_write();

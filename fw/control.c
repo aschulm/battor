@@ -89,8 +89,12 @@ int8_t control_run_message(control_message* m) //{{{
 			led_on(LED_RED_bm);
 			samples_stop();
 
-			g_control_mode = (g_control_mode == CONTROL_MODE_USB_STORE) ?
-				CONTROL_MODE_USB_IDLE : CONTROL_MODE_PORT_IDLE;
+			// return to idle mode depending on which mode it is in
+			// if it is already idle then do not change the mode
+			if (g_control_mode == CONTROL_MODE_USB_STORE)
+				g_control_mode = CONTROL_MODE_USB_IDLE;
+			if (g_control_mode == CONTROL_MODE_PORT_STORE)
+				g_control_mode = CONTROL_MODE_PORT_IDLE;
 
 			samples_store_read_uart_write(m->value1);
 			led_off(LED_RED_bm);
@@ -137,8 +141,8 @@ int8_t control_run_message(control_message* m) //{{{
 			ret = -1;
 		break;
 		case CONTROL_TYPE_GET_MODE_PORTABLE:
-			ret = (g_control_mode == CONTROL_MODE_PORT_STORE ||
-					g_control_mode == CONTROL_MODE_PORT_IDLE);
+			ret = (g_control_mode == CONTROL_MODE_PORT_IDLE ||
+				g_control_mode == CONTROL_MODE_PORT_STORE);
 		break;
 		case CONTROL_TYPE_SELF_TEST:
 			// step 1. test the sram
@@ -165,7 +169,6 @@ void control_button_press() //{{{
 	{
 		case CONTROL_MODE_PORT_IDLE:
 			g_control_mode = CONTROL_MODE_PORT_STORE;
-
 			blink_set_led(LED_RED_bm);
 			samples_start();
 
@@ -173,15 +176,12 @@ void control_button_press() //{{{
 			blink_set_strobe_count(g_fs_file_seq);
 		break;
 		case CONTROL_MODE_PORT_STORE:
-			// indicate to the user what the next open file number is
-			// after the current open file (before it is closed in
-			// samples stop)
+			// indicate to the user what the next open file seq is
+			blink_set_led(LED_YELLOW_bm);
 			blink_set_strobe_count(g_fs_file_seq + 1);
 
 			samples_stop();
 			led_off(LED_RED_bm);
-			blink_set_led(LED_YELLOW_bm);
-
 			g_control_mode = CONTROL_MODE_PORT_IDLE;
 		break;
 	}
@@ -196,17 +196,16 @@ void control_button_hold() //{{{
 			samples_stop();
 			led_off(LED_RED_bm);
 			blink_set_led(LED_YELLOW_bm);
-
 			g_control_mode = CONTROL_MODE_PORT_IDLE;
 	}
 
-	// format SD card
+	// format SD card in portable mode
 	if (fs_format(1) < 0)
 		halt(ERROR_FS_FORMAT_FAIL);
 
 	g_control_mode = CONTROL_MODE_PORT_IDLE;
 
 	// indicate to user that SD card is at the first file and in portable mode
-	blink_set_strobe_count(g_fs_file_seq + 1);
+	blink_set_strobe_count(g_fs_file_seq);
 	led_on(LED_GREEN_bm);
 } //}}}

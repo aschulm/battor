@@ -31,7 +31,7 @@ int main() //{{{
 		// indicate to the user that the battor is in portable mode
 		led_on(LED_GREEN_bm);
 		// indicate to the user what the next open file number is
-		blink_set_strobe_count(g_fs_file_seq + 1);
+		blink_set_strobe_count(g_fs_file_seq);
 	}
 
 	// main loop for interrupt bottom halves 

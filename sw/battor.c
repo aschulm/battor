@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	char* tty = NULL;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
 
-	uint8_t down_file = 0;
+	uint16_t down_file = 0;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
@@ -140,11 +140,12 @@ int main(int argc, char** argv)
 	if (test)
 	{
 		int ret;
-		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
-			fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
-			return EXIT_FAILURE;
-		}
-		fprintf(stderr, "------ Self Test PASSED ------\n");
+		//if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
+		//	fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
+		//	return EXIT_FAILURE;
+		//}
+		//fprintf(stderr, "------ Self Test PASSED ------\n");
+		samples_print_loop(&sconf);
 		return EXIT_SUCCESS;
 	}
 
