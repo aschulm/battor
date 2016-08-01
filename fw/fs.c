@@ -157,7 +157,7 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	{
 		if (create_file)
 		{
-			// format will only happen this way if not in portable mode
+			// format only happens this way if not in portable mode
 			fs_format(0);
 		}
 	}
@@ -196,6 +196,7 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 			}
 
 			// store previous skip block idx so it can be written with next skip block
+			// mod 1 because file seq starts at 1
 			if ((g_fs_file_seq % FS_FILE_SKIP_LEN) == 1)
 				file_prev_skip_startblock_idx = block_idx;
 
@@ -234,7 +235,7 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 			else
 			{
 				if (file_seq_to_open == 0 &&
-						block_idx_prev >= 0)
+					block_idx_prev >= 0)
 				{
 					file_startblock_idx = block_idx_prev;
 					file_byte_len = file_byte_len_prev;
@@ -253,7 +254,7 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	if (block_idx >= (fs_capacity - FS_LAST_FILE_BLOCKS))
 	{
 		// format will only happen this way if not in portable mode
-		// assuming that no one fills up the SD card in portable mode
+		// assumes that no one fills up the SD card in portable mode
 		fs_format(0);
 		// retry open
 		return fs_open(create_file, file_seq_to_open);
@@ -297,7 +298,7 @@ int fs_close() //{{{
 	while (sd_write_block_update() < 0);
 
 	// this is a skip file, point to it from the previous skip file
-	// must subtract 1 from file sequence because file seqs start at 1
+	// mod 1 because file seq starts at 1
 	if ((g_fs_file_seq % FS_FILE_SKIP_LEN) == 1 &&
 	    file_prev_skip_startblock_idx > 0)
 	{

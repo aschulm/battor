@@ -104,5 +104,8 @@ void blink_set_interval_ms(uint16_t interval_ms)
 void blink_set_strobe_count(uint16_t count)
 {
 	if (count > 0)
+	{
 		blink_strobe_count = count;
+		first_blink = 1;
+	}
 }

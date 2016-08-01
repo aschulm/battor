@@ -80,6 +80,12 @@ int8_t control_run_message(control_message* m) //{{{
 			// indicate to the user that the battor is in usb control mode
 			led_off(LED_GREEN_bm);
 
+			// format into usb mode if in portable mode
+			if (g_control_mode == CONTROL_MODE_PORT_IDLE ||
+				g_control_mode == CONTROL_MODE_PORT_STORE)
+				if (fs_format(0) < 0)
+					halt(ERROR_FS_FORMAT_FAIL);
+
 			g_control_mode = CONTROL_MODE_USB_STORE;
 			blink_set_led(LED_RED_bm);
 			blink_set_strobe_count(1);

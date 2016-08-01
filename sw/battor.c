@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 		{
 			case 'd':
 				down = 1;
-				down_file = atoi(optarg);
+				down_file = strtol(optarg, NULL, 10);
 			break;
 			case 'o':
 				count = 1;
@@ -140,12 +140,13 @@ int main(int argc, char** argv)
 	if (test)
 	{
 		int ret;
-		//if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
-		//	fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
-		//	return EXIT_FAILURE;
-		//}
-		//fprintf(stderr, "------ Self Test PASSED ------\n");
-		samples_print_loop(&sconf);
+		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0)
+		{
+			fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
+			return EXIT_FAILURE;
+		}
+
+		fprintf(stderr, "------ Self Test PASSED ------\n");
 		return EXIT_SUCCESS;
 	}
 
@@ -179,6 +180,11 @@ int main(int argc, char** argv)
 		uint8_t avg_shift = 0;
 		if (control(CONTROL_TYPE_GET_MODE_PORTABLE, 0, 0, 1))
 			avg_shift = eeparams->port_avg_2pwr;
+		else if (down_file > 0)
+		{
+			fprintf(stderr, "Error: In USB buffering mode, can only download last file.\n");
+			return EXIT_FAILURE;
+		}
 
 		sconf.sample_rate = (uint32_t)(eeparams->sd_sr >> avg_shift);
 		// TODO set proper gain!

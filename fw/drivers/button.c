@@ -2,7 +2,6 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 
-#include "../interrupt.h"
 #include "../control.h"
 #include "timer.h"
 #include "button.h"

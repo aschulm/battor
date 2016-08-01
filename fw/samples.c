@@ -96,7 +96,7 @@ void samples_start() //{{{
 	if (g_control_mode == CONTROL_MODE_USB_STORE ||
 		g_control_mode == CONTROL_MODE_PORT_STORE)
 	{
-		if ((ret = fs_open(1, -1)) < 0)
+		if ((ret = fs_open(1, 0)) < 0)
 			halt(ERROR_FS_OPEN_FAIL);
 	}
 
