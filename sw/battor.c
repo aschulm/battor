@@ -180,16 +180,16 @@ int main(int argc, char** argv)
 			return EXIT_FAILURE;
 		}
 
-		uint8_t avg_shift = 0;
 		if (control(CONTROL_TYPE_GET_MODE_PORTABLE, 0, 0, 1))
-			avg_shift = eeparams->port_avg_2pwr;
+			ovs_bits = eeparams->port_ovs_bits;
 		else if (down_file > 0)
 		{
 			fprintf(stderr, "Error: In USB buffering mode, can only download last file.\n");
 			return EXIT_FAILURE;
 		}
 
-		sconf.sample_rate = (uint32_t)(eeparams->sd_sr >> avg_shift);
+		sconf.sample_rate = (uint32_t)(eeparams->sd_sr >> (ovs_bits*2));
+		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
 		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
