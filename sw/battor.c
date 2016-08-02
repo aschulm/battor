@@ -42,7 +42,8 @@ int main(int argc, char** argv)
 	samples_config sconf;
 	eeprom_params* eeparams = &sconf.eeparams;
 
-	samples_init(&sconf);
+	// clear sample config
+	memset(&sconf, 0, sizeof(sconf));
 
 	// need an option
 	if (argc < 2)
@@ -193,6 +194,8 @@ int main(int argc, char** argv)
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
 		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
+		samples_init(&sconf);
+		samples_print_config(&sconf);
 		samples_print_loop(&sconf);
 		return EXIT_SUCCESS;
 	}
@@ -213,17 +216,7 @@ int main(int argc, char** argv)
 	if (gain == PARAM_GAIN_HIGH)
 		sconf.gain = eeparams->gainH;
 
-	// print settings
-	sample min_s;
-	sample max_s;
 
-	memset(&min_s, 0, sizeof(sample));
-	max_s.v = (1 << (ADC_BITS + ovs_bits)) - 1;
-	max_s.i = (1 << (ADC_BITS + ovs_bits)) - 1;
-	printf("# BattOr\n");
-	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, &sconf, 0.0), sample_v(&max_s, &sconf, 0.0));
-	printf("# current range [%f, %f] mA\n", sample_i(&min_s, &sconf, 0.0), sample_i(&max_s, &sconf, 0.0));
-	
 	// configuration
 	control(CONTROL_TYPE_GAIN_SET, gain, 0, 1);
 
@@ -231,12 +224,16 @@ int main(int argc, char** argv)
 	{
 		sconf.sample_rate = eeparams->uart_sr;
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
+		samples_init(&sconf);
+		samples_print_config(&sconf);
 		samples_print_loop(&sconf);
 	}
 
 	if (buffer)
 	{
 		control(CONTROL_TYPE_START_SAMPLING_SD, 0, 0, 1);
+		samples_init(&sconf);
+		samples_print_config(&sconf);
 	}
 
 	return EXIT_SUCCESS;
