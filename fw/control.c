@@ -150,6 +150,10 @@ int8_t control_run_message(control_message* m) //{{{
 			ret = (g_control_mode == CONTROL_MODE_PORT_IDLE ||
 				g_control_mode == CONTROL_MODE_PORT_STORE);
 		break;
+		case CONTROL_TYPE_SET_RTC:
+			timer_rtc_set(
+				((uint32_t)m->value1 << 16) | ((uint32_t)m->value2));
+		break;
 		case CONTROL_TYPE_SELF_TEST:
 			// step 1. test the sram
 			printf("====== self test started ======\n");

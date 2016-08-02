@@ -1,5 +1,24 @@
 #include "common.h"
 
+// set the BattOr's clock to the PC's RTC
+int param_write_rtc()
+{
+	struct timeval tv;
+	memset(&tv, 0, sizeof(tv));
+
+	// wait until time is approx an even second
+	do
+	{
+		gettimeofday(&tv, NULL);
+	} while (tv.tv_usec > 1000);
+
+	control(CONTROL_TYPE_SET_RTC,
+		(tv.tv_sec & 0xFFFF0000) >> 16,
+		(tv.tv_sec & 0x0000FFFF),
+		1);
+	return 0;
+}
+
 // compare the firmware and software git version
 int param_check_version()
 {

@@ -8,5 +8,6 @@ void timer_reset(TC0_t* timer);
 void timer_set(TC0_t* timer, uint8_t prescaler, uint16_t period);
 void timer_sleep_ms(uint16_t ms);
 uint16_t timer_elapsed_ms(uint16_t prev, uint16_t curr);
+void timer_rtc_set(uint32_t secs);
 
 #endif

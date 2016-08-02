@@ -80,6 +80,7 @@ struct eeprom_params_
 } __attribute__((packed));
 typedef struct eeprom_params_ eeprom_params;
 
+int param_write_rtc();
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 int param_check_version();
 int param_read_eeprom(eeprom_params* params);

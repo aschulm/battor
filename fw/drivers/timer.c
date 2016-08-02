@@ -9,6 +9,10 @@
 // ms timer
 static volatile uint8_t sleep_ms_timer_fired = 0;
 volatile uint16_t g_timer_ms_ticks = 0;
+
+// sec real time clock
+uint32_t rtc_s = 0;
+
 ISR(TCC0_OVF_vect)
 {
 	g_timer_ms_ticks++;
@@ -56,3 +60,10 @@ uint16_t timer_elapsed_ms(uint16_t prev, uint16_t curr)
 		return (0xFFFF - prev) + curr + 1;
 	return curr - prev;
 }
+
+void timer_rtc_set(uint32_t secs)
+{
+	rtc_s = secs;
+}
+
+void timer_rtc_update_ms
