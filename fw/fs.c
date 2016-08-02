@@ -16,6 +16,8 @@ static int32_t file_startblock_idx;
 static uint32_t file_byte_idx;
 static uint32_t file_byte_len;
 static int32_t file_prev_skip_startblock_idx;
+static uint32_t file_rtc_start_time_s;
+static uint32_t file_rtc_start_time_ms;
 // Current file sequence number
 // * 1 if no file is open
 // * current file seq if file is open
@@ -60,6 +62,8 @@ static void fs_init() //{{{
 	file_startblock_idx = -1;
 	file_byte_idx = 0;
 	file_byte_len = 0;
+	file_rtc_start_time_s = 0;
+	file_rtc_start_time_ms = 0;
 	g_fs_file_seq = 1;
 	file_prev_skip_startblock_idx = -1;
 
@@ -192,6 +196,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 				file_startblock_idx = block_idx;
 				file_byte_len = file->byte_len;
 				file_byte_idx = 0;
+				file_rtc_start_time_s = file->rtc_start_time_s;
+				file_rtc_start_time_ms = file->rtc_start_time_ms;
 				return FS_ERROR_NONE;
 			}
 
@@ -240,6 +246,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 					file_startblock_idx = block_idx_prev;
 					file_byte_len = file_byte_len_prev;
 					file_byte_idx = 0;
+					file_rtc_start_time_s = file->rtc_start_time_s;
+					file_rtc_start_time_ms = file->rtc_start_time_ms;
 				}
 				else
 					return FS_ERROR_NO_EXISTING_FILE;
@@ -261,6 +269,17 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	}
 
 	return FS_ERROR_FILE_TOO_LONG;
+} //}}}
+
+int fs_rtc(uint32_t* s, uint32_t* ms) //{{{
+{
+	if (file_startblock_idx < 0)
+		return -1;
+
+	// return the rtc time for the last opened file
+	*s = file_rtc_start_time_s;
+	*ms = file_rtc_start_time_ms;
+	return 0;
 } //}}}
 
 int fs_close() //{{{
@@ -289,6 +308,9 @@ int fs_close() //{{{
 	file->seq = g_fs_file_seq;
 	file->byte_len = file_byte_idx;
 	file->fmt_iter = fs_fmt_iter;
+	file->rtc_start_time_s = file_rtc_start_time_s;
+	file->rtc_start_time_ms = file_rtc_start_time_ms;
+	printf("+++wrote file with s:%lu ms:%lu\n", file->rtc_start_time_s, file->rtc_start_time_ms);
 
 	// write file block
 	if (file_startblock_idx >= fs_capacity)
@@ -330,6 +352,10 @@ int fs_write(void* buf, uint16_t len) //{{{
 
 	if (fs_busy())
 		return FS_ERROR_WRITE_IN_PROGRESS;
+
+	// time of first write will be stored into file startblock when closed
+	if (file_byte_idx <= 0)
+		timer_rtc_get(&file_rtc_start_time_s, &file_rtc_start_time_ms);
 
 	// note: write_buf must exist until fs_busy() returns 0
 	write_buf = buf;

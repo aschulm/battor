@@ -3,7 +3,7 @@
 
 static uint16_t blink_ms, blink_strobe_ms; 
 static uint16_t blink_interval_ms, blink_strobe_count, blink_strobe_idx;
-static uint16_t blink_prev_ms_ticks, blink_strobe_prev_ms_ticks;
+static uint32_t blink_prev_ms_ticks, blink_strobe_prev_ms_ticks;
 static uint8_t blink_led;
 static uint8_t first_blink;
 static uint8_t strobe_state;

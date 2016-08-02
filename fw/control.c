@@ -49,7 +49,7 @@ int8_t control_run_message(control_message* m) //{{{
 
 	printf("control: type %d\n", m->type);
 	uint8_t buf[100];
-	uint32_t u32;
+	uint32_t u32_1, u32_2;
 	switch (m->type)
 	{
 		case CONTROL_TYPE_INIT:
@@ -130,9 +130,9 @@ int8_t control_run_message(control_message* m) //{{{
 				break;
 			}
 
-			u32 = uart_rx_sample_count();
+			u32_1 = uart_rx_sample_count();
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
-			uart_tx_bytes_prepare(&u32, sizeof(u32));
+			uart_tx_bytes_prepare(&u32_1, sizeof(u32_1));
 			uart_tx_end_prepare();
 
 			uart_tx_dma();
@@ -158,6 +158,22 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_SET_RTC:
 			timer_rtc_set(
 				((uint32_t)m->value1 << 16) | ((uint32_t)m->value2));
+		break;
+		case CONTROL_TYPE_GET_RTC:
+			u32_1 = 0; u32_2 = 0;
+			if (fs_open(0, m->value1) >= 0)
+			{
+				fs_rtc(&u32_1, &u32_2);
+
+				printf("FILE %u has time s:%lu m:%lu\n", m->value1, u32_1, u32_2);
+			}
+
+			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
+			uart_tx_bytes_prepare(&u32_1, sizeof(u32_1));
+			uart_tx_bytes_prepare(&u32_2, sizeof(u32_2));
+			uart_tx_end_prepare();
+			uart_tx_dma();
+			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:
 			// step 1. test the sram

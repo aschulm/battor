@@ -196,6 +196,7 @@ int main(int argc, char** argv)
 		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
+		param_get_rtc_for_file(down_file);
 		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
 		samples_init(&sconf);
 		samples_print_config(&sconf);
@@ -226,9 +227,9 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		sconf.sample_rate = eeparams->uart_sr;
-		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-		samples_init(&sconf);
-		samples_print_config(&sconf);
+//		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
+//		samples_init(&sconf);
+//		samples_print_config(&sconf);
 		samples_print_loop(&sconf);
 	}
 

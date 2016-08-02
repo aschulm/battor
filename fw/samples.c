@@ -29,7 +29,6 @@ typedef enum STATE_enum
 	STATE_END_FRAME,
 } STATE_t;
 
-
 static void end_calibration() //{{{
 {
 	// voltage measurment

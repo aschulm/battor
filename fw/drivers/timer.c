@@ -8,10 +8,12 @@
 
 // ms timer
 static volatile uint8_t sleep_ms_timer_fired = 0;
-volatile uint16_t g_timer_ms_ticks = 0;
+volatile uint32_t g_timer_ms_ticks = 0;
 
-// sec real time clock
-uint32_t rtc_s = 0;
+// real time clock
+static uint32_t rtc_s = 0;
+static uint32_t rtc_ms = 0;
+static uint32_t rtc_prev_ms_ticks = 0;
 
 ISR(TCC0_OVF_vect)
 {
@@ -54,16 +56,44 @@ void timer_sleep_ms(uint16_t ms)
 	}
 }
 
-uint16_t timer_elapsed_ms(uint16_t prev, uint16_t curr)
+uint32_t timer_elapsed_ms(uint32_t prev, uint32_t curr)
 {
 	if (prev > curr)
-		return (0xFFFF - prev) + curr + 1;
+		return (0xFFFFFFFF - prev) + curr + 1;
 	return curr - prev;
 }
 
 void timer_rtc_set(uint32_t secs)
 {
 	rtc_s = secs;
+	rtc_ms = 0;
+	rtc_prev_ms_ticks = g_timer_ms_ticks;
 }
 
-void timer_rtc_update_ms
+void timer_rtc_get(uint32_t* s, uint32_t* ms)
+{
+	timer_rtc_ms_update();
+
+	*s = rtc_s;
+	*ms = rtc_ms;
+
+	printf("+++got time %lu %lu\n", *s, *ms);
+}
+
+void timer_rtc_ms_update()
+{
+	// if rtc has not been set, do not update it
+	if (rtc_s <= 0)
+		return;
+
+	// udate rtc ms timer
+	rtc_ms += timer_elapsed_ms(rtc_prev_ms_ticks, g_timer_ms_ticks);
+	rtc_prev_ms_ticks = g_timer_ms_ticks;
+
+	// update the seconds based on how many milliseconds have passed
+	while (rtc_ms >= 1000)
+	{
+		rtc_s++;
+		rtc_ms -= 1000;
+	}
+}

@@ -2,7 +2,7 @@
 #define FS_H
 
 #define FS_SUPERBLOCK_IDX 0
-#define FS_VERSION 2
+#define FS_VERSION 3
 
 #define FS_FILE_SKIP_LEN 250
 
@@ -24,6 +24,8 @@ typedef struct fs_file_startblock_
 	uint32_t seq;
 	uint32_t byte_len;
 	uint32_t next_skip_file_startblock_idx;
+	uint32_t rtc_start_time_s;
+	uint32_t rtc_start_time_ms;
 } fs_file_startblock;
 
 typedef enum FS_ERROR_enum
@@ -42,6 +44,7 @@ typedef enum FS_ERROR_enum
 int fs_info(fs_superblock* sb);
 int fs_format(uint8_t portable);
 int fs_open(uint8_t create_file, uint32_t file_seq_to_open);
+int fs_rtc(uint32_t* s, uint32_t* ms);
 int fs_close();
 int fs_write(void* buf, uint16_t len);
 int fs_read(void* buf, uint16_t len);
