@@ -20,10 +20,6 @@ void samples_init(samples_config* conf) //{{{
 	conf->sample_rate = 0;
 	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
 	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
-
-	// determine ADC_TOP with ovsersampling
-	s_adc_top_pos = pow(2, (ADC_BITS + conf->ovs_bits))-1;
-	s_adc_top_neg = pow(2, (ADC_BITS + conf->ovs_bits));
 } //}}}
 
 inline double sample_v(sample* s, samples_config* conf, double cal_v) //{{{
@@ -117,6 +113,10 @@ void samples_print_loop(samples_config* conf) //{{{
 	// will block and unblock SIGINT
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGINT);
+
+	// determine ADC_TOP with ovsersampling
+	s_adc_top_pos = pow(2, (ADC_BITS + conf->ovs_bits))-1;
+	s_adc_top_neg = pow(2, (ADC_BITS + conf->ovs_bits));
 
 	// read calibration and compute it
 	while (samples_len == 0 || seqnum != 0)

@@ -31,7 +31,7 @@ typedef enum PARAM_GAIN_enum
 
 // oversampling
 #define OVERSAMPLE_BITS_DEFAULT 0
-#define OVERSAMPLE_BITS_MAX 1
+#define OVERSAMPLE_BITS_MAX 4
 
 // control
 #define CONTROL_ATTEMPTS 5
@@ -47,8 +47,7 @@ typedef enum PARAM_GAIN_enum
 #define GIT_HASH_LEN 7
 
 // eeprom
-//
-#define EEPROM_PORT_AVG_2PWR_VER 1
+#define EEPROM_PORT_OVS_BITS_VER 1
 
 struct eeprom_params_
 {
@@ -75,7 +74,7 @@ struct eeprom_params_
 	uint16_t uart_tdiv;     // UART timer divider
 	uint16_t uart_tovf;     // UART timer overflow
 	uint16_t uart_filpot;   // UART filter potentiometer position
-	uint8_t port_avg_2pwr;  // power of 2 to average portable samples
+	uint8_t port_ovs_bits;  // bits of oversampling (max 4)
 	uint32_t crc32;         // CRC32 [zip algorithm]
 } __attribute__((packed));
 typedef struct eeprom_params_ eeprom_params;

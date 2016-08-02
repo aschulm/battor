@@ -66,10 +66,10 @@ void params_set_samplerate()
 		halt(ERROR_FILPOT_SET_FAILED);
 }
 
-int8_t params_get_port_avg_2pwr()
+int8_t params_get_port_ovs_bits()
 {
-	if (eeprom.version < PARAMS_EEPROM_PORT_AVG_2PWR_VER)
+	if (eeprom.version < PARAMS_EEPROM_PORT_OVS_BITS_VER)
 		return -1;
 
-	return eeprom.port_avg_2pwr;
+	return eeprom.port_ovs_bits;
 }
