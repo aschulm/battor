@@ -62,7 +62,7 @@ int main() //{{{
 		// ADCB DMA (channel 2)
 		if (interrupt_is_set(INTERRUPT_DMA_CH2))
 		{
-			samples_avg(g_adcb0);
+			samples_ovs(g_adcb0);
 
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb0);
@@ -72,7 +72,7 @@ int main() //{{{
 		// other ADCB DMA (channel 3, double buffered)
 		if (interrupt_is_set(INTERRUPT_DMA_CH3))
 		{
-			samples_avg(g_adcb1);
+			samples_ovs(g_adcb1);
 
 			// put samples on FIFO
 			samples_ringbuf_write(g_adcb1);

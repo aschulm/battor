@@ -14,19 +14,12 @@ static inline double adc_to_v(int16_t s) //{{{
 
 void samples_init(samples_config* conf) //{{{
 {
-	// fill conf with default parameters
-	conf->cal = 0;
-	conf->gain = 0.0;
-	conf->sample_rate = 0;
-	conf->ovs_bits = OVERSAMPLE_BITS_DEFAULT;
-	memset(&conf->eeparams, 0, sizeof(conf->eeparams));
-
 	// determine ADC_TOP with ovsersampling
 	s_adc_top_pos = pow(2, (ADC_BITS + conf->ovs_bits))-1;
 	s_adc_top_neg = pow(2, (ADC_BITS + conf->ovs_bits));
 } //}}}
 
-inline double sample_v(sample* s, samples_config* conf, double cal_v) //{{{
+static inline double sample_v(sample* s, samples_config* conf, double cal_v) //{{{
 {
 	double v_v = adc_to_v(s->v) - cal_v;
 
@@ -39,7 +32,7 @@ inline double sample_v(sample* s, samples_config* conf, double cal_v) //{{{
 	return (v_v / V_DEV(conf->eeparams.R2, conf->eeparams.R3)) * 1000.0; // undo the voltage divider
 } //}}}
 
-inline double sample_i(sample* s, samples_config* conf, double cal_v) //{{{
+static inline double sample_i(sample* s, samples_config* conf, double cal_v) //{{{
 {
 	double i_v = adc_to_v(s->i) - cal_v;
 
@@ -103,6 +96,18 @@ int16_t samples_read(sample* samples, samples_config* conf, uint32_t* seqnum) //
 	return hdr->len / sizeof(sample);
 } //}}}
 
+void samples_print_config(samples_config* conf) //{{{
+{
+	sample min_s;
+	sample max_s;
+	memset(&min_s, 0, sizeof(sample));
+	max_s.v = (1 << (ADC_BITS + conf->ovs_bits)) - 1;
+	max_s.i = (1 << (ADC_BITS + conf->ovs_bits)) - 1;
+	printf("# BattOr\n");
+	printf("# voltage range [%f, %f] mV\n", sample_v(&min_s, conf, 0.0), sample_v(&max_s, conf, 0.0));
+	printf("# current range [%f, %f] mA\n", sample_i(&min_s, conf, 0.0), sample_i(&max_s, conf, 0.0));
+} //}}}
+
 void samples_print_loop(samples_config* conf) //{{{
 {
 	int i;
@@ -164,7 +169,9 @@ void samples_print_loop(samples_config* conf) //{{{
 			verb_printf("adc_v %d\n", samples[i].v);
 			verb_printf("adc_i %d\n", samples[i].i);
 
-			double msec = (sample_num/((double)conf->sample_rate)) * 1000.0;
+			double msec =
+				(sample_num / ((double)conf->sample_rate/pow(4, conf->ovs_bits))) * 1000.0;
+
 			double mv = sample_v(samples + i, conf, v_cal);
 			double mi = sample_i(samples + i, conf, i_cal);
 

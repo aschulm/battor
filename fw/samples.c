@@ -66,7 +66,7 @@ static void end_uart_write() //{{{
 
 static void samples_init() //{{{
 {
-	uint8_t port_avg_2pwr;
+	uint8_t port_ovs_bits;
 
 	ringbuf_init(&rb, 0x00000000, SRAM_SIZE_BYTES,
 		sram_write, sram_read);
@@ -82,8 +82,8 @@ static void samples_init() //{{{
 	// divide samples length by number of averaged samples
 	if ((g_control_mode == CONTROL_MODE_PORT_IDLE ||
 		g_control_mode == CONTROL_MODE_PORT_STORE) &&
-		(port_avg_2pwr = params_get_port_avg_2pwr()) > 0)
-		samples_len = (samples_len >> port_avg_2pwr);
+		(port_ovs_bits = params_get_port_ovs_bits()) > 0)
+		samples_len = (samples_len >> (port_ovs_bits*2));
 } //}}}
 
 void samples_start() //{{{
@@ -133,25 +133,25 @@ void samples_stop() //{{{
 	}
 } //}}}
 
-void samples_avg(sample* s) //{{{
+void samples_ovs(sample* s) //{{{
 {
-	uint8_t port_avg_2pwr;
+	uint8_t port_ovs_bits;
 	if (g_control_mode != CONTROL_MODE_PORT_STORE ||
-		(port_avg_2pwr = params_get_port_avg_2pwr()) <= 0)
+		(port_ovs_bits = params_get_port_ovs_bits()) <= 0)
 		return;
 
-	// loop through all samples and average them by power of 2
+	// loop through all samples and oversample
 	uint16_t idx, idx_avg;
-	for (idx = 0; idx < (SAMPLES_LEN>>port_avg_2pwr); idx++)
+	for (idx = 0; idx < samples_len; idx++)
 	{
-		uint32_t i_avg = 0, v_avg = 0;
-		for (idx_avg = 0; idx_avg < (1<<port_avg_2pwr); idx_avg++)
+		int32_t i_avg = 0, v_avg = 0;
+		for (idx_avg = 0; idx_avg < (1<<(port_ovs_bits*2)); idx_avg++)
 		{
-			i_avg += s[(idx<<port_avg_2pwr) + idx_avg].i;
-			v_avg += s[(idx<<port_avg_2pwr) + idx_avg].v;
+			i_avg += s[(idx<<(port_ovs_bits*2)) + idx_avg].i;
+			v_avg += s[(idx<<(port_ovs_bits*2)) + idx_avg].v;
 		}
-		s[idx].i = (i_avg >> port_avg_2pwr);
-		s[idx].v = (v_avg >> port_avg_2pwr);
+		s[idx].i = (i_avg >> port_ovs_bits);
+		s[idx].v = (v_avg >> port_ovs_bits);
 	}
 } //}}}
 
