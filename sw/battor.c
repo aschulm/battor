@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	int i;
 	FILE* file;
 	char opt;
-	char* tty = NULL;
+	char* tty = DEFAULT_TTY;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
 
 	uint16_t down_file = 0;
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 			case 'h':
 				usage(argv[0]);
 				return EXIT_FAILURE;
-      break;
+			break;
 
 			// required argument not supplied
 			case ':':
@@ -123,18 +123,9 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (optind == argc)
-	{
-		tty = DEFAULT_TTY;
-	}
-	else if (optind == argc - 1)
+	if (optind == argc - 1)
 	{
 		tty = argv[optind];
-	}
-	else
-	{
-		usage(argv[0]);
-		return EXIT_FAILURE;
 	}
 	fprintf(stderr, "Connecting to BattOr on port %s\n", tty);
 
