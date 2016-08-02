@@ -93,6 +93,11 @@ int8_t control_run_message(control_message* m) //{{{
 		break;
 		case CONTROL_TYPE_READ_SD_UART:
 			led_on(LED_RED_bm);
+
+			// stopping portable store so indicate the next file to the user
+			if (g_control_mode == CONTROL_MODE_PORT_STORE)
+				blink_set_strobe_count(g_fs_file_seq + 1);
+
 			samples_stop();
 
 			// return to idle mode depending on which mode it is in
