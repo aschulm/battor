@@ -131,6 +131,20 @@ int main(int argc, char** argv)
 
 	uart_init(tty);
 
+	// needs to be before firmware check to update firmware
+	if (reset)
+	{
+		control(CONTROL_TYPE_RESET, 0, 0, 0);
+		return EXIT_SUCCESS;
+	}
+
+	// check the firmware version
+	if (param_check_version() < 0)
+	{
+		fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
+		return EXIT_FAILURE;
+	}
+
 	// run self test
 	if (test)
 	{
@@ -154,12 +168,6 @@ int main(int argc, char** argv)
 		control(CONTROL_TYPE_GET_SAMPLE_COUNT, 0, 0, 0);
 		uart_rx_bytes(&type, &sample_count, sizeof(sample_count));
 		printf("%u\n", sample_count);
-		return EXIT_SUCCESS;
-	}
-
-	if (reset)
-	{
-		control(CONTROL_TYPE_RESET, 0, 0, 0);
 		return EXIT_SUCCESS;
 	}
 
@@ -191,13 +199,6 @@ int main(int argc, char** argv)
 
 	// init the battor 
 	control(CONTROL_TYPE_INIT, 0, 0, 1);
-
-	// check the firmware version
-	if (param_check_version() < 0)
-	{
-		fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
-		return EXIT_FAILURE;
-	}
 
 	// read the BattOr's calibration params from its EEPROM
 	if (param_read_eeprom(eeparams) < 0)
