@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 			return EXIT_FAILURE;
 		}
 
-		sconf.sample_rate = (uint32_t)(eeparams->sd_sr >> (ovs_bits*2));
+		sconf.sample_rate = (uint32_t)eeparams->sd_sr;
 		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;

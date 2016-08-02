@@ -164,7 +164,9 @@ void samples_print_loop(samples_config* conf) //{{{
 			verb_printf("adc_v %d\n", samples[i].v);
 			verb_printf("adc_i %d\n", samples[i].i);
 
-			double msec = (sample_num/((double)conf->sample_rate)) * 1000.0;
+			double msec =
+				(sample_num / ((double)conf->sample_rate/pow(4, conf->ovs_bits))) * 1000.0;
+
 			double mv = sample_v(samples + i, conf, v_cal);
 			double mi = sample_i(samples + i, conf, i_cal);
 
