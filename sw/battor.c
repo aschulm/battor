@@ -8,11 +8,11 @@ void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
 BattOr's PC companion     \n\n\
-usage: %s -s <options>     <tty>   *stream* power measurements over USB                   \n\
-   or: %s -b <options>     <tty>   *buffer* on the SD card                                \n\
-   or: %s -d <file number> <tty>   *download* last file or <file number> from the SD card \n\
-   or: %s -k               <tty>   *restart* the MCU                                      \n\
-   or: %s -o               <tty>   *count* reuurn the sample count                        \n\
+usage: %s -s <options>     <tty> *stream* power measurements over USB                   \n\
+   or: %s -b <options>     <tty> *buffer* on the SD card                                \n\
+   or: %s -d <file number> <tty> *download* last file or <file number> from the SD card \n\
+   or: %s -k               <tty> *restart* the MCU                                      \n\
+   or: %s -o               <tty> *count* reuurn the sample count                        \n\
                                                                                           \n\
 Options:                                                                                  \n\
   -g <[L]ow or [H]igh> : current gain (default %c)                                        \n\
@@ -53,13 +53,17 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, ":sbg:ovh:ktcd:")) != -1)
+	while ((opt = getopt(argc, argv, ":sbg:ovhktcd:")) != -1)
 	{
 		switch(opt)
 		{
 			case 'd':
 				down = 1;
 				down_file = strtol(optarg, NULL, 10);
+
+				// tty passed as last parameter, not file number
+				if(optind == argc && optarg[0] == '/')
+					optind--;
 			break;
 			case 'o':
 				count = 1;
