@@ -8,20 +8,20 @@ void usage(char* name) //{{{
 {
 	fprintf(stderr, "\
 BattOr's PC companion     \n\n\
-usage: %s <tty> -s <options>    *stream* power measurements over USB              \n\
-   or: %s <tty> -b <options>    *buffer* on the SD card                           \n\
-   or: %s <tty> -d              *download* from the SD card                       \n\
-   or: %s <tty> -k              *restart* the MCU                                 \n\
-   or: %s <tty> -o              *count* reuurn the sample count                   \n\
-                                                                            \n\
-Options:                                                                    \n\
-  -g <[L]ow or [H]igh> : current gain (default %c)                          \n\
-  -c calibration mode                                                       \n\
-  -v(v) : verbose printing for debugging                                    \n\
-                                                                            \n\
-Output:                                                                     \n\
-  Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>  \n\
-  Min and max current (I) and voltage (V) are indicated by [m_] and [M_]    \n\
+usage: %s -s <options>     <tty>   *stream* power measurements over USB                   \n\
+   or: %s -b <options>     <tty>   *buffer* on the SD card                                \n\
+   or: %s -d <file number> <tty>   *download* last file or <file number> from the SD card \n\
+   or: %s -k               <tty>   *restart* the MCU                                      \n\
+   or: %s -o               <tty>   *count* reuurn the sample count                        \n\
+                                                                                          \n\
+Options:                                                                                  \n\
+  -g <[L]ow or [H]igh> : current gain (default %c)                                        \n\
+  -c calibration mode                                                                     \n\
+  -v(v) : verbose printing for debugging                                                  \n\
+                                                                                          \n\
+Output:                                                                                   \n\
+  Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>                \n\
+  Min and max current (I) and voltage (V) are indicated by [m_] and [M_]                  \n\
 ", name, name, name, name, name, gain_to_char(GAIN_DEFAULT));
 } //}}}
 
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	char* tty = NULL;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
 
-	uint16_t down_file;
+	uint16_t down_file = 0;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
@@ -53,12 +53,13 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "sbg:ovhu:ktcd")) != -1)
+	while ((opt = getopt(argc, argv, ":sbg:ovh:ktcd:")) != -1)
 	{
 		switch(opt)
 		{
 			case 'd':
 				down = 1;
+				down_file = strtol(optarg, NULL, 10);
 			break;
 			case 'o':
 				count = 1;
@@ -98,6 +99,20 @@ int main(int argc, char** argv)
 				usage(argv[0]);
 				return EXIT_FAILURE;
       break;
+
+			// required argument not supplied
+			case ':':
+				switch (optopt)
+				{
+					case 'd':
+						down = 1;
+					break;
+					default:
+						usage(argv[0]);
+						return EXIT_FAILURE;
+				}
+			break;
+
 			default:
 				usage(argv[0]);
 				return EXIT_FAILURE;
@@ -125,10 +140,12 @@ int main(int argc, char** argv)
 	if (test)
 	{
 		int ret;
-		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0) {
+		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0)
+		{
 			fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
 			return EXIT_FAILURE;
 		}
+
 		fprintf(stderr, "------ Self Test PASSED ------\n");
 		return EXIT_SUCCESS;
 	}
@@ -159,10 +176,20 @@ int main(int argc, char** argv)
 			fprintf(stderr, "Error: EEPROM read failure or BattOr not calibrated\n");
 			return EXIT_FAILURE;
 		}
-		sconf.sample_rate = (uint32_t)eeparams->sd_sr;
+
+		uint8_t avg_shift = 0;
+		if (control(CONTROL_TYPE_GET_MODE_PORTABLE, 0, 0, 1))
+			avg_shift = eeparams->port_avg_2pwr;
+		else if (down_file > 0)
+		{
+			fprintf(stderr, "Error: In USB buffering mode, can only download last file.\n");
+			return EXIT_FAILURE;
+		}
+
+		sconf.sample_rate = (uint32_t)(eeparams->sd_sr >> avg_shift);
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
-		control(CONTROL_TYPE_READ_SD_UART, 0, 0, 0);
+		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
 		samples_print_loop(&sconf);
 		return EXIT_SUCCESS;
 	}

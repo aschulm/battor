@@ -10,6 +10,7 @@
 #include "params.h"
 
 static control_message message;
+static uint8_t inited = 0;
 uint8_t g_control_mode = 0;
 uint8_t g_control_gain = 0;
 
@@ -53,10 +54,8 @@ int8_t control_run_message(control_message* m) //{{{
 	{
 		case CONTROL_TYPE_INIT:
 			// reset if already run
-			if (g_control_mode != 0)
+			if (inited)
 				reset();
-
-			g_control_mode = CONTROL_MODE_IDLE;
 
 			ret = g_error_last;
 			// an error may not have been set yet, always return something
@@ -65,6 +64,8 @@ int8_t control_run_message(control_message* m) //{{{
 
 			// clear out last error
 			g_error_last = 0;
+
+			inited = 1;
 		break;
 		case CONTROL_TYPE_GAIN_SET:
 			g_control_gain = m->value1;
@@ -72,19 +73,37 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_START_SAMPLING_UART:
 			g_control_mode = CONTROL_MODE_STREAM;
 			blink_set_led(LED_GREEN_bm);
+			blink_set_strobe_count(1);
 			samples_start();
 		break;
 		case CONTROL_TYPE_START_SAMPLING_SD:
-			g_control_mode = CONTROL_MODE_STORE;
+			// indicate to the user that the battor is in usb control mode
+			led_off(LED_GREEN_bm);
+
+			// format into usb mode if in portable mode
+			if (g_control_mode == CONTROL_MODE_PORT_IDLE ||
+				g_control_mode == CONTROL_MODE_PORT_STORE)
+				if (fs_format(0) < 0)
+					halt(ERROR_FS_FORMAT_FAIL);
+
+			g_control_mode = CONTROL_MODE_USB_STORE;
 			blink_set_led(LED_RED_bm);
+			blink_set_strobe_count(1);
 			samples_start();
 		break;
 		case CONTROL_TYPE_READ_SD_UART:
 			led_on(LED_RED_bm);
 			samples_stop();
-			samples_store_read_uart_write();
+
+			// return to idle mode depending on which mode it is in
+			// if it is already idle then do not change the mode
+			if (g_control_mode == CONTROL_MODE_USB_STORE)
+				g_control_mode = CONTROL_MODE_USB_IDLE;
+			if (g_control_mode == CONTROL_MODE_PORT_STORE)
+				g_control_mode = CONTROL_MODE_PORT_IDLE;
+
+			samples_store_read_uart_write(m->value1);
 			led_off(LED_RED_bm);
-			g_control_mode = CONTROL_MODE_IDLE;
 			blink_set_led(LED_YELLOW_bm);
 		break;
 		case CONTROL_TYPE_RESET:
@@ -127,6 +146,10 @@ int8_t control_run_message(control_message* m) //{{{
 			uart_tx_dma();
 			ret = -1;
 		break;
+		case CONTROL_TYPE_GET_MODE_PORTABLE:
+			ret = (g_control_mode == CONTROL_MODE_PORT_IDLE ||
+				g_control_mode == CONTROL_MODE_PORT_STORE);
+		break;
 		case CONTROL_TYPE_SELF_TEST:
 			// step 1. test the sram
 			printf("====== self test started ======\n");
@@ -146,3 +169,49 @@ int8_t control_run_message(control_message* m) //{{{
 	return ret;
 } //}}}
 
+void control_button_press() //{{{
+{
+	switch(g_control_mode)
+	{
+		case CONTROL_MODE_PORT_IDLE:
+			g_control_mode = CONTROL_MODE_PORT_STORE;
+			blink_set_led(LED_RED_bm);
+			samples_start();
+
+			// indicate to the user the current open file seq
+			blink_set_strobe_count(g_fs_file_seq);
+		break;
+		case CONTROL_MODE_PORT_STORE:
+			// indicate to the user what the next open file seq is
+			blink_set_led(LED_YELLOW_bm);
+			blink_set_strobe_count(g_fs_file_seq + 1);
+
+			samples_stop();
+			led_off(LED_RED_bm);
+			g_control_mode = CONTROL_MODE_PORT_IDLE;
+		break;
+	}
+} //}}}
+
+void control_button_hold() //{{{
+{
+	// stop storing current file
+	if (g_control_mode == CONTROL_MODE_PORT_STORE ||
+		g_control_mode == CONTROL_MODE_USB_STORE)
+	{
+			samples_stop();
+			led_off(LED_RED_bm);
+			blink_set_led(LED_YELLOW_bm);
+			g_control_mode = CONTROL_MODE_PORT_IDLE;
+	}
+
+	// format SD card in portable mode
+	if (fs_format(1) < 0)
+		halt(ERROR_FS_FORMAT_FAIL);
+
+	g_control_mode = CONTROL_MODE_PORT_IDLE;
+
+	// indicate to user that SD card is at the first file and in portable mode
+	blink_set_strobe_count(g_fs_file_seq);
+	led_on(LED_GREEN_bm);
+} //}}}

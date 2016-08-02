@@ -46,7 +46,8 @@ void params_set_samplerate()
 		tdiv = eeprom.uart_tdiv;
 		filpot_set = eeprom.uart_filpot;
 	}
-	else if (g_control_mode == CONTROL_MODE_STORE)
+	else if (g_control_mode == CONTROL_MODE_USB_STORE ||
+		g_control_mode == CONTROL_MODE_PORT_STORE)
 	{
 		tovf = eeprom.sd_tovf;
 		tdiv = eeprom.sd_tdiv;
@@ -63,4 +64,12 @@ void params_set_samplerate()
 	filpot_get = pot_wiperpos_get(POT_FIL_CS_PIN_gm);
 	if (filpot_get != filpot_set)
 		halt(ERROR_FILPOT_SET_FAILED);
+}
+
+int8_t params_get_port_avg_2pwr()
+{
+	if (eeprom.version < PARAMS_EEPROM_PORT_AVG_2PWR_VER)
+		return -1;
+
+	return eeprom.port_avg_2pwr;
 }

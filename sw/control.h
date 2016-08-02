@@ -13,6 +13,7 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_READ_SD_UART,        // read a file from the SD card over the UART
 	CONTROL_TYPE_GET_SAMPLE_COUNT,    // read the number of samples collected for sync
 	CONTROL_TYPE_GET_GIT_HASH,        // read the GIT hash of the firmware
+	CONTROL_TYPE_GET_MODE_PORTABLE,   // read if the BattOr is portable or not
 } CONTROL_TYPE_t;
 
 struct control_message_

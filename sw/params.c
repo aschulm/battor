@@ -74,6 +74,10 @@ int param_read_eeprom(eeprom_params* params)
 			verb_printf("\tuart_tdiv: %d\n", params->uart_tdiv);
 			verb_printf("\tuart_tovf: %d\n", params->uart_tovf);
 			verb_printf("\tuart_filpot: %d\n", params->uart_filpot);
+
+			if (params->version >= EEPROM_PORT_AVG_2PWR_VER)
+				verb_printf("\tport_avg_2pwr: %d\n", params->port_avg_2pwr);
+
 			// TODO check the EEPROM CRC
 			break;
 		}

@@ -19,6 +19,7 @@ typedef enum ERROR_enum
 	ERROR_FS_OPEN_FAIL,
 	ERROR_FS_WRITE_FAIL,
 	ERROR_FS_CLOSE_FAIL,
+	ERROR_FS_FORMAT_FAIL,
 } ERROR_t;
 
 void halt(uint8_t code);
