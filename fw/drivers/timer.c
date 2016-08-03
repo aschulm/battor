@@ -76,8 +76,6 @@ void timer_rtc_get(uint32_t* s, uint32_t* ms)
 
 	*s = rtc_s;
 	*ms = rtc_ms;
-
-	printf("+++got time %lu %lu\n", *s, *ms);
 }
 
 void timer_rtc_ms_update()

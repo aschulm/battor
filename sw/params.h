@@ -79,8 +79,15 @@ struct eeprom_params_
 } __attribute__((packed));
 typedef struct eeprom_params_ eeprom_params;
 
+struct rtc_
+{
+	uint32_t s;
+	uint32_t ms;
+} __attribute__((packed));
+typedef struct rtc_ rtc;
+
 int param_write_rtc();
-int param_get_rtc_for_file(uint16_t file);
+int param_get_rtc_for_file(uint16_t file, rtc* timestamp);
 uint32_t param_sample_rate(uint32_t desired_sample_rate_hz, uint16_t ovs_bits, uint16_t* t_ovf, uint16_t* t_div, uint16_t* filpot_pos);
 int param_check_version();
 int param_read_eeprom(eeprom_params* params);

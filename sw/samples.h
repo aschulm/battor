@@ -22,6 +22,7 @@ struct samples_config_
 	eeprom_params eeparams;
 	uint8_t ovs_bits;
 	char cal;
+	rtc start_timestamp;
 };
 typedef struct samples_config_ samples_config;
 

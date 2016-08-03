@@ -44,7 +44,8 @@ typedef enum FS_ERROR_enum
 int fs_info(fs_superblock* sb);
 int fs_format(uint8_t portable);
 int fs_open(uint8_t create_file, uint32_t file_seq_to_open);
-int fs_rtc(uint32_t* s, uint32_t* ms);
+int fs_rtc_get(uint32_t* s, uint32_t* ms);
+int fs_rtc_set();
 int fs_close();
 int fs_write(void* buf, uint16_t len);
 int fs_read(void* buf, uint16_t len);

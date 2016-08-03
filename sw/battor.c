@@ -147,7 +147,11 @@ int main(int argc, char** argv)
 	}
 
 	// always update the rtc time
-	param_write_rtc();
+	if (param_write_rtc() < 0)
+	{
+		fprintf(stderr, "Error: Failed to update RTC.\n");
+		return EXIT_FAILURE;
+	}
 
 	// run self test
 	if (test)
@@ -196,7 +200,12 @@ int main(int argc, char** argv)
 		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
-		param_get_rtc_for_file(down_file);
+		if (param_get_rtc_for_file(down_file, &sconf.start_timestamp) < 0)
+		{
+			fprintf(stderr, "Warning: Could not fetch RTC timestamp for file, starting at 0\n");
+			memset(&sconf.start_timestamp, 0, sizeof(rtc));
+		}
+
 		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
 		samples_init(&sconf);
 		samples_print_config(&sconf);
@@ -227,9 +236,9 @@ int main(int argc, char** argv)
 	if (usb)
 	{
 		sconf.sample_rate = eeparams->uart_sr;
-//		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
-//		samples_init(&sconf);
-//		samples_print_config(&sconf);
+		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
+		samples_init(&sconf);
+		samples_print_config(&sconf);
 		samples_print_loop(&sconf);
 	}
 

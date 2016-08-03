@@ -19,33 +19,22 @@ int param_write_rtc()
 	return 0;
 }
 
-struct rtc
-{
-	uint32_t s;
-	uint32_t ms;
-};
-
-int param_get_rtc_for_file(uint16_t file)
+int param_get_rtc_for_file(uint16_t file, rtc* timestamp)
 {
 	uint8_t tries = 0;
 	uint8_t type;
-	struct rtc r;
 
 	while (tries++ < CONTROL_ATTEMPTS)
 	{
-		memset(&r, 0, sizeof(r));
+		memset(timestamp, 0, sizeof(rtc));
 		control(CONTROL_TYPE_GET_RTC, file, 0, 0);
 		usleep(CONTROL_SLEEP_US); // since GIT HASH is sent in ACK, wait for it
-		if (uart_rx_bytes(&type, &r, sizeof(r)) == sizeof(r))
-		{
-				fprintf(stderr, "timestamp is %us %ums\n",
-					 r.s, r.ms);
-				break;
-		}
+		if (uart_rx_bytes(&type, timestamp, sizeof(rtc)) == sizeof(rtc))
+			break;
 	}
 
 	if (tries >= CONTROL_ATTEMPTS)
-		return -2;
+		return -1;
 	else
 		return 0;
 }
