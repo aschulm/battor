@@ -465,6 +465,10 @@ int fs_self_test() //{{{
 
 	printf("fs self test\n");
 
+	// set the rtc to zero so the test cases below will ensure
+	// all test cases below have 0 in their timestamps
+	timer_rtc_set(0);
+
 	// start with clean fs and
 	// remember fs_fmt_iter so it can be read after fs_close()
 	fs_format(0);
@@ -509,6 +513,9 @@ int fs_self_test() //{{{
 	file1.byte_len = 0;
 	file1.fmt_iter = fmt_iter;
 	file1.next_skip_file_startblock_idx = 0;
+	file1.rtc_start_time_s = 0;
+	file1.rtc_start_time_ms = 0;
+
 	if (memcmp(&file1, block, sizeof(file1)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -534,6 +541,8 @@ int fs_self_test() //{{{
 	file2.byte_len = 0;
 	file2.fmt_iter = fmt_iter;
 	file2.next_skip_file_startblock_idx = 0;
+	file2.rtc_start_time_s = 0;
+	file2.rtc_start_time_ms = 0;
 
 	if (memcmp(&file2, block, sizeof(file2)) != 0)
 	{
@@ -564,6 +573,8 @@ int fs_self_test() //{{{
 	file3.seq = 3;
 	file3.byte_len = 10;
 	file3.next_skip_file_startblock_idx = 0;
+	file3.rtc_start_time_s = 0;
+	file3.rtc_start_time_ms = 0;
 
 	if (memcmp(&file3, block, sizeof(file3)) != 0)
 	{
@@ -605,6 +616,8 @@ int fs_self_test() //{{{
 	file4.seq = 4;
 	file4.byte_len = 514;
 	file4.next_skip_file_startblock_idx = 0;
+	file4.rtc_start_time_s = 0;
+	file4.rtc_start_time_ms = 0;
 
 	if (memcmp(&file4, block, sizeof(file3)) != 0)
 	{
@@ -725,6 +738,9 @@ int fs_self_test() //{{{
 	file5.seq = 1;
 	file5.byte_len = 10;
 	file5.next_skip_file_startblock_idx = 0;
+	file5.rtc_start_time_s = 0;
+	file5.rtc_start_time_ms = 0;
+
 	if (memcmp(&file5, block, sizeof(file5)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -751,6 +767,9 @@ int fs_self_test() //{{{
 	file6.seq = 1;
 	file6.byte_len = 10;
 	file6.next_skip_file_startblock_idx = 0;
+	file6.rtc_start_time_s = 0;
+	file6.rtc_start_time_ms = 0;
+
 	if (memcmp(&file6, block, sizeof(file6)) != 0)
 	{
 		printf("FAILED file block is incorrect\n");
@@ -788,6 +807,8 @@ int fs_self_test() //{{{
 	file_skip1.seq = 1;
 	file_skip1.byte_len = 0;
 	file_skip1.next_skip_file_startblock_idx = 251;
+	file_skip1.rtc_start_time_s = 0;
+	file_skip1.rtc_start_time_ms = 0;
 	sd_read_block(block, 1);
 	if (memcmp(&file_skip1, block, sizeof(file_skip1)) != 0)
 	{
@@ -864,6 +885,8 @@ int fs_self_test() //{{{
 	file_skip2.seq = 251;
 	file_skip2.byte_len = 0;
 	file_skip2.next_skip_file_startblock_idx = 750;
+	file_skip2.rtc_start_time_s = 0;
+	file_skip2.rtc_start_time_ms = 0;
 	sd_read_block(block, 251);
 	if (memcmp(&file_skip2, block, sizeof(file_skip2)) != 0)
 	{
