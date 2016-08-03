@@ -28,7 +28,7 @@ Output:                                                                         
 
 int main(int argc, char** argv)
 {
-	int i;
+	int i, ret;
 	FILE* file;
 	char opt;
 	char* tty = DEFAULT_TTY;
@@ -144,9 +144,15 @@ int main(int argc, char** argv)
 	}
 
 	// check the firmware version
-	if (param_check_version() < 0)
+	ret = param_check_version();
+	if (ret == -1)
 	{
 		fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
+		return EXIT_FAILURE;
+	}
+	else if (ret == -2)
+	{
+		fprintf(stderr, "Error: Failed to communicate with the BattOr.\n");
 		return EXIT_FAILURE;
 	}
 
