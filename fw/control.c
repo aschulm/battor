@@ -14,6 +14,23 @@ static uint8_t inited = 0;
 uint8_t g_control_mode = 0;
 uint8_t g_control_gain = 0;
 
+static void stop_sampling()
+{
+	// stopping portable store so indicate the next file to the user
+	if (g_control_mode == CONTROL_MODE_PORT_STORE)
+		blink_set_strobe_count(g_fs_file_seq + 1);
+	blink_set_led(LED_YELLOW_bm);
+
+	samples_stop();
+
+	// return to idle mode depending on which mode it is in
+	// if it is already idle then do not change the mode
+	if (g_control_mode == CONTROL_MODE_USB_STORE)
+		g_control_mode = CONTROL_MODE_USB_IDLE;
+	if (g_control_mode == CONTROL_MODE_PORT_STORE)
+		g_control_mode = CONTROL_MODE_PORT_IDLE;
+}
+
 void control_got_uart_bytes() //{{{
 {
 	uint8_t recv_len;
@@ -43,13 +60,14 @@ void control_got_uart_bytes() //{{{
 	}
 } //}}}
 
+
 int8_t control_run_message(control_message* m) //{{{
 {
 	int8_t ret = 0;
 
 	printf("control: type %d\n", m->type);
 	uint8_t buf[100];
-	uint32_t u32;
+	uint32_t u32_1, u32_2;
 	switch (m->type)
 	{
 		case CONTROL_TYPE_INIT:
@@ -92,24 +110,10 @@ int8_t control_run_message(control_message* m) //{{{
 			samples_start();
 		break;
 		case CONTROL_TYPE_READ_SD_UART:
+			stop_sampling();
 			led_on(LED_RED_bm);
-
-			// stopping portable store so indicate the next file to the user
-			if (g_control_mode == CONTROL_MODE_PORT_STORE)
-				blink_set_strobe_count(g_fs_file_seq + 1);
-
-			samples_stop();
-
-			// return to idle mode depending on which mode it is in
-			// if it is already idle then do not change the mode
-			if (g_control_mode == CONTROL_MODE_USB_STORE)
-				g_control_mode = CONTROL_MODE_USB_IDLE;
-			if (g_control_mode == CONTROL_MODE_PORT_STORE)
-				g_control_mode = CONTROL_MODE_PORT_IDLE;
-
 			samples_store_read_uart_write(m->value1);
 			led_off(LED_RED_bm);
-			blink_set_led(LED_YELLOW_bm);
 		break;
 		case CONTROL_TYPE_RESET:
 			reset();
@@ -130,9 +134,9 @@ int8_t control_run_message(control_message* m) //{{{
 				break;
 			}
 
-			u32 = uart_rx_sample_count();
+			u32_1 = uart_rx_sample_count();
 			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
-			uart_tx_bytes_prepare(&u32, sizeof(u32));
+			uart_tx_bytes_prepare(&u32_1, sizeof(u32_1));
 			uart_tx_end_prepare();
 
 			uart_tx_dma();
@@ -154,6 +158,24 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_GET_MODE_PORTABLE:
 			ret = (g_control_mode == CONTROL_MODE_PORT_IDLE ||
 				g_control_mode == CONTROL_MODE_PORT_STORE);
+		break;
+		case CONTROL_TYPE_SET_RTC:
+			timer_rtc_set(((uint32_t)m->value1 << 16) | ((uint32_t)m->value2));
+				
+		break;
+		case CONTROL_TYPE_GET_RTC:
+			u32_1 = 0; u32_2 = 0;
+
+			stop_sampling();
+
+			if (fs_open(0, m->value1) >= 0)
+				fs_rtc_get(&u32_1, &u32_2);
+			uart_tx_start_prepare(UART_TYPE_CONTROL_ACK);
+			uart_tx_bytes_prepare(&u32_1, sizeof(u32_1));
+			uart_tx_bytes_prepare(&u32_2, sizeof(u32_2));
+			uart_tx_end_prepare();
+			uart_tx_dma();
+			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:
 			// step 1. test the sram
@@ -187,13 +209,7 @@ void control_button_press() //{{{
 			blink_set_strobe_count(g_fs_file_seq);
 		break;
 		case CONTROL_MODE_PORT_STORE:
-			// indicate to the user what the next open file seq is
-			blink_set_led(LED_YELLOW_bm);
-			blink_set_strobe_count(g_fs_file_seq + 1);
-
-			samples_stop();
-			led_off(LED_RED_bm);
-			g_control_mode = CONTROL_MODE_PORT_IDLE;
+			stop_sampling();
 		break;
 	}
 } //}}}
@@ -201,14 +217,7 @@ void control_button_press() //{{{
 void control_button_hold() //{{{
 {
 	// stop storing current file
-	if (g_control_mode == CONTROL_MODE_PORT_STORE ||
-		g_control_mode == CONTROL_MODE_USB_STORE)
-	{
-			samples_stop();
-			led_off(LED_RED_bm);
-			blink_set_led(LED_YELLOW_bm);
-			g_control_mode = CONTROL_MODE_PORT_IDLE;
-	}
+	stop_sampling();
 
 	// format SD card in portable mode
 	if (fs_format(1) < 0)

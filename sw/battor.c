@@ -12,7 +12,8 @@ usage: %s -s <options>     <tty> *stream* power measurements over USB           
    or: %s -b <options>     <tty> *buffer* on the SD card                                \n\
    or: %s -d <file number> <tty> *download* last file or <file number> from the SD card \n\
    or: %s -k               <tty> *restart* the MCU                                      \n\
-   or: %s -o               <tty> *count* reuurn the sample count                        \n\
+   or: %s -o               <tty> *count* return the sample count                        \n\
+   or: %s -r               <tty> *rtc* force an update of the real time clock           \n\
                                                                                           \n\
 Options:                                                                                  \n\
   -g <[L]ow or [H]igh> : current gain (default %c)                                        \n\
@@ -22,7 +23,7 @@ Options:                                                                        
 Output:                                                                                   \n\
   Each line is a power sample: <time (msec)> <current (mA)> <volatge (mV)>                \n\
   Min and max current (I) and voltage (V) are indicated by [m_] and [M_]                  \n\
-", name, name, name, name, name, gain_to_char(GAIN_DEFAULT));
+", name, name, name, name, name, name, gain_to_char(GAIN_DEFAULT));
 } //}}}
 
 int main(int argc, char** argv)
@@ -31,7 +32,7 @@ int main(int argc, char** argv)
 	FILE* file;
 	char opt;
 	char* tty = DEFAULT_TTY;
-	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0;
+	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0, rtc = 0;
 
 	uint16_t down_file = 0;
 	uint16_t timer_ovf, timer_div;
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, ":sbg:ovhktcd:")) != -1)
+	while ((opt = getopt(argc, argv, ":sbg:ovhktcd:r")) != -1)
 	{
 		switch(opt)
 		{
@@ -96,6 +97,9 @@ int main(int argc, char** argv)
 			break; 
 			case 't':
 				test = 1;
+			break;
+			case 'r':
+				rtc = 1;
 			break;
 			case 'v':
 				g_verb++;
@@ -146,6 +150,18 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	// always update the rtc time
+	if (param_write_rtc() < 0)
+	{
+		fprintf(stderr, "Error: Failed to update RTC.\n");
+		return EXIT_FAILURE;
+	}
+	if (rtc)
+	{
+		printf("Succesfully updated the BattOr's RTC\n");
+		return EXIT_SUCCESS;
+	}
+
 	// run self test
 	if (test)
 	{
@@ -193,6 +209,12 @@ int main(int argc, char** argv)
 		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
+		if (param_get_rtc_for_file(down_file, &sconf.start_timestamp) < 0)
+		{
+			fprintf(stderr, "Warning: Could not fetch RTC timestamp for file, starting at 0\n");
+			memset(&sconf.start_timestamp, 0, sizeof(rtc));
+		}
+
 		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
 		samples_init(&sconf);
 		samples_print_config(&sconf);

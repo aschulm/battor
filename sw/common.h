@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 
 #include "params.h"
 #include "samples.h"

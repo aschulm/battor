@@ -14,6 +14,8 @@ typedef enum CONTROL_TYPE_enum
 	CONTROL_TYPE_GET_SAMPLE_COUNT,    // read the number of samples collected for sync
 	CONTROL_TYPE_GET_GIT_HASH,        // read the GIT hash of the firmware
 	CONTROL_TYPE_GET_MODE_PORTABLE,   // read if the BattOr is portable or not
+	CONTROL_TYPE_SET_RTC,             // write the RTC seconds
+	CONTROL_TYPE_GET_RTC,             // read the RTC for the specified file
 } CONTROL_TYPE_t;
 
 struct control_message_

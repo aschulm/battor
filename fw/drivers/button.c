@@ -7,7 +7,7 @@
 #include "button.h"
 
 static uint16_t down_ms;
-static uint16_t prev_ms_ticks;
+static uint32_t prev_ms_ticks;
 static uint8_t button_state;
 typedef enum BUTTON_STATE_enum
 {

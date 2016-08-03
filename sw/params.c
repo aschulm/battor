@@ -1,5 +1,44 @@
 #include "common.h"
 
+// set the BattOr's clock to the PC's RTC
+int param_write_rtc()
+{
+	struct timeval tv;
+	memset(&tv, 0, sizeof(tv));
+
+	// wait until time is approx an even second
+	do
+	{
+		gettimeofday(&tv, NULL);
+	} while (tv.tv_usec > 1000);
+
+	control(CONTROL_TYPE_SET_RTC,
+		(tv.tv_sec & 0xFFFF0000) >> 16,
+		(tv.tv_sec & 0x0000FFFF),
+		1);
+	return 0;
+}
+
+int param_get_rtc_for_file(uint16_t file, rtc* timestamp)
+{
+	uint8_t tries = 0;
+	uint8_t type;
+
+	while (tries++ < CONTROL_ATTEMPTS)
+	{
+		memset(timestamp, 0, sizeof(rtc));
+		control(CONTROL_TYPE_GET_RTC, file, 0, 0);
+		usleep(CONTROL_SLEEP_US); // since GIT HASH is sent in ACK, wait for it
+		if (uart_rx_bytes(&type, timestamp, sizeof(rtc)) == sizeof(rtc))
+			break;
+	}
+
+	if (tries >= CONTROL_ATTEMPTS)
+		return -1;
+	else
+		return 0;
+}
+
 // compare the firmware and software git version
 int param_check_version()
 {

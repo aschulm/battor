@@ -16,6 +16,8 @@ static int32_t file_startblock_idx;
 static uint32_t file_byte_idx;
 static uint32_t file_byte_len;
 static int32_t file_prev_skip_startblock_idx;
+static uint32_t file_rtc_start_time_s;
+static uint32_t file_rtc_start_time_ms;
 // Current file sequence number
 // * 1 if no file is open
 // * current file seq if file is open
@@ -60,6 +62,8 @@ static void fs_init() //{{{
 	file_startblock_idx = -1;
 	file_byte_idx = 0;
 	file_byte_len = 0;
+	file_rtc_start_time_s = 0;
+	file_rtc_start_time_ms = 0;
 	g_fs_file_seq = 1;
 	file_prev_skip_startblock_idx = -1;
 
@@ -192,6 +196,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 				file_startblock_idx = block_idx;
 				file_byte_len = file->byte_len;
 				file_byte_idx = 0;
+				file_rtc_start_time_s = file->rtc_start_time_s;
+				file_rtc_start_time_ms = file->rtc_start_time_ms;
 				return FS_ERROR_NONE;
 			}
 
@@ -240,6 +246,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 					file_startblock_idx = block_idx_prev;
 					file_byte_len = file_byte_len_prev;
 					file_byte_idx = 0;
+					file_rtc_start_time_s = file->rtc_start_time_s;
+					file_rtc_start_time_ms = file->rtc_start_time_ms;
 				}
 				else
 					return FS_ERROR_NO_EXISTING_FILE;
@@ -261,6 +269,32 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	}
 
 	return FS_ERROR_FILE_TOO_LONG;
+} //}}}
+
+int fs_rtc_get(uint32_t* s, uint32_t* ms) //{{{
+{
+	// fail if there is no open file
+	if (file_startblock_idx < 0)
+		return -1;
+
+	// return the rtc time for the currently opened file
+	*s = file_rtc_start_time_s;
+	*ms = file_rtc_start_time_ms;
+	return 0;
+} //}}}
+
+int fs_rtc_set() //{{{
+{
+	uint32_t s, ms;
+	// fail if there is no open file
+	if (file_startblock_idx < 0)
+		return -1;
+
+	// set the rtc time for the currently opened file
+	timer_rtc_get(&s, &ms);
+	file_rtc_start_time_s = s;
+	file_rtc_start_time_ms = ms;
+	return 0;
 } //}}}
 
 int fs_close() //{{{
@@ -289,6 +323,8 @@ int fs_close() //{{{
 	file->seq = g_fs_file_seq;
 	file->byte_len = file_byte_idx;
 	file->fmt_iter = fs_fmt_iter;
+	file->rtc_start_time_s = file_rtc_start_time_s;
+	file->rtc_start_time_ms = file_rtc_start_time_ms;
 
 	// write file block
 	if (file_startblock_idx >= fs_capacity)

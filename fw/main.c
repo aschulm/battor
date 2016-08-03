@@ -56,6 +56,7 @@ int main() //{{{
 		{
 			blink_ms_timer_update();
 			button_ms_timer_update();
+			timer_rtc_ms_update();
 			interrupt_clear(INTERRUPT_TIMER_MS);
 		}
 
