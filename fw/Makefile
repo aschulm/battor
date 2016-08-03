@@ -33,7 +33,7 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 flash: all
-	#battor -k
+	battor -k
 	avrdude -e -p x192a3u -c avr109 -b 115200 -P $(USBDEV) -U flash:w:main.hex
 
 flash_mkII: all
