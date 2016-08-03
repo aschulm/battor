@@ -140,11 +140,11 @@ int main(int argc, char** argv)
 	}
 
 	// check the firmware version
-	if (param_check_version() < 0)
-	{
-		fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
-		return EXIT_FAILURE;
-	}
+	//if (param_check_version() < 0)
+	//{
+	//	fprintf(stderr, "Error: Firmware software version mismatch, please reflash firmware.\n");
+	//	return EXIT_FAILURE;
+	//}
 
 	// always update the rtc time
 	if (param_write_rtc() < 0)

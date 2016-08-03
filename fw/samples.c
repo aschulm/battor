@@ -112,11 +112,11 @@ void samples_start() //{{{
 	// wait for things to settle
 	timer_sleep_ms(10);
 
+	// start getting samples from the ADCs
+	dma_start(g_adcb0, g_adcb1);
 	// set the rtc start timestamp for the file when in portable mode
 	if (g_control_mode == CONTROL_MODE_PORT_STORE)
 		fs_rtc_set();
-	// start getting samples from the ADCs
-	dma_start(g_adcb0, g_adcb1);
 } //}}}
 
 void samples_stop() //{{{
