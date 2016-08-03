@@ -143,6 +143,8 @@ int fs_format(uint8_t portable) //{{{
 int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 {
 	uint32_t file_byte_len_prev = -1;
+	uint32_t file_rtc_start_time_s_prev = 0;
+	uint32_t file_rtc_start_time_ms_prev = 0;
 	int32_t block_idx_prev = -1;
 
 	// reset filesystem state
@@ -212,6 +214,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 				// no prev file due to skip
 				block_idx_prev = -1;
 				file_byte_len_prev = -1;
+				file_rtc_start_time_s_prev = 0;
+				file_rtc_start_time_ms_prev = 0;
 
 				block_idx = file->next_skip_file_startblock_idx-1;
 				g_fs_file_seq += FS_FILE_SKIP_LEN;
@@ -221,6 +225,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 			{
 				block_idx_prev = block_idx;
 				file_byte_len_prev = file->byte_len;
+				file_rtc_start_time_s_prev = file->rtc_start_time_s;
+				file_rtc_start_time_ms_prev = file->rtc_start_time_ms;
 
 				block_idx += BYTES_TO_BLOCKS(file->byte_len);
 				g_fs_file_seq++;
@@ -246,8 +252,8 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 					file_startblock_idx = block_idx_prev;
 					file_byte_len = file_byte_len_prev;
 					file_byte_idx = 0;
-					file_rtc_start_time_s = file->rtc_start_time_s;
-					file_rtc_start_time_ms = file->rtc_start_time_ms;
+					file_rtc_start_time_s = file_rtc_start_time_s_prev;
+					file_rtc_start_time_ms = file_rtc_start_time_ms_prev;
 				}
 				else
 					return FS_ERROR_NO_EXISTING_FILE;
