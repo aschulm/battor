@@ -17,6 +17,11 @@
 static uint8_t csd[16];
 static uint8_t write_in_progress;
 
+#ifdef DEBUG_SD_TIMING
+static uint16_t down_ms;
+static uint32_t prev_ms_ticks;
+#endif
+
 static int read_csd()
 {
 	uint8_t tries;
@@ -189,6 +194,11 @@ int sd_init() //{{{
 	if (read_csd() < 0)
 		return -5;
 
+#ifdef DEBUG_SD_TIMING
+	down_ms = 0;
+	prev_ms_ticks = 0;
+#endif
+
 	return 0;
 } //}}}
 
@@ -237,6 +247,11 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 {
 	if (write_in_progress)
 		halt(ERROR_SD_WRITE_IN_PROGRESS);
+
+#ifdef DEBUG_SD_TIMING
+    down_ms = 0;
+    prev_ms_ticks = g_timer_ms_ticks;
+#endif
 
 	// TODO bounds checking
 	uint8_t rx = 0xFF;
@@ -293,6 +308,11 @@ int sd_write_block_update() //{{{
 	// cycle the clock several times to advance write progress
 	dma_spi_txrx(&USARTE1, NULL, rx, sizeof(rx));
 
+#ifdef DEBUG_SD_TIMING
+    down_ms += timer_elapsed_ms(prev_ms_ticks, g_timer_ms_ticks);
+    prev_ms_ticks = g_timer_ms_ticks;
+#endif
+
 	// is transfer complete?
 	if (rx[sizeof(rx) - 1] != 0)
 	{
@@ -301,9 +321,15 @@ int sd_write_block_update() //{{{
 		 */
 		write_in_progress = 0;
 
+#ifdef DEBUG_SD_TIMING
+        //printf("write_block: %d\n", down_ms);
+        printf("write_block: %d\n", down_ms);
+#endif
+
 		 //give the SD card 8 clock cycles to prepare for command
 		usart_spi_txrx(&USARTE1, NULL, NULL, 1);
 		gpio_on(&PORTE, SPI_SS_PIN_bm);
+
 		return 0;
 	}
 
