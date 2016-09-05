@@ -371,3 +371,13 @@ int sd_self_test() //{{{
 
 	return 0;
 } //}}}
+
+
+void sd_overrun() //{{{
+{
+#ifdef DEBUG_SD_TIMING
+    down_ms += timer_elapsed_ms(prev_ms_ticks, g_timer_ms_ticks);
+    prev_ms_ticks = g_timer_ms_ticks;
+    printf("write_block_overrun: %d\n", down_ms);
+#endif
+}
