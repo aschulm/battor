@@ -9,8 +9,8 @@
     - [Systrace](#systrace)
     - [Firmware](#firmware)
   - [Usage](#usage)
-    - [LED status codes](#led-status-codes)
-    - [Software](#software-1)
+    - [Desktop operation mode](#desktop-operation-mode)
+    - [Portable operation mode](#portable-operation-mode)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -59,24 +59,18 @@ The firmware currently only builds on Linux. The BattOr software must be in $PAT
 
 ## Usage
 
-### LED status codes
+### Desktop operation mode
 
-* Fast blinking *YELLOW*: In bootloader
-* Slow blinking *YELLOW*: Idle
-* Blinking *RED*: Buffering to SD card
-* Solid *RED*: Downloading from SD card
-* Blinking *GREEN*: Streaming over USB
-
-### Software
-
-**Streaming**
+**LED status codes:**
+* Blinking *YELLOW*: Idle, waiting to start next trace.
+* Blinking *RED*: Recording trace.
+* Solid *RED*: Downloading trace.
+* Blinking *GREEN*: Streaming trace.
 
 To stream samples from the BattOr over USB, run the following on the command line.
 Often you will want to redirect the output to a file.
 
     $ battor -s
-
-**Buffering**
 
 To start buffering power measurements, run the following on the command line.
 Once the BattOr has a blinking *RED* LED, it can be disconnected from USB so power can
@@ -91,3 +85,26 @@ downloading buffered power measurements takes approximately 1/4 of time that
 the samples were buffered.
 
     $ battor -d
+
+### Portable operation mode
+
+**LED status codes:**
+* Solid *GREEN*: Portable mode enabled.
+* Blinking *YELLOW*: Idle, waiting to start next trace. Number of strobes indicates the next file number to write (e.g., two strobes indicates the next file is file #2).
+* Blinking *RED* Recording trace. Number of strobes indicates file currently being written.
+* Solid *RED*: Downloading trace.
+
+To enter portable operation mode, hold the *Rec* button for 5 seconds. The
+green LED will stay on indicating that the BattOr is in portable mode. You can
+then tap the *Rec* button to start and stop recording traces.  As described
+above, the strobes of the YELLOW LED indicates the number of the next file that
+will be written, and the strobes of the RED LED indicates the number of the
+file currently being written. When there are too many strobes for your keep a
+good count, you can reset to file #1 by holding the *Rec* button for 5
+seconds.
+
+To download a trace file, run the following on the command line and fill in the
+file number. The BattOr will have a solid *RED* LED until the download is
+completed.
+
+	$ battor -d <file number>
