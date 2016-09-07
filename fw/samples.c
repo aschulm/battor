@@ -178,8 +178,14 @@ void samples_ringbuf_write(sample* s) //{{{
 #endif
 
 	// write samples
-	if (ringbuf_write(&rb, s, samples_len) < 0)
+	if (ringbuf_write(&rb, s, samples_len) < 0) {
+        // the only known cause now for ringbuffer being full would be
+        // that the sd card can't keep up so notify the sd card driver
+        // we're debugging and want to see how long it's been since the
+        // last successful block write.
+        sd_overrun();
 		halt(ERROR_RINGBUF_WRITE_FAIL);
+    }
 } //}}}
 
 int samples_uart_write(uint8_t just_prepare) // {{{
