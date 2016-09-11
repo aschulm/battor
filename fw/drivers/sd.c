@@ -299,6 +299,15 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 	return 1;
 } //}}}
 
+int sd_write_multi_block_start(void* block, int block_num) {
+    return sd_write_block_start(block, block_num);
+}
+
+int sd_write_multi_block_end() {
+    // TODO
+    return 0;
+}
+
 int sd_write_block_update() //{{{
 {
 	uint8_t rx[32];
@@ -337,9 +346,10 @@ int sd_write_block_update() //{{{
 	return -1;
 } //}}}
 
+#define NUM_BLOCKS 10
 int sd_self_test() //{{{
 {
-	int i = 0;
+	int i = 0, j = 0;
 	uint8_t block[SD_BLOCK_LEN];
 	uint32_t* block_int = (uint32_t*)block;
 
@@ -367,6 +377,34 @@ int sd_self_test() //{{{
 			return -1;
 		}
 	}
+	printf("PASSED\n");
+
+	printf("multi block write and read...");
+	for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
+	{
+		block_int[i] = i;
+	}
+    
+    for (j = 0; j < NUM_BLOCKS; ++j) {
+        sd_write_multi_block_start(block, 20 + j);
+        while(sd_write_block_update() < 0);
+    }
+    sd_write_multi_block_end();
+
+	memset(block, 0, sizeof(block));
+    for (j = 0; j < NUM_BLOCKS; ++j) {
+        sd_read_block(block, 20 + j);
+        for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
+        {
+            if (block_int[i] != i)
+            {
+                printf("FAILED wrote[%d] read[%lu]\n",
+                        i,
+                        block_int[i]);
+                return -1;
+            }
+        }
+    }
 	printf("PASSED\n");
 
 	return 0;
