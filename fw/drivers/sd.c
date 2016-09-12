@@ -17,6 +17,12 @@
 static uint8_t csd[16];
 static uint8_t write_in_progress;
 
+// Multi block write support
+#define TEST_MULTI_BLOCK_COUNT 2
+#if SD_MULTI_WRITE
+static uint8_t multi_write_in_progress;
+#endif
+
 #ifdef DEBUG_SD_TIMING
 static uint16_t down_ms;
 static uint32_t prev_ms_ticks;
@@ -219,6 +225,7 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 
 	// send the single block command
 	gpio_off(&PORTE, SPI_SS_PIN_bm);
+    printf("reading\n");
 	sd_command(17, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1); // CMD17
 
 	// Could be an issue here where the last 8 of SD command contains the token, but I doubt this happens
@@ -243,9 +250,13 @@ int sd_read_block(void* block, uint32_t block_num) //{{{
 	return 1;
 } //}}}
 
+int sd_busy() {
+    return write_in_progress || multi_write_in_progress;
+}
+
 int sd_write_block_start(void* block, uint32_t block_num) //{{{
 {
-	if (write_in_progress)
+	if (sd_busy())
 		halt(ERROR_SD_WRITE_IN_PROGRESS);
 
 #ifdef DEBUG_SD_TIMING
@@ -300,17 +311,133 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 } //}}}
 
 int sd_write_multi_block_start(void* block, int block_num) {
+#if !SD_MULTI_WRITE
     return sd_write_block_start(block, block_num);
+#else
+    // Only bail out if currently writing a block, but not if in a multi-block.
+	if (write_in_progress)
+		halt(ERROR_SD_WRITE_IN_PROGRESS);
+    
+#ifdef DEBUG_SD_TIMING
+    down_ms = 0;
+    prev_ms_ticks = g_timer_ms_ticks;
+#endif
+
+    uint32_t tries;
+	uint8_t rx = 0xFF;
+	uint8_t tx[2];
+
+    if (!multi_write_in_progress) {
+        // send the multi block write command
+        printf("starting multi_write\n");
+        gpio_off(&PORTE, SPI_SS_PIN_bm);
+        if (sd_command(25, (0xFF000000 & block_num) >> 24, (0xFF0000 & block_num) >> 16, (0xFF00 & block_num) >> 8, 0xFF & block_num, 0, &rx, 1) < 0) // CMD25
+        {
+            halt(ERROR_SD_CMD25_FAILED);
+        }
+
+        // Could be an issue here where the last 8 of SD command
+        // contains the token, but I doubt this happens
+        if (rx != 0x00)
+        {
+            halt(ERROR_SD_CMD25_ACK_FAILED);
+        }
+
+        multi_write_in_progress = 1;
+    } else {
+        printf("waiting for busy to end\n");
+        // Wait until not busy
+        rx = 0;
+        tries = 0;
+        while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
+        {
+            usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+            tries++;
+        }
+
+        if (tries >= SD_MAX_BUSY_TRIES) {
+            printf("never came unbusy");
+            return -2;
+        }
+    }
+    printf("write onwards\n");
+	// tick clock 8 times to start write operation 
+	usart_spi_txrx(&USARTE1, NULL, NULL, 1);
+
+	// write data token
+	tx[0] = 0xFC;
+	usart_spi_txrx(&USARTE1, tx, NULL, 1);
+
+	// write data
+	memset(tx, 0, sizeof(tx));
+	dma_spi_txrx(&USARTE1, block, NULL, SD_BLOCK_LEN); // write the block
+	usart_spi_txrx(&USARTE1, tx, NULL, 2); // write a blank CRC
+	usart_spi_txrx(&USARTE1, NULL, &rx, 1); // get the response
+
+	// check if the data is accepted
+	if (!((rx & 0xE) >> 1 == 0x2))
+	{
+        printf("data rejected: 0x%x all of it 0x%x\n", (rx & 0xE) >> 1, rx);
+		halt(ERROR_SD_CMD25_DATA_REJECTED);
+	}
+	/*
+	 * NOTE: This function must follow with calls to
+	 * sd_write_block_update() until the write completes.
+     * When you are done writing you must call
+     * sd_write_multi_block_end().
+	 */
+	write_in_progress = 1;
+
+	return 1;
+#endif
 }
 
 int sd_write_multi_block_end() {
-    // TODO
+#if !SD_MULTI_WRITE
     return 0;
+#else
+	uint32_t tries;
+	uint8_t rx, tx;
+    if(multi_write_in_progress) {
+        printf("waiting for last block...\n");
+        // End the current write
+        while(sd_write_block_update() < 0);
+
+        printf("sending last data token\n");
+        // write end transmission token
+        tx = 0xFD;
+        usart_spi_txrx(&USARTE1, &tx, NULL, 1);
+
+        // read until the busy flag is cleared 
+        rx = 0;
+        tries = 0;
+        while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
+        {
+            usart_spi_txrx(&USARTE1, NULL, &rx, 1);
+            tries++;
+        }
+
+        if (tries >= SD_MAX_BUSY_TRIES)
+            return -2;
+
+        printf("end of multi-write!\n");
+
+        // De-select SD card at end of transmission
+		gpio_on(&PORTE, SPI_SS_PIN_bm);
+
+        multi_write_in_progress = 0;
+    }
+    return 0;
+#endif
 }
 
 int sd_write_block_update() //{{{
 {
 	uint8_t rx[32];
+
+    // If no write in progress report completion
+    if (!write_in_progress)
+        return 0;
 
 	rx[sizeof(rx) - 1] = 0;
 
@@ -337,7 +464,10 @@ int sd_write_block_update() //{{{
 
 		 //give the SD card 8 clock cycles to prepare for command
 		usart_spi_txrx(&USARTE1, NULL, NULL, 1);
-		gpio_on(&PORTE, SPI_SS_PIN_bm);
+
+        // Toggle slave select if this is a single block write
+        if (!multi_write_in_progress)
+            gpio_on(&PORTE, SPI_SS_PIN_bm);
 
 		return 0;
 	}
@@ -346,7 +476,6 @@ int sd_write_block_update() //{{{
 	return -1;
 } //}}}
 
-#define NUM_BLOCKS 10
 int sd_self_test() //{{{
 {
 	int i = 0, j = 0;
@@ -385,15 +514,17 @@ int sd_self_test() //{{{
 		block_int[i] = i;
 	}
     
-    for (j = 0; j < NUM_BLOCKS; ++j) {
-        sd_write_multi_block_start(block, 20 + j);
+    for (j = 0; j < TEST_MULTI_BLOCK_COUNT; ++j) {
+        printf("test - multi write block %d\n", j);
+        while(sd_write_multi_block_start(block, 400 + j) < 0);
         while(sd_write_block_update() < 0);
     }
     sd_write_multi_block_end();
 
-	memset(block, 0, sizeof(block));
-    for (j = 0; j < NUM_BLOCKS; ++j) {
-        sd_read_block(block, 20 + j);
+    for (j = 0; j < TEST_MULTI_BLOCK_COUNT; ++j) {
+        printf("reading %d\n", j);
+        memset(block, 0, sizeof(block));
+        sd_read_block(block, 400 + j);
         for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
         {
             if (block_int[i] != i)
