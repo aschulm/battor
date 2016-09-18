@@ -7,6 +7,8 @@
 #define SD_MAX_BUSY_TRIES 1000
 #define SD_INVALID_SECTOR 0xFFFFFFFF
 
+#define SD_MULTI_WRITE 1
+
 int sd_init();
 int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint8_t crc, uint8_t* response, uint16_t response_len);
 int sd_read_block(void* block, uint32_t block_num);
