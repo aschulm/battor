@@ -342,27 +342,6 @@ int sd_write_multi_block_start(void* block, int block_num) {
         multi_write_in_progress = 1;
     }
 
-#if 0
-    printf("waiting for busy to end\n");
-    // Wait until not busy
-    rx = 0;
-    tries = 0;
-    while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
-    {
-        usart_spi_txrx(&USARTE1, NULL, &rx, 1);
-        tries++;
-    }
-
-    if (tries >= SD_MAX_BUSY_TRIES) {
-        printf("never came unbusy");
-        return -2;
-    }
-    //}
-
-	// tick clock 8 times to start write operation 
-	usart_spi_txrx(&USARTE1, NULL, NULL, 1);
-#endif
-
 	// write data token
 	tx[0] = 0xFC;
 	usart_spi_txrx(&USARTE1, tx, NULL, 1);
@@ -398,7 +377,8 @@ int sd_write_multi_block_end() {
 	uint8_t rx, tx;
     if(multi_write_in_progress) {
         // End the current write
-        while(sd_write_block_update() < 0)
+        while(sd_write_block_update() < 0);
+
         // write end transmission token
         tx = 0xFD;
         usart_spi_txrx(&USARTE1, &tx, NULL, 1);
@@ -457,12 +437,13 @@ int sd_write_block_update() //{{{
         printf("write_block: %d\n", down_ms);
 #endif
 
-		 //give the SD card 8 clock cycles to prepare for command
-		usart_spi_txrx(&USARTE1, NULL, NULL, 1);
 
         // Toggle slave select if this is a single block write
-        if (!multi_write_in_progress)
+        if (!multi_write_in_progress) {
+            //give the SD card 8 clock cycles to prepare for command
+            usart_spi_txrx(&USARTE1, NULL, NULL, 1);
             gpio_on(&PORTE, SPI_SS_PIN_bm);
+        }
 
 		return 0;
 	}
@@ -510,16 +491,14 @@ int sd_self_test() //{{{
 	}
     
     for (j = 0; j < TEST_MULTI_BLOCK_COUNT; ++j) {
-        printf("test - multi write block %d\n", j);
-        while(sd_write_multi_block_start(block, 400 + j) < 0);
+        while(sd_write_multi_block_start(block, 250 + j) < 0);
         while(sd_write_block_update() < 0);
     }
     sd_write_multi_block_end();
 
     for (j = 0; j < TEST_MULTI_BLOCK_COUNT; ++j) {
-        printf("reading %d\n", j);
         memset(block, 0, sizeof(block));
-        sd_read_block(block, 400 + j);
+        sd_read_block(block, 250 + j);
         for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
         {
             if (block_int[i] != i)
