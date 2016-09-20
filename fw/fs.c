@@ -320,9 +320,12 @@ int fs_close() //{{{
 	{
 		if (last_block_idx >= fs_capacity)
 			return FS_ERROR_FILE_TOO_LONG;
-		sd_write_block_start(block, last_block_idx);
+		sd_write_multi_block_start(block, last_block_idx);
 		while (sd_write_block_update() < 0);
 	}
+
+    // finish off the multi-write
+    sd_write_multi_block_end();
 
 	file = (fs_file_startblock*)block;
 	memset(block, 0, sizeof(block));
@@ -442,7 +445,7 @@ void fs_update() //{{{
 			uint32_t block_idx_to_write = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
 			if (block_idx_to_write >= fs_capacity)
 				return;
-			sd_write_block_start(block, block_idx_to_write);
+			sd_write_multi_block_start(block, block_idx_to_write);
 			sd_write_in_progress = 1;
 		}
 

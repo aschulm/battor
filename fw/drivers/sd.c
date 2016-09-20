@@ -320,7 +320,6 @@ int sd_write_multi_block_start(void* block, int block_num) {
     prev_ms_ticks = g_timer_ms_ticks;
 #endif
 
-    uint32_t tries;
 	uint8_t rx = 0xFF;
 	uint8_t tx[2];
 
