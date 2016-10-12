@@ -60,7 +60,6 @@ void control_got_uart_bytes() //{{{
 	}
 } //}}}
 
-
 int8_t control_run_message(control_message* m) //{{{
 {
 	int8_t ret = 0;
