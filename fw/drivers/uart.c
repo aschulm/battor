@@ -227,18 +227,17 @@ uint16_t uart_set_tx_buffer(uint8_t* tx_buffer) //{{{
 	return tx_buffer_len;
 } //}}}
 
-inline uint8_t uart_rx_byte() //{{{
+static inline uint8_t rx_byte(uint8_t* b, uint8_t* read_idx) //{{{
 {
-	uint8_t ret;
+	// no more bytes remaining
+	if (*read_idx == uart_rx_buffer_write_idx)
+		return 0;
 
-	// wait for byte to arrive
-	while (uart_rx_buffer_read_idx == uart_rx_buffer_write_idx);
+	*b = uart_rx_buffer[(*read_idx)++];
+	if (*read_idx >= UART_RX_BUFFER_LEN)
+		*read_idx = 0;
 
-	ret = uart_rx_buffer[uart_rx_buffer_read_idx++];
-	if (uart_rx_buffer_read_idx >= UART_RX_BUFFER_LEN)
-		uart_rx_buffer_read_idx = 0;
-
-	return ret;
+	return 1;
 } //}}}
 
 uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
@@ -248,13 +247,18 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 	uint8_t start_found = 0;
 	uint8_t end_found = 0;
 
+	// Create local copy of the UART RX buffer index.
+	uint8_t rx_buffer_read_idx = uart_rx_buffer_read_idx;
+
 	while (!(start_found && end_found))
 	{
-		b_tmp = uart_rx_byte();
+		if (!rx_byte(&b_tmp, &rx_buffer_read_idx))
+			return 0;
 
 		if (b_tmp == UART_ESC_DELIM)
 		{
-			b_tmp = uart_rx_byte();
+			if (!rx_byte(&b_tmp, &rx_buffer_read_idx))
+				return 0;
 
 			if (bytes_read < b_len)
 			{
@@ -266,7 +270,8 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 			start_found = 1;
 			bytes_read = 0;
 
-			*type = uart_rx_byte();
+			if (!rx_byte(type, &rx_buffer_read_idx))
+				return 0;
 		}
 		else if (b_tmp == UART_END_DELIM)
 		{
@@ -278,6 +283,8 @@ uint8_t uart_rx_bytes(uint8_t* type, uint8_t* b, uint8_t b_len) //{{{
 		}
 	}
 
+	// Successfully read frame.
+	uart_rx_buffer_read_idx = rx_buffer_read_idx;
 	return bytes_read;
 } //}}}
 
