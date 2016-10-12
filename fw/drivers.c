@@ -37,12 +37,16 @@ void drivers_init() //{{{
 #endif
 } //}}}
 
-int drivers_self_test() //{{{
+int drivers_self_test(uint8_t interactive) //{{{
 {
-	if (led_self_test())
-		return 1;
-	if (button_self_test())
-		return 2;
+	if (interactive)
+	{
+		if (led_self_test())
+			return 1;
+		if (button_self_test())
+			return 2;
+	}
+
 	if (pot_self_test())
 		return 3;
 	if (sram_self_test())
