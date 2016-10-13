@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0, rtc = 0;
 
 	uint16_t down_file = 0;
+	uint16_t test_interactive = 0;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
 	uint16_t ovs_bits = OVERSAMPLE_BITS_DEFAULT;
@@ -55,7 +56,7 @@ int main(int argc, char** argv)
 
 	// process the options
 	opterr = 0;
-	while ((opt = getopt(argc, argv, ":sbg:ovhktcd:r")) != -1)
+	while ((opt = getopt(argc, argv, ":sbg:ovhkt:cd:r")) != -1)
 	{
 		switch(opt)
 		{
@@ -97,6 +98,14 @@ int main(int argc, char** argv)
 			break; 
 			case 't':
 				test = 1;
+				test_interactive = strtol(optarg, NULL, 2);
+
+				// tty passed as last parameter, not test interactive mode
+				if(optind == argc && optarg[0] == '/')
+				{
+					test_interactive = 1;
+					optind--;
+				}
 			break;
 			case 'r':
 				rtc = 1;
@@ -115,6 +124,10 @@ int main(int argc, char** argv)
 				{
 					case 'd':
 						down = 1;
+					break;
+					case 't':
+						test = 1;
+						test_interactive = 1;
 					break;
 					default:
 						usage(argv[0]);
@@ -172,7 +185,7 @@ int main(int argc, char** argv)
 	if (test)
 	{
 		int ret;
-		if ((ret = control(CONTROL_TYPE_SELF_TEST, 0, 0, 1)) != 0)
+		if ((ret = control(CONTROL_TYPE_SELF_TEST, test_interactive, 0, 1)) != 0)
 		{
 			fprintf(stderr, "++++++ Self Test FAILED %d ++++++\n", ret);
 			return EXIT_FAILURE;
