@@ -324,8 +324,9 @@ int fs_close() //{{{
 		while (sd_write_block_update() < 0);
 	}
 
-    // finish off the multi-write
-    sd_write_multi_block_end();
+	// finish off the multi-write
+	if (sd_write_multi_block_end() < 0)
+		return FS_ERROR_SD_MULTI_WRITE_END;
 
 	file = (fs_file_startblock*)block;
 	memset(block, 0, sizeof(block));
@@ -345,7 +346,7 @@ int fs_close() //{{{
 	// this is a skip file, point to it from the previous skip file
 	// mod 1 because file seq starts at 1
 	if ((g_fs_file_seq % FS_FILE_SKIP_LEN) == 1 &&
-	    file_prev_skip_startblock_idx > 0)
+		file_prev_skip_startblock_idx > 0)
 	{
 		// read the prev skip file startblock
 		fs_file_startblock* skip_file = (fs_file_startblock*)block;

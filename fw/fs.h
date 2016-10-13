@@ -39,6 +39,7 @@ typedef enum FS_ERROR_enum
 	FS_ERROR_SD_WRITE = -6,
 	FS_ERROR_WRITE_IN_PROGRESS = -7,
 	FS_ERROR_CANNOT_READ_NEW_FILE = -8,
+	FS_ERROR_SD_MULTI_WRITE_END = -9,
 } FS_ERROR_t;
 
 int fs_info(fs_superblock* sb);

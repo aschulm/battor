@@ -389,14 +389,15 @@ int sd_write_multi_block_end() {
         // read until the busy flag is cleared 
         rx = 0;
         tries = 0;
-        while (rx == 0 && tries < SD_MAX_BUSY_TRIES)
+        while (rx == 0 && tries < SD_MAX_BUSY_TRIES_MULTI)
         {
             usart_spi_txrx(&USARTE1, NULL, &rx, 1);
             tries++;
         }
 
-        if (tries >= SD_MAX_BUSY_TRIES)
+        if (tries >= SD_MAX_BUSY_TRIES_MULTI) {
             return -2;
+        }
 
         // De-select SD card at end of transmission
 		gpio_on(&PORTE, SPI_SS_PIN_bm);
