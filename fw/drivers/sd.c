@@ -120,6 +120,7 @@ int sd_command(uint8_t index, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, ui
 int sd_init() //{{{
 {
 	write_in_progress = 0;
+    multi_write_in_progress = 0;
 
 	// init SPI
 	PORTE.OUT |= USART1_TXD_PIN; // set the TXD pin high
@@ -307,7 +308,7 @@ int sd_write_block_start(void* block, uint32_t block_num) //{{{
 	return 1;
 } //}}}
 
-int sd_write_multi_block_start(void* block, int block_num) {
+int sd_write_multi_block_start(void* block, uint32_t block_num) {
 #if !SD_MULTI_WRITE
     return sd_write_block_start(block, block_num);
 #else
