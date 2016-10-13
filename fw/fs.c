@@ -316,7 +316,7 @@ int fs_close() //{{{
 
 	// there is one more partial block that remains to be written
 	uint32_t last_block_idx = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
-	if (last_block_idx != block_idx)
+	if (BYTES_IN_LAST_BLOCK(file_byte_idx) != 0)
 	{
 		if (last_block_idx >= fs_capacity)
 			return FS_ERROR_FILE_TOO_LONG;

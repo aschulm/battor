@@ -23,6 +23,7 @@ typedef enum ERROR_enum
     ERROR_SD_CMD25_FAILED,
     ERROR_SD_CMD25_ACK_FAILED,
     ERROR_SD_CMD25_DATA_REJECTED,
+    ERROR_SD_MULTI_BLOCK_OUT_OF_ORDER,
 } ERROR_t;
 
 void halt(uint8_t code);

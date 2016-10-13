@@ -20,6 +20,7 @@ static uint8_t write_in_progress;
 // Multi block write support
 #define TEST_MULTI_BLOCK_COUNT 16
 static uint8_t multi_write_in_progress;
+static uint32_t multi_write_block_num;
 
 #ifdef DEBUG_SD_TIMING
 static uint16_t down_ms;
@@ -121,6 +122,7 @@ int sd_init() //{{{
 {
 	write_in_progress = 0;
     multi_write_in_progress = 0;
+    multi_write_block_num = -1;
 
 	// init SPI
 	PORTE.OUT |= USART1_TXD_PIN; // set the TXD pin high
@@ -340,7 +342,13 @@ int sd_write_multi_block_start(void* block, uint32_t block_num) {
         }
 
         multi_write_in_progress = 1;
+    } else if (block_num != multi_write_block_num + 1) {
+        // Make sure that you always write a multi_block in sequence...
+        halt(ERROR_SD_MULTI_BLOCK_OUT_OF_ORDER);
     }
+
+    // update internal state of where we are in the multi-block write
+    multi_write_block_num = block_num;
 
 	// write data token
 	tx[0] = 0xFC;
@@ -439,7 +447,8 @@ int sd_write_block_update() //{{{
 #endif
 
 
-        // Toggle slave select if this is a single block write
+        // Multi-block write doesn't need a pause, or to raise the select
+        // line; so we only do these tasks in the case of single block write.
         if (!multi_write_in_progress) {
             //give the SD card 8 clock cycles to prepare for command
             usart_spi_txrx(&USARTE1, NULL, NULL, 1);
