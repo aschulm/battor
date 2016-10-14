@@ -315,14 +315,18 @@ int fs_close() //{{{
 		fs_update();
 
 	// there is one more partial block that remains to be written
-	uint32_t last_block_idx = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
-	if (last_block_idx != block_idx)
+	if (BYTES_IN_LAST_BLOCK(file_byte_idx) != 0)
 	{
+		uint32_t last_block_idx = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
 		if (last_block_idx >= fs_capacity)
 			return FS_ERROR_FILE_TOO_LONG;
-		sd_write_block_start(block, last_block_idx);
+		sd_write_multi_block_start(block, last_block_idx);
 		while (sd_write_block_update() < 0);
 	}
+
+	// finish off the multi-write
+	if (sd_write_multi_block_end() < 0)
+		return FS_ERROR_SD_MULTI_WRITE_END;
 
 	file = (fs_file_startblock*)block;
 	memset(block, 0, sizeof(block));
@@ -342,7 +346,7 @@ int fs_close() //{{{
 	// this is a skip file, point to it from the previous skip file
 	// mod 1 because file seq starts at 1
 	if ((g_fs_file_seq % FS_FILE_SKIP_LEN) == 1 &&
-	    file_prev_skip_startblock_idx > 0)
+		file_prev_skip_startblock_idx > 0)
 	{
 		// read the prev skip file startblock
 		fs_file_startblock* skip_file = (fs_file_startblock*)block;
@@ -442,7 +446,7 @@ void fs_update() //{{{
 			uint32_t block_idx_to_write = file_startblock_idx + BYTES_TO_BLOCKS(file_byte_idx);
 			if (block_idx_to_write >= fs_capacity)
 				return;
-			sd_write_block_start(block, block_idx_to_write);
+			sd_write_multi_block_start(block, block_idx_to_write);
 			sd_write_in_progress = 1;
 		}
 
