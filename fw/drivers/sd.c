@@ -479,7 +479,7 @@ int sd_self_test() //{{{
 	printf("sd self test\n");
 
 	printf("the inserted SD card's capacity is %lu blocks\n",
-		   sd_capacity());
+		sd_capacity());
 
 	printf("one block write and read...");
 	for (i = 0; i < (SD_BLOCK_LEN >> 2); i++)
@@ -495,8 +495,8 @@ int sd_self_test() //{{{
 		if (block_int[i] != i)
 		{
 			printf("FAILED wrote[%d] read[%lu]\n",
-					i,
-					block_int[i]);
+				i,
+				block_int[i]);
 			return -1;
 		}
 	}
