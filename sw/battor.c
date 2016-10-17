@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 {
 	int i, ret;
 	FILE* file;
-	char opt;
+	int opt;
 	char* tty = DEFAULT_TTY;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0, rtc = 0;
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 	opterr = 0;
 	while ((opt = getopt(argc, argv, ":sbg:ovhkt:cd:r")) != -1)
 	{
-		switch(opt)
+		switch((char)opt)
 		{
 			case 'd':
 				down = 1;
