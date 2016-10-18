@@ -25,6 +25,7 @@ echo "==== Cloning catapult ===="
 cd $BATTOR_DIR/tests
 rm -rf catapult
 git clone https://github.com/catapult-project/catapult.git
+patch -dcatapult -p0 < catapult-armv7l.patch
 cd -
 
 echo "==== Flashing BattOr firmware ===="
@@ -70,7 +71,7 @@ echo "==== battor_agent loop 30s 100x (output in $OUT_DIR) ===="
 cd $BATTOR_DIR/tests/catapult
 rm -rf $OUT_DIR
 mkdir $OUT_DIR
-BATTOR_AGENT=./common/battor/bin/darwin/x86_64/battor_agent
+BATTOR_AGENT=./common/battor/bin/override/battor_agent
 for i in `seq 1 100`
 do
 	echo -n "Test #$i..."

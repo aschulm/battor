@@ -1,0 +1,16 @@
+diff --git common/battor/battor/battor_binary_dependencies.json common/battor/battor/battor_binary_dependencies.json
+index f4b2871..7eed67e 100644
+--- common/battor/battor/battor_binary_dependencies.json
++++ common/battor/battor/battor_binary_dependencies.json
+@@ -12,6 +12,11 @@
+             "../bin/override/battor_agent"
+           ]
+         },
++        "linux2_armv7l": {
++          "local_paths": [
++            "../bin/override/battor_agent"
++          ]
++        },
+         "darwin_x86_64": {
+           "cloud_storage_hash": "6923bb851fe57f5880d5dac78add6939134e5514",
+           "download_path": "../bin/darwin/x86_64/battor_agent",
