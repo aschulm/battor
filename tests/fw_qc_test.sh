@@ -7,6 +7,7 @@ BATTOR_SERIAL_PATH=$1
 
 BATTOR_DIR=`dirname $0`/../
 
+
 echo "==== Building BattOr firmware ===="
 cd $BATTOR_DIR/fw
 make clean
@@ -26,8 +27,8 @@ cd $BATTOR_DIR/tests
 rm -rf catapult
 git clone https://github.com/catapult-project/catapult.git
 patch -dcatapult -p0 < catapult-armv7l.patch
-mkdir -p ./catapult/bin/override
-cp /home/pi/battor_agent ./catapult/bin/override/battor_agent
+mkdir -p ./catapult/common/battor/bin/override
+ln -s /home/pi/battor_agent ./catapult/common/battor/bin/override/battor_agent
 cd -
 
 echo "==== Flashing BattOr firmware ===="
