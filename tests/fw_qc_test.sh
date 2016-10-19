@@ -27,7 +27,7 @@ rm -rf catapult
 git clone https://github.com/catapult-project/catapult.git
 patch -dcatapult -p0 < catapult-armv7l.patch
 mkdir -p ./catapult/bin/override
-ln -s /home/pi/battor_agent ./catapult/bin/override/battor_agent
+cp /home/pi/battor_agent ./catapult/bin/override/battor_agent
 cd -
 
 echo "==== Flashing BattOr firmware ===="
