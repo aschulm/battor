@@ -142,8 +142,8 @@ int8_t control_run_message(control_message* m) //{{{
 			while (!dma_uart_tx_ready());
 
 			// toggle CTS to force FTDI chip to flush the buffer
-			uart_set_rts(0);
 			uart_set_rts(1);
+			uart_set_rts(0);
 
 			ret = -1;
 		break;

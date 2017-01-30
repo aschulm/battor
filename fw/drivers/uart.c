@@ -136,9 +136,9 @@ void uart_set_rts(uint8_t ready) //{{{
 {
 	// set the CTS pin on the FTDI to assert or deassert RTS
 	if (ready)
-		PORTD.DIR |= UART_CTS_bm;
+		PORTD.OUT |= UART_CTS_bm;
 	else
-		PORTD.DIR &= ~UART_CTS_bm;
+		PORTD.OUT &= ~UART_CTS_bm;
 } //}}}
 
 void uart_tx_start_prepare(uint8_t type) //{{{
