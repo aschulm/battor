@@ -143,6 +143,7 @@ int8_t control_run_message(control_message* m) //{{{
 
 			// toggle CTS to force FTDI chip to flush the buffer
 			uart_set_rts(1);
+			_delay_us(20);
 			uart_set_rts(0);
 
 			ret = -1;
