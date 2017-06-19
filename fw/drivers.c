@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "error.h"
 #include "drivers.h"
 
 void drivers_init() //{{{
@@ -16,7 +17,8 @@ void drivers_init() //{{{
 	pot_init();
 	sram_init();
 	adc_init(&ADCB);
-	sd_init();
+	if (sd_init() < 0)
+    halt(ERROR_SD_INIT_FAIL);
 
 	// sample timer
 	timer_init(&TCD0,  TC_OVFINTLVL_OFF_gc);
