@@ -2,6 +2,7 @@
 #define PARAMS_H
 
 #define BAUD_RATE 2000000
+#define BAUD_RATE_CYGWIN B2000000
 
 #define VREF 1.200
 

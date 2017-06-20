@@ -244,6 +244,8 @@ void uart_init(char* tty) //{{{
 	cfsetspeed(&tio, B115200); // don't care, we  the baud rate anyway
 #elif __linux__
 	cfsetspeed(&tio, B38400); // linux needs this for custom baud rate
+#elif __CYGWIN__
+	cfsetspeed(&tio, BAUD_RATE_CYGWIN); // CYGWIN can handle the full baud rate
 #endif
 	tcsetattr(fd, TCSANOW, &tio); // set the options now
 
