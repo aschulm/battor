@@ -6,7 +6,6 @@
   - [Directory structure](#directory-structure)
   - [Installation](#installation)
     - [Software](#software)
-    - [Systrace](#systrace)
     - [Firmware](#firmware)
   - [Usage](#usage)
     - [Desktop operation mode](#desktop-operation-mode)
@@ -20,7 +19,6 @@
 
 * sw - PC software for collecting power measurements from the BattOr
 * fw - Atmel XMega192A3 firmware for the BattOr hardware
-* systrace - Fork of Android systrace for visualizing power measurments synced with phone events
 
 ## Installation
 
@@ -37,14 +35,6 @@ To run BattOr without root on Linux you will need to add your user to the "dialo
 
     $ sudo usermod -a -G dialout <userName>
     
-### Systrace
-
-**Dependencies**
-* Chrome
-* Android adb
-
-Systrace collects trace data from BattOr and Android and produces an interactive timeline view of the data in html using [trace-viewer](http://github.com/google/trace-viewer).
-
 ### Firmware
 
 **Dependencies**
