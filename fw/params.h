@@ -11,8 +11,9 @@
  */
 struct eeprom_params_
 {
+	// version 0
 	uint8_t magic[4];         // Magic (0x31103110)
-	uint16_t version;         // Version (1)
+	uint16_t version;         // Version
 	char serialno[20];        // Serial number
 	uint32_t timestamp;       // Calibration timestamp (epoch time in secs)
 	uint32_t R1;              // [float] R1 [current sense] value
@@ -34,8 +35,12 @@ struct eeprom_params_
 	uint16_t uart_tdiv;       // UART timer divider
 	uint16_t uart_tovf;       // UART timer overflow
 	uint16_t uart_filpot;     // UART filter potentiometer position
+
+	// version 1
 	uint8_t port_ovs_bits;    // bits of oversampling (max 4)
-	uint32_t crc32;           // CRC32 [zip algorithm]
+
+	// all versions have a trailing CRC
+	//uint32_t crc32;           // CRC32 [zip algorithm]
 } __attribute__((packed));
 typedef struct eeprom_params_ eeprom_params;
 

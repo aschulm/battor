@@ -116,6 +116,8 @@ int param_read_eeprom(eeprom_params* params)
 
 			if (params->version >= EEPROM_PORT_OVS_BITS_VER)
 				verb_printf("\tport_ovs_bits: %d\n", params->port_ovs_bits);
+			else
+				params->port_ovs_bits = 0;
 
 			// TODO check the EEPROM CRC
 			break;
