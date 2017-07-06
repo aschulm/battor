@@ -160,6 +160,7 @@ void dma_uart_tx(const void* data, uint16_t len)
 	interrupt_disable();
 
 	// reset DMA channel
+	uart_ch->CTRLA = 0;
 	uart_ch->CTRLA = DMA_CH_RESET_bm;
 	loop_until_bit_is_clear(uart_ch->CTRLA, DMA_CH_RESET_bp);
 
@@ -200,12 +201,6 @@ inline void dma_uart_tx_pause(uint8_t on_off)
 		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
 	else
 		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
-}
-
-void dma_uart_tx_abort()
-{
-	// stop the DMA channel
-	uart_ch->CTRLA = 0;
 }
 
 uint8_t dma_uart_tx_ready()

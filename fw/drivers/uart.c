@@ -52,9 +52,6 @@ ISR(USARTD0_RXC_vect) //{{{
 			uart_rx_buffer[uart_rx_buffer_write_idx++] = tmp;
 			if (uart_rx_buffer_write_idx >= UART_RX_BUFFER_LEN)
 				uart_rx_buffer_write_idx = 0;
-
-			// only interrupt if a byte actually came in
-			interrupt_set(INTERRUPT_UART_RX);
 		}
 	}
 } //}}}
@@ -225,6 +222,11 @@ uint16_t uart_set_tx_buffer(uint8_t* tx_buffer) //{{{
 	uart_tx_buffer = tx_buffer;
 
 	return tx_buffer_len;
+} //}}}
+
+inline uint8_t uart_rx_is_pending() //{{{
+{
+	return uart_rx_buffer_read_idx != uart_rx_buffer_write_idx;
 } //}}}
 
 static inline uint8_t rx_byte(uint8_t* b, uint8_t* read_idx) //{{{

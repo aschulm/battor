@@ -359,6 +359,10 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 	{
 		uint8_t* tx_buffer_tmp;
 
+		// abort the download if there is a UART command waiting to be run
+		if (uart_rx_is_pending())
+			goto cleanup;
+
 		// write the samples to the ring buffer like during streaming operation
 		samples_ringbuf_write(sd_samples);
 
@@ -373,10 +377,7 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 
 		// timeout waiting for uart tx to complete
 		if (tries >= SAMPLES_UART_TX_TIMEOUT_20US)
-		{
-			dma_uart_tx_abort();
 			goto cleanup;
-		}
 
 		// switch the uart driver to the other uart buffer
 		len = uart_set_tx_buffer(tx_buffer_b);
@@ -394,9 +395,9 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 	end_uart_write();
 
 cleanup:
+	// switch DMA back into normal mode and reset
+	dma_init(0);
+
 	// set the uart buffer back to the default
 	uart_set_tx_buffer(uart_driver_tx_buffer);
-
-	// switch DMA back into normal mode
-	dma_init(0);
 } //}}}

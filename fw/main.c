@@ -96,11 +96,8 @@ int main() //{{{
 		}
 
 		// UART receive
-		if (interrupt_is_set(INTERRUPT_UART_RX))
-		{
+		if (uart_rx_is_pending())
 			control_got_uart_bytes();
-			interrupt_clear(INTERRUPT_UART_RX);
-		}
 	}
 
 	return 0;
