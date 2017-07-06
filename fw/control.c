@@ -113,6 +113,7 @@ int8_t control_run_message(control_message* m) //{{{
 			led_on(LED_RED_bm);
 			samples_store_read_uart_write(m->value1);
 			led_off(LED_RED_bm);
+			ret = -1;
 		break;
 		case CONTROL_TYPE_RESET:
 			reset();
