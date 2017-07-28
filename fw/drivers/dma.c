@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <string.h>
+#include <util/delay.h>
 
 #include "../error.h"
 #include "../interrupt.h"
@@ -11,6 +12,8 @@
 #include "timer.h"
 #include "dma.h"
 #include "gpio.h"
+#include "uart.h"
+#include "led.h"
 
 static volatile uint32_t sample_count;
 static volatile uint8_t uart_tx_paused;
@@ -45,6 +48,19 @@ ISR(DMA_CH3_vect)
 
 	interrupt_set(INTERRUPT_DMA_CH3);
 	DMA.INTFLAGS = DMA_CH3TRNIF_bm; // clear the interrupt
+}
+ISR(DMA_CH0_vect)
+{
+	// only toggle CTS if UART is assigned to channel 0
+	if (uart_ch != &(DMA.CH0))
+		return;
+
+	// toggle CTS to force FTDI chip to flush the buffer
+	uart_set_rts(1);
+	_delay_us(20);
+	uart_set_rts(0);
+
+	DMA.INTFLAGS = DMA_CH0TRNIF_bm; // clear the interrupt
 }
 
 static void set_24_bit_addr(volatile uint8_t* d, uint16_t v)
@@ -182,6 +198,10 @@ void dma_uart_tx(const void* data, uint16_t len)
 		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
 
 	uart_ch->TRFCNT = len;
+
+	// interrupt when UART transmission is complete for flushing
+	if (uart_ch == &(DMA.CH0))
+		DMA.CH0.CTRLB |= DMA_CH_TRNINTLVL_MED_gc;
 
 	uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
 
