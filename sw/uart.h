@@ -21,6 +21,6 @@ typedef enum UART_TYPE_enum
 
 void uart_init(char* tty);
 int uart_rx_bytes(uint8_t* type, void* b, uint16_t b_len);
-void uart_tx_bytes(uint8_t type, void* b, uint16_t b_len);
+int uart_tx_bytes(uint8_t type, void* b, uint16_t b_len);
 
 #endif

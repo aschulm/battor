@@ -148,9 +148,9 @@ uart_rx_bytes_start:
 	return bytes_read;
 } //}}}
 
-void uart_tx_byte(uint8_t b) //{{{
+int uart_tx_byte(uint8_t b) //{{{
 {
-	int i,j;
+	int i,j, attempt = 0;
 	int write_len;
 	int to_write_len;
 
@@ -165,28 +165,39 @@ void uart_tx_byte(uint8_t b) //{{{
 		to_write_len = uart_tx_buffer_idx;
 		while (to_write_len > 0)
 		{
-			// try write until it works, XON/XOFF may kill it?
+			if (attempt++ >= UART_TX_ATTEMPTS)
+			{
+				vverb_printf("uart_tx_byte: timeout\n%s", "");
+				return -1;
+			}
+
 			if ((write_len = write(fd, uart_tx_buffer + (uart_tx_buffer_idx - to_write_len), to_write_len)) < 0)
 			{
-				perror("write()");
-				exit(EXIT_FAILURE);
-			}
+				vverb_printf("uart_tx_byte: write() ret:%d\n", write_len);
 
-			// verbose
-			verb_printf("uart_tx_byte: sent %s", "");
-			for (i = 0; i < write_len; i++)
+				// write failed, wait a bit and try again
+				struct timespec to_sleep = {0, UART_WRITE_SLEEP_NS};
+				while (nanosleep(&to_sleep, &to_sleep) < 0);
+			}
+			else
 			{
-				verb_printf(" %.2X", uart_tx_buffer[i + (uart_tx_buffer_idx - to_write_len)]);
-			}
-			verb_printf("%s\n", "");
+				// verbose
+				verb_printf("uart_tx_byte: sent %s", "");
+				for (i = 0; i < write_len; i++)
+				{
+					verb_printf(" %.2X", uart_tx_buffer[i + (uart_tx_buffer_idx - to_write_len)]);
+				}
+				verb_printf("%s\n", "");
 
-			to_write_len -= write_len;
+				to_write_len -= write_len;
+			}
 		}
 		uart_tx_buffer_idx = 0;
 	}
+	return 0;
 } //}}}
 
-void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
+int uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 {
 	uint16_t i;
 	uint8_t* b_b = (uint8_t*)b;
@@ -199,20 +210,28 @@ void uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 	}
 	verb_printf("%s\n", "");
 
-	uart_tx_byte(UART_START_DELIM);
-	uart_tx_byte(type);
+	if (uart_tx_byte(UART_START_DELIM) < 0)
+		return -1;
+	if (uart_tx_byte(type) < 0)
+		return -1;
 
 	for (i = 0; i < len; i++)
 	{
 		if (b_b[i] == UART_START_DELIM ||
 			b_b[i] == UART_END_DELIM ||
 			b_b[i] == UART_ESC_DELIM)
-			uart_tx_byte(UART_ESC_DELIM);	
+		{
+			if (uart_tx_byte(UART_ESC_DELIM) < 0)
+				return -1;
+		}
 
-		uart_tx_byte(b_b[i]);
+		if (uart_tx_byte(b_b[i]) < 0)
+			return -1;
 	}
 
-	uart_tx_byte(UART_END_DELIM);
+	if (uart_tx_byte(UART_END_DELIM) < 0)
+		return -1;
+	return 0;
 } //}}}
 
 void uart_init(char* tty) //{{{

@@ -19,7 +19,11 @@ int control(uint8_t type, uint16_t value1, uint16_t value2, uint8_t wait_for_ack
 		message.value1 = value1;
 		message.value2 = value2;
 		verb_printf("control: sending type:%d v1:%d v2:%d\n", type, value1, value2);
-		uart_tx_bytes(UART_TYPE_CONTROL, &message, sizeof(message));
+		if (uart_tx_bytes(UART_TYPE_CONTROL, &message, sizeof(message)) < 0)
+		{
+			fprintf(stderr, "ERROR: failed to send control message\n");
+			exit(EXIT_FAILURE);
+		}
 
 		if (wait_for_ack)
 		{
