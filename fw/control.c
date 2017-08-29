@@ -164,7 +164,7 @@ int8_t control_run_message(control_message* m) //{{{
 			ret = -1;
 		break;
 		case CONTROL_TYPE_SELF_TEST:
-			// step 1. test the sram
+			// step 1. test the drivers
 			printf("====== self test started ======\n");
 			if ((ret = drivers_self_test(m->value1)) > 0)
 				break;

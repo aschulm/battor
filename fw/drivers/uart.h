@@ -42,5 +42,6 @@ uint32_t uart_rx_sample_count();
 int uart_putchar(char c, FILE* stream);
 int uart_getchar(FILE* stream);
 uint8_t uart_tx_ready();
+int uart_self_test();
 
 #endif

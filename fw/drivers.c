@@ -55,5 +55,7 @@ int drivers_self_test(uint8_t interactive) //{{{
 		return 4;
 	if (sd_self_test())
 		return 5;
+	if (uart_self_test())
+		return 6;
 	return 0;
 } //}}}
