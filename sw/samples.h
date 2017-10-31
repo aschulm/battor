@@ -23,6 +23,8 @@ struct samples_config_
 	uint8_t ovs_bits;
 	char cal;
 	rtc start_timestamp;
+	uint8_t down;
+	uint16_t down_file;
 };
 typedef struct samples_config_ samples_config;
 

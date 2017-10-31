@@ -67,7 +67,6 @@ int16_t samples_read(sample* samples, samples_config* conf, uint32_t* seqnum) //
 	uint8_t type;
 	int ret = 0;
 
-
 	if ((ret = uart_rx_bytes(&type, frame, sizeof(frame))) < 0 || type != UART_TYPE_SAMPLES)
 		return 0;
 
@@ -111,8 +110,9 @@ void samples_print_config(samples_config* conf) //{{{
 void samples_print_loop(samples_config* conf) //{{{
 {
 	int i;
-	sample samples[2000];
+	sample samples[20000];
 	uint32_t seqnum = 0xFFFFFFFF;
+	uint32_t seqnum_next = 0;
 	uint32_t sample_num = 0;
 	int16_t samples_len = 0;
 	double v_cal = 0, i_cal = 0;
@@ -122,6 +122,13 @@ void samples_print_loop(samples_config* conf) //{{{
 	// will block and unblock SIGINT
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGINT);
+
+	if (conf->down)
+	{
+		// request calibration frame
+		control(CONTROL_TYPE_READ_SD_UART, conf->down_file, seqnum_next, 0);
+		seqnum_next++;
+	}
 
 	// read calibration and compute it
 	while (samples_len == 0 || seqnum != 0)
@@ -156,13 +163,20 @@ void samples_print_loop(samples_config* conf) //{{{
 	// main sample read loop
 	while(1)
 	{
+		if (conf->down)
+		{
+			// request next sample frame
+			control(CONTROL_TYPE_READ_SD_UART, conf->down_file, seqnum_next, 0);
+			seqnum_next++;
+		}
+
 		while ((samples_len = samples_read(samples, conf, &seqnum)) == 0);
 
 		// end of file, quit read loop
 		if (samples_len <= 0)
 			return;
 
-		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
+		sigprocmask(SIG_BLOCK, &sigs, NULL);	 // disable interrupts before print
 
 		for (i = 0; i < samples_len; i++)
 		{

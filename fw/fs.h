@@ -40,11 +40,13 @@ typedef enum FS_ERROR_enum
 	FS_ERROR_WRITE_IN_PROGRESS = -7,
 	FS_ERROR_CANNOT_READ_NEW_FILE = -8,
 	FS_ERROR_SD_MULTI_WRITE_END = -9,
+  FS_ERROR_SEEK_PAST_END = -10,
 } FS_ERROR_t;
 
 int fs_info(fs_superblock* sb);
 int fs_format(uint8_t portable);
 int fs_open(uint8_t create_file, uint32_t file_seq_to_open);
+int fs_seek(uint32_t pos);
 int fs_rtc_get(uint32_t* s, uint32_t* ms);
 int fs_rtc_set();
 int fs_close();

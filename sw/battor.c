@@ -34,7 +34,6 @@ int main(int argc, char** argv)
 	char* tty = DEFAULT_TTY;
 	char usb = 0, buffer = 0, reset = 0, test = 0, cal = 0, down = 0, count = 0, rtc = 0;
 
-	uint16_t down_file = 0;
 	uint16_t test_interactive = 0;
 	uint16_t timer_ovf, timer_div;
 	uint16_t filpot_pos, amppot_pos;
@@ -62,7 +61,7 @@ int main(int argc, char** argv)
 		{
 			case 'd':
 				down = 1;
-				down_file = strtol(optarg, NULL, 10);
+				sconf.down_file = strtol(optarg, NULL, 10);
 
 				// tty passed as last parameter, not file number
 				if(optind == argc && optarg[0] == '/')
@@ -218,23 +217,23 @@ int main(int argc, char** argv)
 
 		if (control(CONTROL_TYPE_GET_MODE_PORTABLE, 0, 0, 1))
 			ovs_bits = eeparams->port_ovs_bits;
-		else if (down_file > 0)
+		else if (sconf.down_file > 0)
 		{
 			fprintf(stderr, "Error: In USB buffering mode, can only download last file.\n");
 			return EXIT_FAILURE;
 		}
 
+		sconf.down = 1;
 		sconf.sample_rate = (uint32_t)eeparams->sd_sr;
 		sconf.ovs_bits = ovs_bits;
 		// TODO set proper gain!
 		sconf.gain = eeparams->gainL;
-		if (param_get_rtc_for_file(down_file, &sconf.start_timestamp) < 0)
+		if (param_get_rtc_for_file(sconf.down_file, &sconf.start_timestamp) < 0)
 		{
 			fprintf(stderr, "Warning: Could not fetch RTC timestamp for file, starting at 0\n");
 			memset(&sconf.start_timestamp, 0, sizeof(rtc));
 		}
 
-		control(CONTROL_TYPE_READ_SD_UART, down_file, 0, 0);
 		samples_init(&sconf);
 		samples_print_config(&sconf);
 		samples_print_loop(&sconf);
@@ -263,6 +262,7 @@ int main(int argc, char** argv)
 
 	if (usb)
 	{
+		sconf.down = 0;
 		sconf.sample_rate = eeparams->uart_sr;
 		control(CONTROL_TYPE_START_SAMPLING_UART, 0, 0, 1);
 		samples_init(&sconf);

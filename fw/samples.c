@@ -50,6 +50,7 @@ static void end_uart_write() //{{{
 	memcpy(samples_tmp + len, &seqnum,
 		sizeof(uint32_t));
 	len += sizeof(uint32_t);
+	seqnum++;
 
 	// length (bytes)
 	memcpy(samples_tmp + len,
@@ -71,8 +72,8 @@ static void samples_init() //{{{
 		sram_write, sram_read);
 
 	state = STATE_PRE_FRAME;
-	ringbuf_writes_remaining = SAMPLES_CAL_BUFFERS;
-	ringbuf_reads_remaining = SAMPLES_CAL_BUFFERS;
+	ringbuf_writes_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+	ringbuf_reads_remaining = SAMPLES_LEN_PER_CAL_FRAME;
 	calibrated = 0;
 	seqnum = 0;
 
@@ -264,8 +265,8 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 
 		// prepare to write next frame
 		state = STATE_PRE_FRAME;
-		ringbuf_reads_remaining = 1;
-		ringbuf_writes_remaining = 1;
+		ringbuf_reads_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+		ringbuf_writes_remaining = SAMPLES_LEN_PER_DATA_FRAME;
 	}
 
 	// at the end of the sample stream has been reached
@@ -321,9 +322,8 @@ int samples_store_write() //{{{
 	return 1;
 } //}}}
 
-void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
+void samples_store_read_uart_frame(uint16_t file_num, uint32_t uart_seqnum) //{{{
 {
-	int ret;
 	uint32_t tries;
 	uint16_t len;
 	sample sd_samples[SAMPLES_LEN];
@@ -348,20 +348,69 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 	tx_buffer_b = uart_tx_buffer;
 
 	// open file
-	if (fs_open(0, file_seq_to_open) < 0)
+	if (fs_open(0, file_num) < 0)
 	{
 		// no file found, indicate as such by writing a blank end of file
 		end_uart_write();
 		goto cleanup;
 	}
 
-	while ((ret = fs_read(sd_samples, samples_len)) != FS_ERROR_EOF)
+	// start read at calibration frame
+	if (uart_seqnum == 0)
+	{
+		if (fs_seek(0) < 0)
+		{
+			// failed to seek, indicate as such by writing a blank end of file
+			end_uart_write();
+			goto cleanup;
+		}
+
+		// setup UART state to read the calibration frame
+		state = STATE_PRE_FRAME;
+		seqnum = uart_seqnum;
+		ringbuf_reads_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+		ringbuf_writes_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+	}
+	// start read at requested UART frame
+	else
+	{
+		uint32_t uart_start_byte = (samples_len * SAMPLES_LEN_PER_CAL_FRAME) +
+			(uart_seqnum * samples_len * SAMPLES_LEN_PER_DATA_FRAME);
+
+		if (fs_seek(uart_start_byte) < 0)
+		{
+			// failed to seek, indicate as such by writing a blank end of file
+			end_uart_write();
+			goto cleanup;
+		}
+
+		// setup UART state to read a frame in the middle of the download
+		state = STATE_PRE_FRAME;
+		seqnum = uart_seqnum;
+		ringbuf_reads_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+		ringbuf_writes_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+	}
+
+	// send the requested UART frame
+	while (seqnum < (uart_seqnum + 1))
 	{
 		uint8_t* tx_buffer_tmp;
 
-		// abort the download if there is a UART command waiting to be run
+		// abort if there is a new control message
 		if (uart_rx_is_pending())
 			goto cleanup;
+
+		// read next buffer of samples
+		if (fs_read(sd_samples, samples_len) == FS_ERROR_EOF)
+		{
+			// write the last frame to indicate the download is over
+			//
+			// TODO write the last frame partially. This is difficult
+			// because we already wrote the length of the frame at this point
+			// to the UART buffer
+			end_uart_write();
+			goto cleanup;
+		}
 
 		// write the samples to the ring buffer like during streaming operation
 		samples_ringbuf_write(sd_samples);
@@ -391,8 +440,8 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 		tx_buffer_b = tx_buffer_tmp;
 	}
 
-	// write the last frame to indicate the download is over
-	end_uart_write();
+	// wait for uart transmission to complete
+	while(!dma_uart_tx_ready());
 
 cleanup:
 	// switch DMA back into normal mode and reset

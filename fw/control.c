@@ -111,7 +111,7 @@ int8_t control_run_message(control_message* m) //{{{
 		case CONTROL_TYPE_READ_SD_UART:
 			stop_sampling();
 			led_on(LED_RED_bm);
-			samples_store_read_uart_write(m->value1);
+			samples_store_read_uart_frame(m->value1, m->value2);
 			led_off(LED_RED_bm);
 			ret = -1;
 		break;
