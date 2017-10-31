@@ -71,8 +71,8 @@ static void samples_init() //{{{
 		sram_write, sram_read);
 
 	state = STATE_PRE_FRAME;
-	ringbuf_writes_remaining = SAMPLES_CAL_BUFFERS;
-	ringbuf_reads_remaining = SAMPLES_CAL_BUFFERS;
+	ringbuf_writes_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+	ringbuf_reads_remaining = SAMPLES_LEN_PER_CAL_FRAME;
 	calibrated = 0;
 	seqnum = 0;
 
@@ -264,8 +264,8 @@ int samples_uart_write(uint8_t just_prepare) // {{{
 
 		// prepare to write next frame
 		state = STATE_PRE_FRAME;
-		ringbuf_reads_remaining = 1;
-		ringbuf_writes_remaining = 1;
+		ringbuf_reads_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+		ringbuf_writes_remaining = SAMPLES_LEN_PER_DATA_FRAME;
 	}
 
 	// at the end of the sample stream has been reached
@@ -321,23 +321,30 @@ int samples_store_write() //{{{
 	return 1;
 } //}}}
 
-void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
+void samples_store_read_uart_frame(uint16_t file_num, uint32_t seqnum_req) //{{{
 {
-	int ret;
 	uint32_t tries;
 	uint16_t len;
 	sample sd_samples[SAMPLES_LEN];
 	uint8_t* uart_driver_tx_buffer;
 	uint8_t* tx_buffer_a;
 	uint8_t* tx_buffer_b;
+	int32_t file_byte_len;
+	uint32_t uart_frame_byte_idx;
 
 	// wait until any outstanding UART transactions are done
-	while(!dma_uart_tx_ready());
+	tries = 0;
+	while(!dma_uart_tx_ready() &&
+		tries++ < SAMPLES_UART_TX_TIMEOUT_20US)
+		_delay_us(20);
+	// timeout waiting for uart tx to complete
+	if (tries >= SAMPLES_UART_TX_TIMEOUT_20US)
+		goto cleanup;
 
 	// switch DMA into UART and SPI only mode because 3 channels are needed
 	dma_init(1);
 
-	// init sampling state
+	// init sampling state.
 	samples_init();
 
 	// remember the uart driver's default buffer
@@ -348,20 +355,92 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 	tx_buffer_b = uart_tx_buffer;
 
 	// open file
-	if (fs_open(0, file_seq_to_open) < 0)
+	if (fs_open(0, file_num) < 0)
 	{
-		// no file found, indicate as such by writing a blank end of file
+		// error: no file found, indicate as such by writing a blank end of file
 		end_uart_write();
 		goto cleanup;
 	}
 
-	while ((ret = fs_read(sd_samples, samples_len)) != FS_ERROR_EOF)
+	// get file size
+	if ((file_byte_len = fs_size_get()) < 0)
+	{
+		// error: no file found, indicate by writing a end of file
+		end_uart_write();
+		goto cleanup;
+	}
+
+	// prepare the UART frame generator state
+	state = STATE_PRE_FRAME;
+	seqnum = seqnum_req;
+
+	// prepare to start reading requested UART frame of calibration samples
+	if (seqnum_req == 0)
+	{
+		uart_frame_byte_idx = 0;
+
+		int32_t samples_len_remaining = (file_byte_len - uart_frame_byte_idx) / samples_len;
+
+		// error: Not enough calibration samples, indicate by writing a end of file
+		if (samples_len_remaining < SAMPLES_LEN_PER_CAL_FRAME)
+		{
+			end_uart_write();
+			goto cleanup;
+		}
+
+		ringbuf_reads_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+		ringbuf_writes_remaining = SAMPLES_LEN_PER_CAL_FRAME;
+	}
+	// prepare to start reading requested UART frame of data samples
+	else
+	{
+		uart_frame_byte_idx = (samples_len * SAMPLES_LEN_PER_CAL_FRAME) +
+			((seqnum_req - 1) * samples_len * SAMPLES_LEN_PER_DATA_FRAME);
+
+		int32_t samples_len_remaining = (file_byte_len - uart_frame_byte_idx) / samples_len;
+
+		// end of file reached, write the last frame
+		if (samples_len_remaining <= 0)
+		{
+			end_uart_write();
+			goto cleanup;
+		}
+		// partial frame remaining
+		else if (samples_len_remaining < SAMPLES_LEN_PER_DATA_FRAME)
+		{
+			ringbuf_reads_remaining = samples_len_remaining;
+			ringbuf_writes_remaining = samples_len_remaining;
+		}
+		// full frame
+		else
+		{
+			ringbuf_reads_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+			ringbuf_writes_remaining = SAMPLES_LEN_PER_DATA_FRAME;
+		}
+	}
+
+	if (fs_seek(uart_frame_byte_idx) < 0)
+	{
+		// error: failed to seek, indicate by writing a end of file
+		end_uart_write();
+		goto cleanup;
+	}
+
+	// send the requested UART frame
+	while (seqnum < (seqnum_req + 1))
 	{
 		uint8_t* tx_buffer_tmp;
 
-		// abort the download if there is a UART command waiting to be run
+		// abort if there is a pending control message
 		if (uart_rx_is_pending())
 			goto cleanup;
+
+		// read next buffer of samples
+		if (fs_read(sd_samples, samples_len) == FS_ERROR_EOF)
+		{
+			// With the prepare logic this should never happen, but if it does, exit gracefully.
+			goto cleanup;
+		}
 
 		// write the samples to the ring buffer like during streaming operation
 		samples_ringbuf_write(sd_samples);
@@ -391,10 +470,13 @@ void samples_store_read_uart_write(uint16_t file_seq_to_open) //{{{
 		tx_buffer_b = tx_buffer_tmp;
 	}
 
-	// write the last frame to indicate the download is over
-	end_uart_write();
-
 cleanup:
+	// wait for uart transmission to complete
+	tries = 0;
+	while(!dma_uart_tx_ready() &&
+			tries++ < SAMPLES_UART_TX_TIMEOUT_20US)
+			_delay_us(20);
+
 	// switch DMA back into normal mode and reset
 	dma_init(0);
 

@@ -59,14 +59,13 @@ static inline double sample_i(sample* s, samples_config* conf, double cal_v) //{
 	return i_samp;
 } //}}}
 
-int16_t samples_read(sample* samples, samples_config* conf, uint32_t* seqnum) //{{{
+int16_t samples_read(sample* samples, samples_config* conf, uint32_t seqnum) //{{{
 {
 	samples_hdr* hdr;
 	uint8_t frame[50000];
 	uint8_t* frame_ptr;
 	uint8_t type;
 	int ret = 0;
-
 
 	if ((ret = uart_rx_bytes(&type, frame, sizeof(frame))) < 0 || type != UART_TYPE_SAMPLES)
 		return 0;
@@ -78,17 +77,23 @@ int16_t samples_read(sample* samples, samples_config* conf, uint32_t* seqnum) //
 
 	verb_printf("samples_read: read_len:%d hdr_len:%d seqnum:%d\n", ret, hdr->len, hdr->seqnum);
 
-	if (*seqnum != 0)
+	// unexpected sequence number
+	if (hdr->seqnum != seqnum)
 	{
-		if (hdr->seqnum != *seqnum + 1)
-			fprintf(stderr, "warning: expected sample frame seqnum %d got seqnum %d\n", *seqnum + 1, hdr->seqnum);
+		fprintf(stderr, "warning: expected sample frame seqnum %d got seqnum %d\n", seqnum, hdr->seqnum);
+		return -2;
 	}
 
-	// end of file read
+	// mismatched length
+	if ((hdr->len + sizeof(samples_hdr)) != ret)
+	{
+		fprintf(stderr, "warning: expected frame length %d got %d\n", hdr->len, ret);
+		return -3;
+	}
+
+	// end of file marker
 	if (hdr->len == 0)
 		return -1;
-
-	*seqnum = hdr->seqnum;
 
 	memcpy(samples, frame_ptr, hdr->len);
 	frame_ptr += hdr->len;
@@ -111,8 +116,8 @@ void samples_print_config(samples_config* conf) //{{{
 void samples_print_loop(samples_config* conf) //{{{
 {
 	int i;
-	sample samples[2000];
-	uint32_t seqnum = 0xFFFFFFFF;
+	sample samples[50000];
+	uint32_t seqnum_next = 0;
 	uint32_t sample_num = 0;
 	int16_t samples_len = 0;
 	double v_cal = 0, i_cal = 0;
@@ -123,22 +128,25 @@ void samples_print_loop(samples_config* conf) //{{{
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGINT);
 
-	// read calibration and compute it
-	while (samples_len == 0 || seqnum != 0)
+	while (1)
 	{
-		samples_len = samples_read(samples, conf, &seqnum);
+		if (conf->down)
+		{
+			// request calibration frame
+			control(CONTROL_TYPE_READ_SD_UART, conf->down_file, seqnum_next, 0);
+		}
+
+		if ((samples_len = samples_read(samples, conf, seqnum_next)) > 0)
+		{
+			seqnum_next++;
+			break;
+		}
 
 		if (samples_len == -1)
 		{
 			fprintf(stderr, "ERROR: the file can not be found in the BattOr's storage\n");
 			exit(EXIT_FAILURE);
 		}
-	}
-
-	if (samples_len == 0)
-	{
-		fprintf(stderr, "ERROR: read zero calibration samples\n");
-		exit(EXIT_FAILURE);
 	}
 
 	for (i = 0; i < samples_len; i++)
@@ -156,13 +164,26 @@ void samples_print_loop(samples_config* conf) //{{{
 	// main sample read loop
 	while(1)
 	{
-		while ((samples_len = samples_read(samples, conf, &seqnum)) == 0);
+		while(1)
+		{
+			if (conf->down)
+			{
+				// request next sample frame
+				control(CONTROL_TYPE_READ_SD_UART, conf->down_file, seqnum_next, 0);
+			}
 
-		// end of file, quit read loop
-		if (samples_len <= 0)
-			return;
+			if ((samples_len = samples_read(samples, conf, seqnum_next)) > 0)
+			{
+				seqnum_next++;
+				break;
+			}
 
-		sigprocmask(SIG_BLOCK, &sigs, NULL);   // disable interrupts before print
+			// end of file, quit read loop
+			if (samples_len == -1)
+				return;
+		}
+
+		sigprocmask(SIG_BLOCK, &sigs, NULL); // disable interrupts before print
 
 		for (i = 0; i < samples_len; i++)
 		{

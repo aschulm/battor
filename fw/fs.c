@@ -147,6 +147,14 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	uint32_t file_rtc_start_time_ms_prev = 0;
 	int32_t block_idx_prev = -1;
 
+	// Quickly open file if it is already open and has been written to.
+	if (!create_file &&
+			file_startblock_idx > 0 && file_seq_to_open == 0 && file_byte_len > 0)
+	{
+		file_byte_idx = 0;
+		return FS_ERROR_NONE;
+	}
+
 	// reset filesystem state
 	fs_init();
 
@@ -275,6 +283,27 @@ int fs_open(uint8_t create_file, uint32_t file_seq_to_open) //{{{
 	}
 
 	return FS_ERROR_FILE_TOO_LONG;
+} //}}}
+
+int fs_seek(uint32_t byte) //{{{
+{
+	if (file_startblock_idx < 0)
+		return FS_ERROR_FILE_NOT_OPEN;
+
+	if (byte >= file_byte_len)
+		return FS_ERROR_SEEK_PAST_END;
+
+	file_byte_idx = byte;
+
+	return 0;
+} //}}}
+
+int32_t fs_size_get() //{{{
+{
+	if (file_startblock_idx < 0)
+		return FS_ERROR_FILE_NOT_OPEN;
+
+	return file_byte_len;
 } //}}}
 
 int fs_rtc_get(uint32_t* s, uint32_t* ms) //{{{
@@ -716,6 +745,65 @@ int fs_self_test() //{{{
 	}
 	printf("PASSED\n");
 
+	printf("fs_open a new file, write more than a block, fs_close, fs_seek, fs_read...");
+	if ((ret = fs_open(1, 0)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	for (i = 0; i < 256; i++)
+		buf[i] = i;
+	// write 1024 bytes
+	for (i = 0; i < 4; i++)
+	{
+		fs_write(buf, 256);
+		while (fs_busy())
+			fs_update();
+	}
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	if ((ret = fs_open(0, 0)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	if ((ret = fs_seek(10)) < 0)
+	{
+		printf("FAILED fs_seek failed, returned %d\n", ret);
+		return 1;
+	}
+	if ((ret = fs_read(buf2, 1)) < 0)
+	{
+		printf("FAILED fs_read failed, returned %d\n", ret);
+		return 1;
+	}
+	if (*buf2 != 10)
+	{
+		printf("FAILED first seek read is incorrect\n");
+		return 1;
+	}
+	if ((ret = fs_seek(600)) < 0)
+	{
+		printf("FAILED fs_seek failed, returned %d\n", ret);
+		return 1;
+	}
+	if ((ret = fs_read(buf2, 1)) < 0)
+	{
+		printf("FAILED fs_read failed, returned %d\n", ret);
+		return 1;
+	}
+	if (*buf2 != 88)
+	{
+		printf("FAILED first seek read is incorrect\n");
+		return 1;
+	}
+	printf("PASSED\n");
+
+
+
 	// start with clean fs to see if reformat happens correctly
 	// remember fs_fmt_iter so it can be read after fs_close()
 	fs_format(0);
@@ -900,6 +988,34 @@ int fs_self_test() //{{{
 	}
 	printf("PASSED\n");
 #endif
+
+	// always finish by formatting and writing a large test file
+	// that can be used to test reading buffered samples
+	printf("fs_write large file for eventual sample buffer test...");
+	int j;
+	uint32_t n = 0;
+	fs_format(0);
+	if ((ret = fs_open(1, 0)) < 0)
+	{
+		printf("FAILED fs_open failed, returned %d\n", ret);
+		return 1;
+	}
+	// write samples
+	for (i = 0; i < 1000; i++)
+	{
+		for (j = 0; j < (sizeof(buf)/sizeof(uint32_t)); j++)
+			((uint32_t*)buf)[j] = n++;
+		fs_write(buf, sizeof(buf));
+		while (fs_busy())
+			fs_update();
+	}
+	// write end of file marker
+	if ((ret = fs_close()) < 0)
+	{
+		printf("FAILED fs_close failed, returned %d\n", ret);
+		return 1;
+	}
+	printf("PASSED\n");
 
 	return 0;
 } //}}}
