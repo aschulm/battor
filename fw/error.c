@@ -2,7 +2,6 @@
 
 #include "control.h"
 #include "blink.h"
-#include "interrupt.h"
 #include "drivers.h"
 
 uint8_t g_error_last __attribute__ ((section (".noinit"))); // do not zero out on reset
@@ -22,20 +21,6 @@ void dump_stack() //{{{
 		printf("%02X ", sp[i]);
 	}
 	printf("\n");
-} //}}}
-
-void inline halt(uint8_t code) //{{{
-{
-	interrupt_disable();
-
-	// remember last error
-	g_error_last = code;
-
-	printf("HALT %u\n", code);
-
-	dump_stack();
-
-	reset();
 } //}}}
 
 void print_buffer(uint8_t* buf, uint16_t len) //{{{

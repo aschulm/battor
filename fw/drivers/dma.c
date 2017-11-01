@@ -16,8 +16,9 @@
 #include "led.h"
 
 static volatile uint32_t sample_count;
-static volatile uint8_t uart_tx_paused;
-static DMA_CH_t* uart_ch;
+
+volatile uint8_t g_uart_tx_paused;
+DMA_CH_t* g_uart_ch;
 
 ISR(DMA_CH2_vect)
 {
@@ -52,7 +53,7 @@ ISR(DMA_CH3_vect)
 ISR(DMA_CH0_vect)
 {
 	// only toggle CTS if UART is assigned to channel 0
-	if (uart_ch != &(DMA.CH0))
+	if (g_uart_ch != &(DMA.CH0))
 		return;
 
 	// toggle CTS to force FTDI chip to flush the buffer
@@ -86,12 +87,12 @@ void dma_init(uint8_t spi_uart_only)
 
 	// set the UART DMA channel corresponding to the operating mode
 	if (!spi_uart_only)
-		uart_ch = &(DMA.CH0);
+		g_uart_ch = &(DMA.CH0);
 	else
-		uart_ch = &(DMA.CH2);
+		g_uart_ch = &(DMA.CH2);
 
 	// start with the uart tx unpaused
-	uart_tx_paused = 0;
+	g_uart_tx_paused = 0;
 }
 
 void dma_start(void* adcb_samples0, void* adcb_samples1)
@@ -176,56 +177,42 @@ void dma_uart_tx(const void* data, uint16_t len)
 	interrupt_disable();
 
 	// reset DMA channel
-	uart_ch->CTRLA = 0;
-	uart_ch->CTRLA = DMA_CH_RESET_bm;
-	loop_until_bit_is_clear(uart_ch->CTRLA, DMA_CH_RESET_bp);
+	g_uart_ch->CTRLA = 0;
+	g_uart_ch->CTRLA = DMA_CH_RESET_bm;
+	loop_until_bit_is_clear(g_uart_ch->CTRLA, DMA_CH_RESET_bp);
 
 	// setup transmit DMA
-	uart_ch->CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
-	uart_ch->CTRLB = DMA_CH_TRNIF_bm; // clear flag
-	uart_ch->ADDRCTRL = 
+	g_uart_ch->CTRLA = DMA_CH_BURSTLEN_1BYTE_gc | DMA_CH_SINGLE_bm;
+	g_uart_ch->CTRLB = DMA_CH_TRNIF_bm; // clear flag
+	g_uart_ch->ADDRCTRL =
 		DMA_CH_SRCRELOAD_NONE_gc |
 		DMA_CH_SRCDIR_INC_gc |
 		DMA_CH_DESTRELOAD_BURST_gc |
 		DMA_CH_DESTDIR_FIXED_gc;
-	set_24_bit_addr(&(uart_ch->SRCADDR0), (uint16_t)(data));
-	set_24_bit_addr(&(uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA));
+	set_24_bit_addr(&(g_uart_ch->SRCADDR0), (uint16_t)(data));
+	set_24_bit_addr(&(g_uart_ch->DESTADDR0), (uint16_t)&(USARTD0.DATA));
 
 	// set the trigger based on the current UART flow control state
-	if (uart_tx_paused)
-		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
+	if (g_uart_tx_paused)
+		g_uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
 	else
-		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+		g_uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
 
-	uart_ch->TRFCNT = len;
+	g_uart_ch->TRFCNT = len;
 
 	// interrupt when UART transmission is complete for flushing
-	if (uart_ch == &(DMA.CH0))
+	if (g_uart_ch == &(DMA.CH0))
 		DMA.CH0.CTRLB |= DMA_CH_TRNINTLVL_MED_gc;
 
-	uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
+	g_uart_ch->CTRLA |= DMA_CH_ENABLE_bm;
 
 	// re-enable flow control interrupt now that DMA channel is set up
 	interrupt_enable();
 }
 
-inline void dma_uart_tx_pause(uint8_t on_off)
-{
-	uart_tx_paused = on_off;
-
-	if (!(uart_ch->TRIGSRC == DMA_CH_TRIGSRC_OFF_gc ||
-		uart_ch->TRIGSRC == DMA_CH_TRIGSRC_USARTD0_DRE_gc))
-		return;
-
-	if (on_off)
-		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_OFF_gc;
-	else
-		uart_ch->TRIGSRC = DMA_CH_TRIGSRC_USARTD0_DRE_gc;
-}
-
 uint8_t dma_uart_tx_ready()
 {
-	return ((uart_ch->CTRLA & DMA_CH_ENABLE_bm) == 0);
+	return ((g_uart_ch->CTRLA & DMA_CH_ENABLE_bm) == 0);
 }
 
 void dma_spi_txrx(USART_t* usart, const void* txd, void* rxd, uint16_t len)
