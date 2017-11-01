@@ -5,8 +5,8 @@
  
 GIT_HASH := $(shell git describe --always --tags)
 
-override CFLAGS += -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -O2 -DGIT_HASH=\"$(GIT_HASH)\" #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DFS_SKIP_TEST #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0 -DGPIO_MAIN_LOOP=0
-OBJECTS = drivers/led.o drivers/clock.o drivers/usart.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/gpio.o drivers/sd.o drivers/mux.o drivers/reset.o drivers/eeprom.o drivers/sram.o drivers/button.o blink.o main.o drivers.o interrupt.o error.o control.o samples.o ringbuf.o params.o fs.o
+override CFLAGS += -mmcu=atxmega192a3u -DF_CPU=32000000 -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -O2 -std=c99 -DGIT_HASH=\"$(GIT_HASH)\" #-DSAMPLE_INC #-DSAMPLE_ZERO #-gdwarf-2 #-DDEBUG #-DFS_SKIP_TEST #-DGPIO_SAMPLE_WRITE_DONE=1 #-DGPIO_DMA_INT=0 -DGPIO_MAIN_LOOP=0
+OBJECTS = drivers/led.o drivers/clock.o drivers/usart.o drivers/uart.o drivers/adc.o drivers/dma.o drivers/nvm.o drivers/timer.o drivers/int.o drivers/spi.o drivers/pot.o drivers/sd.o drivers/mux.o drivers/reset.o drivers/eeprom.o drivers/sram.o drivers/button.o blink.o main.o drivers.o interrupt.o error.o control.o samples.o ringbuf.o params.o fs.o
 FUSES = -U hfuse:w:0x99:m -U lfuse:w:0xff:m
 
 DEBUG_PORT = 4242

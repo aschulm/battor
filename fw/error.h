@@ -1,6 +1,9 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include "drivers/reset.h"
+#include "interrupt.h"
+
 typedef enum ERROR_enum
 {
 	ERROR_AMPPOT_SET_FAILED = 1,
@@ -27,9 +30,24 @@ typedef enum ERROR_enum
 	ERROR_SD_INIT_FAIL,
 } ERROR_t;
 
-void halt(uint8_t code);
+extern uint8_t g_error_last;
+
 void dump_stack();
 void print_buffer(uint8_t* buf, uint16_t len);
+
+void inline halt(uint8_t code) //{{{
+{
+	interrupt_disable();
+
+	// remember last error
+	g_error_last = code;
+
+	printf("HALT %u\n", code);
+
+	dump_stack();
+
+	reset();
+} //}}}
 
 extern uint8_t g_error_last;
 

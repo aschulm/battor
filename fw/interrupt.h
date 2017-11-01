@@ -1,6 +1,10 @@
 #ifndef INTERRUPT_H
 #define INTERRUPT_H
 
+#include <avr/interrupt.h>
+
+extern volatile uint16_t g_interrupt;
+
 typedef enum INTERRUPT_enum
 {
 	INTERRUPT_TIMER_MS = (1<<0),
@@ -12,10 +16,30 @@ typedef enum INTERRUPT_enum
 } INTERRUPT_t;
 
 void interrupt_init();
-void inline interrupt_set(uint16_t interrupt);
-void inline interrupt_clear(uint16_t interrupt);
-uint8_t interrupt_is_set(uint16_t interrupt);
-void inline interrupt_disable();
-void inline interrupt_enable();
+
+void inline interrupt_set(uint16_t interrupt) //{{{
+{
+	g_interrupt |= interrupt;
+} //}}}
+
+void inline interrupt_clear(uint16_t interrupt) //{{{
+{
+	g_interrupt &= ~interrupt;
+} //}}}
+
+void inline interrupt_disable() //{{{
+{
+	cli();
+} //}}}
+
+void inline interrupt_enable() //{{{
+{
+	sei();
+} //}}}
+
+uint8_t inline interrupt_is_set(uint16_t interrupt) //{{{
+{
+	return (g_interrupt & interrupt) > 0;
+} //}}}
 
 #endif
