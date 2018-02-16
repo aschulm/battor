@@ -5,10 +5,8 @@
 
 static int fd;
 static uint8_t uart_rx_buffer[UART_RX_BUFFER_LEN];
-static uint8_t uart_tx_buffer[UART_RX_BUFFER_LEN];
 static int uart_rx_buffer_write_idx = 0;
 static int uart_rx_buffer_read_idx = 0;
-static int uart_tx_buffer_idx = 0;
 
 int uart_rx_byte(uint8_t* b) //{{{
 {
@@ -148,59 +146,16 @@ uart_rx_bytes_start:
 	return bytes_read;
 } //}}}
 
-int uart_tx_byte(uint8_t b) //{{{
-{
-	int i,j, attempt = 0;
-	int write_len;
-	int to_write_len;
-
-	uart_tx_buffer[uart_tx_buffer_idx++] = b;
-
-	// reached end of frame so write it
-	if (uart_tx_buffer_idx > 3 &&
-		uart_tx_buffer[uart_tx_buffer_idx-1] == UART_END_DELIM &&
-		!(uart_tx_buffer[uart_tx_buffer_idx-2] == UART_ESC_DELIM &&
-		uart_tx_buffer[uart_tx_buffer_idx-3] != UART_ESC_DELIM))
-	{
-		to_write_len = uart_tx_buffer_idx;
-		while (to_write_len > 0)
-		{
-			if (attempt++ >= UART_TX_ATTEMPTS)
-			{
-				vverb_printf("uart_tx_byte: timeout\n%s", "");
-				return -1;
-			}
-
-			if ((write_len = write(fd, uart_tx_buffer + (uart_tx_buffer_idx - to_write_len), to_write_len)) < 0)
-			{
-				vverb_printf("uart_tx_byte: write() ret:%d\n", write_len);
-
-				// write failed, wait a bit and try again
-				struct timespec to_sleep = {0, UART_WRITE_SLEEP_NS};
-				while (nanosleep(&to_sleep, &to_sleep) < 0);
-			}
-			else
-			{
-				// verbose
-				verb_printf("uart_tx_byte: sent %s", "");
-				for (i = 0; i < write_len; i++)
-				{
-					verb_printf(" %.2X", uart_tx_buffer[i + (uart_tx_buffer_idx - to_write_len)]);
-				}
-				verb_printf("%s\n", "");
-
-				to_write_len -= write_len;
-			}
-		}
-		uart_tx_buffer_idx = 0;
-	}
-	return 0;
-} //}}}
-
 int uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 {
-	uint16_t i;
+	int i;
 	uint8_t* b_b = (uint8_t*)b;
+
+	uint8_t tx_buffer[UART_RX_BUFFER_LEN];
+	int tx_buffer_idx = 0;
+
+	int attempt;
+	int write_len, to_write_len;
 
 	// verbose
 	verb_printf("uart_tx_bytes: send%s", "");
@@ -210,10 +165,9 @@ int uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 	}
 	verb_printf("%s\n", "");
 
-	if (uart_tx_byte(UART_START_DELIM) < 0)
-		return -1;
-	if (uart_tx_byte(type) < 0)
-		return -1;
+	// create tx buffer
+	tx_buffer[tx_buffer_idx++] = UART_START_DELIM;
+	tx_buffer[tx_buffer_idx++] = type;
 
 	for (i = 0; i < len; i++)
 	{
@@ -221,16 +175,47 @@ int uart_tx_bytes(uint8_t type, void* b, uint16_t len) //{{{
 			b_b[i] == UART_END_DELIM ||
 			b_b[i] == UART_ESC_DELIM)
 		{
-			if (uart_tx_byte(UART_ESC_DELIM) < 0)
-				return -1;
+			tx_buffer[tx_buffer_idx++] = UART_ESC_DELIM;
 		}
 
-		if (uart_tx_byte(b_b[i]) < 0)
-			return -1;
+		tx_buffer[tx_buffer_idx++] = b_b[i];
 	}
 
-	if (uart_tx_byte(UART_END_DELIM) < 0)
-		return -1;
+	tx_buffer[tx_buffer_idx++] = UART_END_DELIM;
+
+	// write tx buffer to UART
+	attempt = 0;
+	to_write_len = tx_buffer_idx;
+	while (to_write_len > 0)
+	{
+		if (attempt++ >= UART_TX_ATTEMPTS)
+		{
+			vverb_printf("uart_tx_byte: timeout\n%s", "");
+			return -1;
+		}
+
+		if ((write_len = write(fd, tx_buffer + (tx_buffer_idx - to_write_len), to_write_len)) < 0)
+		{
+			vverb_printf("uart_tx_byte: write() ret:%d\n", write_len);
+
+			// write failed, wait a bit and try again
+			struct timespec to_sleep = {0, UART_WRITE_SLEEP_NS};
+			while (nanosleep(&to_sleep, &to_sleep) < 0);
+		}
+		else
+		{
+			// verbose
+			verb_printf("uart_tx_byte: sent %s", "");
+			for (i = 0; i < write_len; i++)
+			{
+				verb_printf(" %.2X", tx_buffer[i + (tx_buffer_idx - to_write_len)]);
+			}
+			verb_printf("%s\n", "");
+
+			to_write_len -= write_len;
+		}
+	}
+
 	return 0;
 } //}}}
 

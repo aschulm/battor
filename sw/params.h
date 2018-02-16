@@ -41,7 +41,7 @@ typedef enum PARAM_GAIN_enum
 // uart
 // needs at least the latency of the FTDI, so at least 20ms is plenty
 #define UART_TX_ATTEMPTS 100
-#define UART_RX_ATTEMPTS 100
+#define UART_RX_ATTEMPTS 1000
 #define UART_READ_SLEEP_NS 1000000
 #define UART_WRITE_SLEEP_NS 1000000
 #define DEFAULT_TTY "/dev/ttyUSB0"
